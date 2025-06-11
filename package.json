@@ -1,0 +1,39 @@
+{
+  "name": "mathtrade-game-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": "18.x"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": "next lint --fix --dir ."
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "lint-fix": "next lint --fix",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "geist": "^1.4.2",
+    "html5-qrcode": "^2.3.8",
+    "next": "~14.2.3",
+    "react": "~18.2.0",
+    "react-dom": "~18.2.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4.1.9",
+    "@types/node": "^20",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.3",
+    "husky": "^9.1.7",
+    "lint-staged": "~15.2.0",
+    "tailwindcss": "^4.1.9",
+    "typescript": "^5"
+  }
+}
