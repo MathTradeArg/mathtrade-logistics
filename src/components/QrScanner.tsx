@@ -1,54 +1,51 @@
 "use client";
 
-import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode';
-import { useEffect } from 'react';
-
+import React, { useState, useEffect } from 'react';
+import QrReader from 'react-qr-scanner';
 interface QrScannerProps {
   onScan: (data: string) => void;
 }
 
 const QrScanner: React.FC<QrScannerProps> = ({ onScan }) => {
+  const [isClient, setIsClient] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   useEffect(() => {
-    const scanner = new Html5QrcodeScanner(
-      "qr-reader-container",
-      {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        rememberLastUsedCamera: true, 
-        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA], 
-        /*videoConstraints: {
-          facingMode: { exact: "environment" } 
-        }*/
-      },
-      false 
-    );
+    setIsClient(true);
+  }, []);
 
-    const onScanSuccess = (decodedText: string) => {
-      scanner.clear();
-      onScan(decodedText);
-    };
+  const handleScan = (data: { text: string } | null) => {
+    if (data) {
+      onScan(data.text);
+      setScanError(null);
+    }
+  };
 
-    const onScanFailure = () => {
-    };
+  const handleError = (err: any) => {
+    console.error("Error del QrScanner:", err);
+    setScanError("Error de cámara/scan. ¿Diste permisos?");
+  };
 
-    scanner.render(onScanSuccess, onScanFailure);
-
-    return () => {
-      scanner.clear().catch(error => {
-        console.error("Error al limpiar el scanner, probablemente ya estaba detenido.", error);
-      });
-    };
-  }, [onScan]); 
+  const previewStyle = {
+    margin: 'auto',
+  };
 
   return (
-        <div className="w-full max-w-md mx-auto p-4 flex flex-col items-center">
-      <h2 className="text-2xl font-semibold mb-4 text-center">Escanear Código QR</h2>
-      <div id="qr-reader-container" className="w-full aspect-square border-2 border-gray-300 rounded-lg overflow-hidden mb-4 md:w-80 md:h-80">
-      </div>
-      <p className="text-gray-600 text-center">
-        Apuntá la cámara al código QR
-      </p>
+    <div className="w-full max-w-md mx-auto my-8 flex flex-col items-center space-y-5"> 
+      {isClient && (
+        <div className="w-full aspect-square rounded-xl overflow-hidden shadow-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+          <QrReader
+            delay={300}
+            style={previewStyle} 
+            onError={handleError}
+            onScan={handleScan}
+            constraints={{ video: { facingMode: "environment" } }}
+            className="w-full h-full object-cover bg-gray-100 dark:bg-gray-800" 
+          /> 
+        </div>
+      )}
+      {scanError && <p className="text-red-500 dark:text-red-400 text-center mt-4 text-sm">{scanError}</p>}
+      <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">Apuntá al QR</p>
     </div>
   );
 };

@@ -22,8 +22,9 @@ export async function GET(
    const scannedQrData = params.qrId; 
 
   try {
-    //TODO: Cambiar mock por request
-    const dbPath = path.join(process.cwd(), `mock-db-${scannedQrData}.json`);
+    //TODO: Cambiar mock por request (numero par devuelve lista vacia, cualquier otra cosa el mock)
+    const mock = parseInt(scannedQrData) % 2 == 0 ? "empty": "long";
+    const dbPath = path.join(process.cwd(), `mock-db-${mock}.json`);
     const jsonData = await fs.readFile(dbPath, 'utf-8');
     const user: MockDB = JSON.parse(jsonData);
 
