@@ -19,6 +19,7 @@ export default function LoginPage() {
   }, []);
 
   const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
 
   useEffect(() => {
     if (isMounted && !RECAPTCHA_SITE_KEY) {
@@ -61,7 +62,7 @@ export default function LoginPage() {
       }
 
       const body = JSON.stringify({ email, password, recaptcha: recaptchaToken })
-      const response = await fetch('https://api.mathtrade.com.ar/api/auth-token/', {
+      const response = await fetch(MT_API_HOST + 'auth-token/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: body,
@@ -80,6 +81,8 @@ export default function LoginPage() {
 
         const userName = `${data.user.first_name} ${data.user.last_name || ''}`.trim();
         localStorage.setItem('userName', userName);
+        if (data.user.role) localStorage.setItem('userRole', data.user.role); 
+        if (data.user.id) localStorage.setItem('userId', data.user.id.toString());
         router.push('/');
       } else {
         throw new Error('Sin token del server.');
@@ -97,7 +100,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
+    <main className="flex flex-col items-center justify-center h-screen bg-gray-100 dark:bg-gray-900 p-4 overflow-y-auto">
       <div className="w-full max-w-sm p-8 space-y-8 bg-white dark:bg-gray-800 shadow-2xl rounded-xl">
         <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-white">Bienvenido</h1>
         <form onSubmit={handleSubmit} className="space-y-7">

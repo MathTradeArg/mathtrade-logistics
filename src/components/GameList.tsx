@@ -1,20 +1,44 @@
 "use client";
 
-import type { Game, Item, User } from '@/types';
+import type { Game, Item, User } from "@/types";
 import { Check } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; 
+import ConfirmationModal from './ConfirmationModal'; 
 
 interface GameListProps {
   user: User;
-  onUpdateItem: (itemId: number, newDeliveredState: boolean) => Promise<void>;
+  onUpdateItems: (itemIds: number[], deliveredByUserId: number) => Promise<void>;
   onFinish: () => void;
+  deliveredByUserId: number | null;
 }
 
-const GameList: React.FC<GameListProps> = ({ user, onUpdateItem, onFinish }) => {
-  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
-
+const GameList: React.FC<GameListProps> = ({ user, onUpdateItems, onFinish, deliveredByUserId }) => {
   const pendingItems = user.items.filter(item => !item.delivered);
   const deliveredItemsCount = user.items.length - pendingItems.length;
+
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(() => {
+    const initialSelected = new Set<number>();
+    if (user && user.items) {
+      user.items.forEach(item => {
+        if (!item.delivered) {
+          initialSelected.add(item.id);
+        }
+      });
+    }
+    return initialSelected;
+  });
+
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [itemsToConfirm, setItemsToConfirm] = useState<Item[]>([]);
+  const [confirmActionType, setConfirmActionType] = useState<'all' | 'selected' | null>(null);
+
+  useEffect(() => {
+    const initialSelected = new Set<number>();
+    pendingItems.forEach(item => initialSelected.add(item.id));
+    setSelectedItems(initialSelected);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.id]); 
+
 
   const handleToggleSelectedItem = (itemId: number) => {
     setSelectedItems(prevSelected => {
@@ -29,15 +53,35 @@ const GameList: React.FC<GameListProps> = ({ user, onUpdateItem, onFinish }) => 
   };
 
   const handleDeliverAllPending = async () => {
-    const promises = pendingItems.map(item => onUpdateItem(item.id, true));
-    await Promise.all(promises);
-    setSelectedItems(new Set());
+    const itemsToConfirmDelivery = user.items.filter(item => !item.delivered);
+    if (itemsToConfirmDelivery.length > 0) {
+      setItemsToConfirm(itemsToConfirmDelivery);
+      setConfirmActionType('all');
+      setIsConfirmModalOpen(true);
+    }
   };
 
   const handleDeliverSelected = async () => {
-    const promises = Array.from(selectedItems).map(itemId => onUpdateItem(itemId, true));
-    await Promise.all(promises);
-    setSelectedItems(new Set());
+    const itemsToConfirmDelivery = user.items.filter(item => selectedItems.has(item.id) && !item.delivered);
+    if (itemsToConfirmDelivery.length > 0) {
+      setItemsToConfirm(itemsToConfirmDelivery);
+      setConfirmActionType('selected');
+      setIsConfirmModalOpen(true);
+    }
+  };
+
+  const executeConfirmedDelivery = async () => {
+    const itemIdsToDeliver = itemsToConfirm.map(item => item.id);
+    if (itemIdsToDeliver.length > 0 && deliveredByUserId !== null) {
+      await onUpdateItems(itemIdsToDeliver, deliveredByUserId);
+      setSelectedItems(new Set());
+      if (confirmActionType === 'all') {
+        setTimeout(() => {
+          const finishButton = document.getElementById('finish-button');
+          finishButton?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    }
   };
 
   return (
@@ -93,7 +137,7 @@ const GameList: React.FC<GameListProps> = ({ user, onUpdateItem, onFinish }) => 
             key={item.id}
             className={`flex rounded-xl shadow-md transition-all duration-200 overflow-hidden
                             ${item.delivered
-                ? 'bg-accent-green/30 dark:bg-accent-green/20 opacity-70'
+                ? 'bg-accent-green/30 dark:bg-accent-green/20 opacity-70' 
                 : `bg-gray-50 dark:bg-gray-700/50 hover:shadow-lg ${selectedItems.has(item.id) ? 'ring-2 ring-secondary-blue ring-offset-1 dark:ring-offset-gray-800' : ''}`}`}
             onClick={!item.delivered ? () => handleToggleSelectedItem(item.id) : undefined}
           >
@@ -166,10 +210,19 @@ const GameList: React.FC<GameListProps> = ({ user, onUpdateItem, onFinish }) => 
 
       <button
         onClick={onFinish}
+        id="finish-button" // Añadimos un ID al botón
         className="w-full mt-4 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out"
       >
         {pendingItems.length === 0 && user.items.length > 0 ? 'Todo entregado. Siguiente QR' : 'Listo, otro QR'}
       </button>
+
+      <ConfirmationModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={executeConfirmedDelivery}
+        itemsToDeliver={itemsToConfirm}
+        actionType={confirmActionType || 'selected'} 
+      />
     </div>
   );
 };

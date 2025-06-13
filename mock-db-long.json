@@ -5,7 +5,7 @@
   "items": [
     {
       "id": 21,
-      "title": "Cangazo",
+      "title": "Cangazo (2020)",
       "delivered": false,
       "elements": [
         {
@@ -27,7 +27,7 @@
     },
     {
       "id": 1111,
-      "title": "5-Minute Dungeon (2017) + 5-Minute Dungeon: Curses! Foiled Again! (2018)",
+      "title": "5-Minute Dungeon: Curses! Foiled Again! (2018) + 5-Minute Dungeon (2017)",
       "delivered": false,
       "elements": [
         {
@@ -42,151 +42,131 @@
     },
     {
       "id": 1010,
-      "title": "A Feast for Odin (2016) + A Feast for Odin: The Norwegians (2018)",
+      "title": "Wingspan (2019) + Oceania Expansion (2020)",
       "delivered": false,
       "elements": [
         {
           "id": 21285,
-          "primary_name": "A Feast for Odin"
+          "primary_name": "Wingspan"
         },
         {
           "id": 21286,
-          "primary_name": "A Feast for Odin: The Norwegians"
+          "primary_name": "Oceania Expansion"
         }
       ]
     },
     {
       "id": 9999,
-      "title": "A Feast for Odin (2016) + A Feast for Odin: The Norwegians (2018)",
+      "title": "Terraforming Mars (2016)",
       "delivered": false,
       "elements": [
         {
           "id": 21285,
-          "primary_name": "A Feast for Odin"
-        },
-        {
-          "id": 21286,
-          "primary_name": "A Feast for Odin: The Norwegians"
+          "primary_name": "Terraforming Mars"
         }
       ]
     },
     {
       "id": 1802,
-      "title": "A Feast for Odin (2016) + A Feast for Odin: The Norwegians (2018)",
+      "title": "Gloomhaven: Jaws of the Lion (2020)",
       "delivered": false,
       "elements": [
         {
           "id": 21285,
-          "primary_name": "A Feast for Odin"
-        },
-        {
-          "id": 21286,
-          "primary_name": "A Feast for Odin: The Norwegians"
+          "primary_name": "Gloomhaven: Jaws of the Lion"
         }
       ]
     },
     {
       "id": 1803,
-      "title": "A Feast for Odin (2016) + A Feast for Odin: The Norwegians (2018)",
+      "title": "Everdell (2018)",
       "delivered": false,
       "elements": [
         {
           "id": 21285,
-          "primary_name": "A Feast for Odin"
-        },
-        {
-          "id": 21286,
-          "primary_name": "A Feast for Odin: The Norwegians"
+          "primary_name": "Everdell"
         }
       ]
     },
     {
       "id": 18034,
-      "title": "A Feast for Odin (2016) + A Feast for Odin: The Norwegians (2018)",
+      "title": "Azul (2017)",
       "delivered": false,
       "elements": [
         {
           "id": 21285,
-          "primary_name": "A Feast for Odin"
-        },
-        {
-          "id": 21286,
-          "primary_name": "A Feast for Odin: The Norwegians"
+          "primary_name": "Azul"
         }
       ]
     },
     {
       "id": 1805,
-      "title": "A Feast for Odin (2016) + A Feast for Odin: The Norwegians (2018)",
+      "title": "Root (2018) + Root: The Riverfolk Expansion (2018)",
       "delivered": false,
       "elements": [
         {
           "id": 21285,
-          "primary_name": "A Feast for Odin"
+          "primary_name": "Root"
         },
         {
-          "id": 21286,
-          "primary_name": "A Feast for Odin: The Norwegians"
+          "id": 21291,
+          "primary_name": "Root: The Riverfolk Expansion"
         }
       ]
     },
     {
       "id": 1806,
-      "title": "A Feast for Odin (2016) + A Feast for Odin: The Norwegians (2018)",
+      "title": "Scythe (2016) + Scythe: Invaders from Afar (2017)",
       "delivered": false,
       "elements": [
         {
           "id": 21285,
-          "primary_name": "A Feast for Odin"
+          "primary_name": "Scythe"
         },
         {
-          "id": 21286,
-          "primary_name": "A Feast for Odin: The Norwegians"
+          "id": 21292,
+          "primary_name": "Scythe: Invaders from Afar"
         }
       ]
     },
     {
       "id": 1807,
-      "title": "A Feast for Odin (2016) + A Feast for Odin: The Norwegians (2018)",
+      "title": "Spirit Island (2017) + Spirit Island: Branch & Claw (2017)",
       "delivered": false,
       "elements": [
         {
           "id": 21285,
-          "primary_name": "A Feast for Odin"
+          "primary_name": "Spirit Island"
         },
         {
-          "id": 21286,
-          "primary_name": "A Feast for Odin: The Norwegians"
+          "id": 21293,
+          "primary_name": "Spirit Island: Branch & Claw"
         }
       ]
     },
     {
       "id": 1808,
-      "title": "A Feast for Odin (2016) + A Feast for Odin: The Norwegians (2018)",
+      "title": "Great Western Trail (Second Edition) (2021)",
       "delivered": false,
       "elements": [
         {
           "id": 21285,
-          "primary_name": "A Feast for Odin"
-        },
-        {
-          "id": 21286,
-          "primary_name": "A Feast for Odin: The Norwegians"
+          "primary_name": "Great Western Trail (Second Edition)"
         }
       ]
     },
     {
       "id": 1809,
-      "title": "A Feast for Odin (2016) + A Feast for Odin: The Norwegians (2018)",
+      "title": "Lost Ruins of Arnak (2020) + Lost Ruins of Arnak: Expedition Leaders (2021)",
       "delivered": false,
       "elements": [
         {
           "id": 21285,
-          "primary_name": "A Feast for Odin"
+          "primary_name": "Lost Ruins of Arnak"
         },
         {
-          "id": 21286,
-          "primary_name": "A Feast for Odin: The Norwegians"
+          "id": 21295,
+          "primary_name": "Lost Ruins of Arnak: Expedition Leaders"
         }
       ]
     }
