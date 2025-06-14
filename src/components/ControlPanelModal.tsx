@@ -1,26 +1,28 @@
 "use client";
-
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, ChangeEvent } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { X, Check, XCircle } from 'lucide-react'; 
 import Link from 'next/link'; 
-import { GameDetails } from '@/types';
+import { GameDetail, GameStatusCode, GameStatusMap } from '@/types';
 
 
 interface ControlPanelModalProps {
   isOpen: boolean;
   onClose: () => void;
-  userRole: string;
+  isAdmin: boolean;
   loggedInUserId: number | null;
   loggedInUserName: string | null;
 }
 
-const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, userRole, loggedInUserId, loggedInUserName }) => {
+const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, isAdmin, loggedInUserId, loggedInUserName }) => {
   const [searchId, setSearchId] = useState('');
-  const [gameDetails, setGameDetails] = useState<GameDetails | null>(null);
+  const [gameDetail, setGameDetails] = useState<GameDetail | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
+  const { isHighContrast, toggleHighContrast } = useAuth();
+
 
   if (!isOpen) return null;
 
@@ -37,7 +39,13 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
     setActionSuccess('');
 
     try {
-      const response = await fetch(`/api/game/${searchId}`);
+      const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
+      const response = await fetch(`${MT_API_HOST}logistics/game/${searchId}/detail/`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `token ${localStorage.getItem('authToken')}`
+        }
+      });
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error(`Juego con id ${searchId} no encontrado.`);
@@ -45,7 +53,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.message || `Error ${response.status} al buscar el juego.`);
       }
-      const data: GameDetails = await response.json();
+      const data: GameDetail = await response.json();
       setGameDetails(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido al buscar.");
@@ -54,19 +62,22 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
     }
   };
 
-  const handleGameAction = async (gameId: number, newStatus: 'delivered' | 'pending') => {
+  const handleGameAction = async (gameId: number, newStatus: GameStatusCode ) => {
     setIsLoading(true);
     setActionError('');
     setActionSuccess('');
     try {
-      const response = await fetch('/api/games/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
+      const response = await fetch(`${MT_API_HOST}logistics/games/bulk-update-status/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `token ${localStorage.getItem('authToken')}`
+        },
         body: JSON.stringify({
-          itemIds: [gameId],
+          assigned_trade_codes: [gameId],
           status: newStatus,
-          deliveredByUserId: loggedInUserId,
-          userRole: userRole
+          change_by_id: loggedInUserId
         }),
       });
 
@@ -78,13 +89,14 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
       setGameDetails(prev => {
         if (!prev) return null;
         const updatedDetails = { ...prev, status: newStatus };
-        if (newStatus === 'delivered') {
-          updatedDetails.delivered_to_user_id = loggedInUserId;
-          updatedDetails.delivered_to_user_name = loggedInUserName;
+        if (newStatus === 6 && loggedInUserId && loggedInUserName) {
+          updatedDetails.change_by.id = loggedInUserId;
+          updatedDetails.change_by.first_name = loggedInUserName.slice(0, loggedInUserName.indexOf(' '));
+          updatedDetails.change_by.last_name = loggedInUserName.slice(1, loggedInUserName.indexOf(' '));
         }
         return updatedDetails;
-      });
-      setActionSuccess(`Juego ${gameId} ${newStatus === 'delivered' ? 'entregado' : 'no entregado'}.`);
+      });      
+      setActionSuccess(`Juego ${gameId} actualizado a: ${GameStatusMap[newStatus]}.`);
 
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Error al realizar la acción.");
@@ -93,6 +105,8 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
     }
   };
 
+  const canDecreaseStatus = isAdmin == true;
+  const currentStatusText = gameDetail ? GameStatusMap[gameDetail.status] || "Desconocido" : "";
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center p-4 z-50">
@@ -104,7 +118,23 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
           </button>
         </div>
 
-        {userRole === 'ADMIN' && (
+        <div className="border-t dark:border-gray-700 mt-4 pt-4">
+        <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-3">Preferencias de Visualización</h3>
+        <label className="flex items-center justify-between cursor-pointer p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+          <span className="text-gray-700 dark:text-gray-300">Modo Alto Contraste</span>
+          <div className="relative">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={isHighContrast}
+              onChange={toggleHighContrast}
+            />
+            <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white dark:after:bg-gray-400 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary-blue dark:peer-checked:bg-sky-500"></div>
+          </div>
+        </label>
+      </div>
+
+        {isAdmin == true && (
           <div className="mb-4 border-t border-b border-gray-200 dark:border-gray-700 py-4">
             <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">Vistas de Admin</h3>
             <Link href="/admin/ready-to-pickup" passHref>
@@ -127,43 +157,89 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
             disabled={isLoading}
             className="px-4 py-2 bg-secondary-blue text-white font-semibold rounded-md shadow-sm hover:opacity-85 disabled:opacity-50"
           >
-            {isLoading && !gameDetails ? 'Buscando...' : 'Buscar'}
+            {isLoading && !gameDetail ? 'Buscando...' : 'Buscar'}
           </button>
         </form>
 
         {error && <p className="text-sm text-red-500 dark:text-red-400 mb-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-md">{error}</p>}
         
         <div className="overflow-y-auto flex-grow">
-          {gameDetails && (
+          {gameDetail && (
             <div className="space-y-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <p><strong>ID:</strong> {gameDetails.id}</p>
-              <p><strong>Título:</strong> {gameDetails.title}</p>
-              <p><strong>Estado:</strong> <span className={gameDetails.status === 'delivered' ? 'text-accent-green font-semibold' : 'text-accent-yellow font-semibold'}>
-                {gameDetails.status === 'delivered' ? 'Entregado' : 'No Entregado'}
+              <p><strong>ID:</strong> {gameDetail.assigned_trade_code}</p>
+              <p><strong>Título:</strong> {gameDetail.item_to.title}</p>
+              <p><strong>Estado:</strong> <span className={`font-semibold ${
+                  gameDetail.status === 6 ? 'text-accent-green' : 
+                  gameDetail.status === 5 ? 'text-blue-500' : 
+                  'text-accent-yellow'
+                }`}>
+                {currentStatusText}
               </span></p>
-              {gameDetails.status === 'delivered' && gameDetails.delivered_to_user_name && (
-                <p><strong>Recibido por:</strong> {gameDetails.delivered_to_user_name} (ID: {gameDetails.delivered_to_user_id})</p>
+              {gameDetail.status === 6 && gameDetail.member_to && gameDetail.member_to.first_name && gameDetail.member_to.last_name && (
+                <p><strong>Recibido por:</strong> {gameDetail.member_to.first_name} {gameDetail.member_to.last_name}</p>
+              )}
+              {gameDetail.change_by && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">Último cambio por: {gameDetail.change_by.first_name} {gameDetail.change_by.last_name} (ID: {gameDetail.change_by.id})</p>
               )}
 
               <div className="mt-4">
                 <div className="flex flex-wrap items-center gap-2"> 
-                  {gameDetails.status === 'pending' && (
-                    <button
-                      onClick={() => handleGameAction(gameDetails.id, 'delivered')}
-                      disabled={isLoading}
-                      className="px-4 py-2 bg-secondary-blue text-white font-semibold rounded-md shadow-sm hover:opacity-85 disabled:opacity-50"
-                    >
-                      {isLoading ? 'Procesando...' : 'Marcar como Entregado'}
-                    </button>
+                  {gameDetail.status < 5 && (
+                    <>
+                      <button
+                        onClick={() => handleGameAction(gameDetail.assigned_trade_code, 5)}
+                        disabled={isLoading}
+                        className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-md shadow-sm hover:bg-blue-600 disabled:opacity-50"
+                      >
+                        {isLoading ? 'Procesando...' : 'A "En Evento"'}
+                      </button>
+                      <button
+                        onClick={() => handleGameAction(gameDetail.assigned_trade_code, 6)}
+                        disabled={isLoading}
+                        className="px-4 py-2 bg-accent-green text-white font-semibold rounded-md shadow-sm hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {isLoading ? 'Procesando...' : 'A "Entregado"'}
+                      </button>
+                    </>
                   )}
-                  {userRole === 'ADMIN' && gameDetails.status === 'delivered' && (
+                  {gameDetail.status === 5 && (
+                    <>
+                       <button
+                        onClick={() => handleGameAction(gameDetail.assigned_trade_code, 4)}
+                        disabled={isLoading || !canDecreaseStatus}
+                        className={`px-4 py-2 font-semibold rounded-md shadow-sm ${canDecreaseStatus ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-400 text-gray-700 cursor-not-allowed'}`}
+                        title={!canDecreaseStatus ? "Solo administradores pueden retroceder estados" : ""}
+                      >
+                        {isLoading ? 'Procesando...' : 'A "Pendiente"'}
+                      </button>
+                      <button
+                        onClick={() => handleGameAction(gameDetail.assigned_trade_code, 6)}
+                        disabled={isLoading}
+                        className="px-4 py-2 bg-accent-green text-white font-semibold rounded-md shadow-sm hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {isLoading ? 'Procesando...' : 'A "Entregado"'}
+                      </button>
+                    </>
+                  )}
+                  {gameDetail.status === 6 && (
+                    <>
+                      <button
+                        onClick={() => handleGameAction(gameDetail.assigned_trade_code, 4)}
+                        disabled={isLoading || !canDecreaseStatus}
+                        className={`px-4 py-2 font-semibold rounded-md shadow-sm ${canDecreaseStatus ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-400 text-gray-700 cursor-not-allowed'}`}
+                        title={!canDecreaseStatus ? "Solo administradores pueden retroceder estados" : ""}
+                      >
+                        {isLoading ? 'Procesando...' : 'A "Pendiente"'}
+                      </button>
                     <button
-                      onClick={() => handleGameAction(gameDetails.id, 'pending')}
-                      disabled={isLoading}
-                      className="px-4 py-2 bg-accent-yellow text-gray-800 font-semibold rounded-md shadow-sm hover:opacity-85 disabled:opacity-50"
+                      onClick={() => handleGameAction(gameDetail.assigned_trade_code, 5)}
+                      disabled={isLoading || !canDecreaseStatus}
+                      className={`px-4 py-2 font-semibold rounded-md shadow-sm ${canDecreaseStatus ? 'bg-accent-yellow text-gray-800 hover:opacity-85' : 'bg-gray-400 text-gray-700 cursor-not-allowed'}`}
+                      title={!canDecreaseStatus ? "Solo administradores pueden retroceder estados" : ""}
                     >
-                      {isLoading ? 'Procesando...' : 'Marcar como NO Entregado (Admin)'}
+                      {isLoading ? 'Procesando...' : 'A "En Evento"'}
                     </button>
+                  </>
                   )}
                 </div>
                 {actionSuccess && !isLoading && (

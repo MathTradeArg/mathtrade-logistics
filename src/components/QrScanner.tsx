@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import QrReader from 'react-qr-scanner';
+import styles from './QrScanner.module.css';
+import { QrScanner as QrReader } from 'react-qrcode-scanner-mi'; 
 interface QrScannerProps {
   onScan: (data: string) => void;
 }
@@ -14,9 +15,9 @@ const QrScanner: React.FC<QrScannerProps> = ({ onScan }) => {
     setIsClient(true);
   }, []);
 
-  const handleScan = (data: { text: string } | null) => {
-    if (data) {
-      onScan(data.text);
+  const handleScanFromLibrary = (scannedData: string | null) => {
+    if (scannedData) {
+      onScan(scannedData);
       setScanError(null);
     }
   };
@@ -26,26 +27,21 @@ const QrScanner: React.FC<QrScannerProps> = ({ onScan }) => {
     setScanError("Error de cámara/scan. ¿Diste permisos?");
   };
 
-  const previewStyle = {
-    margin: 'auto',
-  };
-
   return (
-    <div className="w-full max-w-md mx-auto my-8 flex flex-col items-center space-y-5"> 
+    <div className="w-full max-w-md mx-auto my-2 flex flex-col items-center space-y-5"> 
       {isClient && (
-        <div className="w-full aspect-square rounded-xl overflow-hidden shadow-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+        <div className={`${styles.qrReaderContainer} w-full aspect-square rounded-xl overflow-hidden shadow-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800`}>
           <QrReader
             delay={300}
-            style={previewStyle} 
-            onError={handleError}
-            onScan={handleScan}
+            onError={handleError} 
+            onScan={handleScanFromLibrary} 
             constraints={{ video: { facingMode: "environment" } }}
-            className="w-full h-full object-cover bg-gray-100 dark:bg-gray-800" 
+            className="w-full h-full" // El div raíz de QrReader llenará el contenedor. El fondo ya está en el div padre.
           /> 
         </div>
       )}
       {scanError && <p className="text-red-500 dark:text-red-400 text-center mt-4 text-sm">{scanError}</p>}
-      <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">Apuntá al QR</p>
+      <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-2">Apuntá al QR</p>
     </div>
   );
 };

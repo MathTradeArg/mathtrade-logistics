@@ -8,9 +8,130 @@ body {
   font-family: var(--font-nunito, "Nunito", sans-serif);
 }
 
+::-webkit-scrollbar {
+  display: none;
+}
+
+html {
+  scrollbar-width: none; 
+  -ms-overflow-style: none;  
+}
+
 @theme {
   --color-accent-green: #80d8c3;
   --color-accent-yellow: #ffd66b;
   --color-secondary-blue: #4da8da;
   --color-neutral-white: #f5f5f5;
+}
+
+html.high-contrast {
+  --hc-bg: black;
+  --hc-text: yellow;
+  --hc-text-secondary: #ffff99; 
+  --hc-primary-bg: #1A1A00; 
+  --hc-primary-text: yellow;
+  --hc-border: yellow;
+  --hc-link: #99ffff; 
+  --hc-accent-green-text: #00FF00;
+  --hc-secondary-blue-text: var(--hc-link); 
+}
+
+html.high-contrast body,
+html.high-contrast .bg-neutral-white,
+html.high-contrast .dark\:bg-gray-900,
+html.high-contrast .bg-gray-50,
+html.high-contrast .bg-gray-100 
+{
+  background-color: var(--hc-bg) !important;
+  color: var(--hc-text) !important;
+}
+
+html.high-contrast .text-gray-800,
+html.high-contrast .dark\:text-gray-100,
+html.high-contrast .text-gray-900,
+html.high-contrast .dark\:text-white,
+html.high-contrast .text-gray-700,
+html.high-contrast .dark\:text-gray-200,
+html.high-contrast .text-gray-300 {
+  color: var(--hc-text) !important;
+}
+
+html.high-contrast .text-gray-600,
+html.high-contrast .dark\:text-gray-400,
+html.high-contrast .dark\:text-gray-300 { 
+  color: var(--hc-text-secondary) !important;
+}
+
+html.high-contrast .bg-white,
+html.high-contrast .dark\:bg-gray-800 {
+  background-color: var(--hc-primary-bg) !important;
+  border: 1px solid var(--hc-border) !important;
+}
+
+html.high-contrast .border,
+html.high-contrast .border-gray-200,
+html.high-contrast .dark\:border-gray-700,
+html.high-contrast .border-gray-300,
+html.high-contrast .dark\:border-gray-600,
+html.high-contrast .border-red-300, 
+html.high-contrast .dark\:border-red-600,
+html.high-contrast .dark\:border-red-700 {
+  border-color: var(--hc-border) !important;
+}
+
+html.high-contrast input,
+html.high-contrast textarea,
+html.high-contrast .bg-gray-50, 
+html.high-contrast .dark\:bg-gray-700 {
+  background-color: var(--hc-bg) !important;
+  color: var(--hc-text) !important;
+  border: 1px solid var(--hc-border) !important;
+}
+
+html.high-contrast ::placeholder,
+html.high-contrast .placeholder-gray-400,
+html.high-contrast .dark\:placeholder-gray-500 {
+  color: var(--hc-text-secondary) !important;
+  opacity: 0.8 !important;
+}
+
+html.high-contrast .bg-secondary-blue,
+html.high-contrast .bg-primary {
+  background-color: var(--hc-primary-bg) !important;
+  color: var(--hc-primary-text) !important;
+  border: 1px solid var(--hc-border) !important;
+}
+html.high-contrast .text-white { 
+  color: var(--hc-primary-text) !important;
+}
+
+html.high-contrast a,
+html.high-contrast .text-secondary-blue,
+html.high-contrast .dark\:text-sky-400 {
+  color: var(--hc-link) !important;
+  text-decoration: underline !important;
+}
+html.high-contrast .text-accent-green,
+html.high-contrast .dark\:text-green-400 {
+  color: var(--hc-accent-green-text) !important;
+}
+
+html.high-contrast hr.bg-secondary-blue,
+html.high-contrast hr.dark\:bg-sky-500 {
+    background-color: var(--hc-border) !important;
+}
+
+html.high-contrast .lucide {
+    color: var(--hc-text) !important; 
+}
+
+html.high-contrast .bg-red-50,
+html.high-contrast .dark\:bg-red-900\/30,
+html.high-contrast .dark\:bg-red-900\/20 {
+    background-color: var(--hc-primary-bg) !important;
+    border: 1px solid var(--hc-border) !important;
+}
+html.high-contrast .text-red-600,
+html.high-contrast .dark\:text-red-400 {
+    color: var(--hc-text) !important; 
 }

@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { FormEvent, useRef, useState, useEffect } from 'react';
+import { useAuth } from '../../hooks/useAuth'; 
 import ReCAPTCHA from "react-google-recaptcha";
 
 export default function LoginPage() {
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
   const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const { login: contextLogin } = useAuth(); 
 
   const [isMounted, setIsMounted] = useState(false);
 
@@ -62,7 +64,7 @@ export default function LoginPage() {
       }
 
       const body = JSON.stringify({ email, password, recaptcha: recaptchaToken })
-      const response = await fetch(MT_API_HOST + 'auth-token/', {
+      const response = await fetch(MT_API_HOST + 'auth-token/volunteer/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: body,
@@ -72,7 +74,7 @@ export default function LoginPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Error del server.' }));
-        throw new Error(errorData.message || `Error ${response.status} al entrar.`);
+        throw new Error(errorData.message || `Error  al entrar.`);
       }
 
       const data = await response.json();
@@ -81,8 +83,10 @@ export default function LoginPage() {
 
         const userName = `${data.user.first_name} ${data.user.last_name || ''}`.trim();
         localStorage.setItem('userName', userName);
-        if (data.user.role) localStorage.setItem('userRole', data.user.role); 
+        if (data.user.isAdmin) localStorage.setItem('isAdmin', data.user.math_admin); 
         if (data.user.id) localStorage.setItem('userId', data.user.id.toString());
+        
+        contextLogin(data.token, data.user);
         router.push('/');
       } else {
         throw new Error('Sin token del server.');
@@ -100,7 +104,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex flex-col items-center justify-center h-screen bg-gray-100 dark:bg-gray-900 p-4 overflow-y-auto">
+    <main className="flex flex-col items-center justify-center min-h-dvh bg-gray-100 dark:bg-gray-900 p-4">
       <div className="w-full max-w-sm p-8 space-y-8 bg-white dark:bg-gray-800 shadow-2xl rounded-xl">
         <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-white">Bienvenido</h1>
         <form onSubmit={handleSubmit} className="space-y-7">

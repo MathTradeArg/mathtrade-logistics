@@ -1,11 +1,11 @@
-declare module 'react-qr-scanner' {
+declare module 'react-qrcode-scanner-mi' {
   import * as React from 'react';
 
-  interface QrReaderProps {
+  interface QrScannerProps {
     delay?: number | false;
     style?: React.CSSProperties;
     onError?: (error: any) => void;
-    onScan?: (data: { text: string } | null) => void;
+    onScan: (data: string) => void;
     constraints?: MediaStreamConstraints;
     className?: string;
     facingMode?: 'user' | 'environment'; 
@@ -13,8 +13,8 @@ declare module 'react-qr-scanner' {
     maxImageSize?: number;
     chooseDevice?: (devices: MediaDeviceInfo[]) => MediaDeviceInfo;
   }
+  
+  const QrScanner: React.FC<QrScannerProps>;
 
-  class QrReader extends React.Component<QrReaderProps> {}
-
-  export default QrReader;
+  export { QrScanner }; 
 }
