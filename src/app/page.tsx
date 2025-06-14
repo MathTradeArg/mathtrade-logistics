@@ -28,7 +28,6 @@ export default function LandingPage() {
       )}
       <div className="w-full max-w-5xl text-center">
 
-
         <div className="my-10 sm:my-12 text-center">
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-700 dark:text-gray-200">Mathtrade Logistics</h1>
           <p className="mt-3 text-lg text-gray-600 dark:text-gray-400">Seleccioná una opción para continuar</p>

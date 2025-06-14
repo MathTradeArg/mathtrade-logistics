@@ -6,22 +6,24 @@ interface AppHeaderProps {
   userName: string | null;
   userRole: string | null;
   onLogoutClick: () => void;
-  onPanelClick?: () => void; 
-  showPanelButton?: boolean; 
-  showBackButton?: boolean; 
-  onBackClick?: () => void; 
+  onPanelClick?: () => void;
+  showPanelButton?: boolean;
+  showBackButton?: boolean;
+  onBackClick?: () => void;
 }
 
 const AppHeader: React.FC<AppHeaderProps> = ({ userName, userRole, onLogoutClick, onPanelClick, showPanelButton = true, showBackButton = false, onBackClick }) => {
   if (!userName) {
-    return null; 
+    return null;
   }
 
+  const firstName = userName?.split(' ')[0];
+
   return (
-    <header className="w-full max-w-5xl mb-8 sm:mb-12">
-      <div className="flex justify-between items-center p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-        <div className="flex items-center">
-          <div className="w-10 h-10 flex items-center justify-center mr-2"> 
+    <header className="w-full sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-md">
+      <div className="max-w-5xl mx-auto flex justify-between items-center p-4">
+        <div className="flex items-center min-w-0">
+          <div className="w-10 h-10 flex items-center justify-center mr-2">
             {showBackButton && onBackClick && (
               <button
                 aria-label="Atrás"
@@ -32,12 +34,15 @@ const AppHeader: React.FC<AppHeaderProps> = ({ userName, userRole, onLogoutClick
               </button>
             )}
           </div>
-          <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300"> 
-            Hola, <span className="font-bold text-secondary-blue dark:text-sky-400">{userName}!</span>
+          <div className="flex items-baseline min-w-0">
+            <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-nowrap">Hola,&nbsp;</span>
+            <span className="text-sm sm:text-base font-bold text-secondary-blue dark:text-sky-400 truncate" title={firstName || ''}>{firstName}</span>
+            <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-nowrap">!</span>
             {userRole && userRole !== 'USER' && (
-              <span className="text-xs bg-accent-yellow text-gray-700 px-1.5 py-0.5 rounded-full ml-2 align-middle">{userRole}</span>
+              <span className="ml-2 text-xs bg-accent-yellow text-gray-700 px-1.5 py-0.5 rounded-full align-middle whitespace-nowrap flex-shrink-0">{userRole}</span>
+
             )}
-          </p>
+          </div>
         </div>
         <div className="flex items-center space-x-2">
           {showPanelButton && onPanelClick && (

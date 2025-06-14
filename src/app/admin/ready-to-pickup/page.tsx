@@ -10,7 +10,7 @@ interface ReadyUser {
   name: string;
 }
 
-const POLLING_INTERVAL = 15000; // 15 segundos
+const POLLING_INTERVAL = 1000 * 15; // 15 segundos
 
 export default function ReadyToPickupPage() {
   const { isAuthenticated, userName, userRole, logout, isLoading: authIsLoading } = useAuth();
@@ -31,7 +31,7 @@ export default function ReadyToPickupPage() {
 
     setError(null);
     try {
-      const response = await fetch('/api/admin/ready-to-pickup');
+      const response = await fetch('/api/admin/ready-to-pickup', { cache: 'no-store' });
       if (!response.ok) {
         throw new Error(`Error ${response.status} al obtener datos.`);
       }
@@ -41,13 +41,11 @@ export default function ReadyToPickupPage() {
         const newUsersMap = new Map(data.map(user => [user.id, user]));
         const prevUserIds = new Set(prevReadyUsers.map(user => user.id));
 
-        // Usuarios que son nuevos en esta actualización
         const trulyNewUsers = data.filter(user => !prevUserIds.has(user.id));
 
-        // Usuarios que ya estaban y siguen estando 
         const persistentUsers = prevReadyUsers
           .filter(user => newUsersMap.has(user.id))
-          .map(user => newUsersMap.get(user.id)!);
+          .map(user => newUsersMap.get(user.id)!); 
 
         return [...trulyNewUsers, ...persistentUsers];
       });
@@ -76,28 +74,28 @@ export default function ReadyToPickupPage() {
   }
 
   return (
-    <main className="w-full p-6 md:p-8 lg:p-12 flex flex-col items-center min-h-screen bg-gray-800 text-gray-100">
+    <main className="w-full p-4 md:p-6 lg:p-8 flex flex-col items-center h-screen bg-gray-800 text-gray-100 overflow-hidden"> 
       <div className="w-full text-center"> 
-        <div className="my-8 md:my-12 text-center">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-100 flex items-center justify-center">
-            <Users size={48} className="mr-4 text-sky-400" />
+        <div className="my-4 md:my-6 text-center"> 
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-100 flex items-center justify-center"> 
+            <Users size={40} className="mr-3 text-sky-400" />
             Listos para Retirar
           </h1>
-          {lastUpdated && <p className="text-base md:text-lg text-gray-400 mt-3">Última actualización: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>}
+          {lastUpdated && <p className="text-sm md:text-base text-gray-400 mt-2">Última actualización: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>}
         </div>
       </div>
 
-      <section className="w-full p-6 md:p-8 bg-gray-700 rounded-2xl shadow-2xl"> 
-        {isLoadingData && readyUsers.length === 0 && <p className="text-2xl md:text-3xl text-sky-400 my-8 text-center">Cargando usuarios...</p>}
-        {error && <p className="text-xl md:text-2xl text-red-300 my-8 p-6 bg-red-900/60 border border-red-500 rounded-lg text-center">{error}</p>}
+      <section className="w-full p-4 md:p-6 bg-gray-700 rounded-2xl shadow-2xl flex-grow overflow-y-auto"> 
+        {isLoadingData && readyUsers.length === 0 && <p className="text-xl md:text-2xl text-sky-400 my-6 text-center">Cargando usuarios...</p>}
+        {error && <p className="text-lg md:text-xl text-red-300 my-6 p-4 bg-red-900/60 border border-red-500 rounded-lg text-center">{error}</p>}
 
-        {!isLoadingData && readyUsers.length === 0 && !error && <p className="text-gray-300 text-2xl md:text-3xl text-center py-10">No hay usuarios listos para retirar.</p>}
+        {!isLoadingData && readyUsers.length === 0 && !error && <p className="text-gray-300 text-xl md:text-2xl text-center py-8">No hay usuarios listos para retirar.</p>}
 
         {readyUsers.length > 0 && (
-          <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
+          <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             {readyUsers.map(user => (
-              <li key={user.id} className="p-3 sm:p-4 bg-gray-600 rounded-xl shadow-lg flex items-center justify-center min-h-[90px] md:min-h-[110px] lg:min-h-[120px]">
-                <p className="font-bold text-sky-300 text-4xl sm:text-3xl md:text-3xl lg:text-4xl text-center">{user.name}</p></li>
+              <li key={user.id} className="p-1.5 sm:p-2 bg-gray-600 rounded-lg shadow-md flex items-center justify-center min-h-[70px] md:min-h-[80px] lg:min-h-[90px]">
+                <p className="font-bold text-sky-300 text-xl sm:text-2xl md:text-4xl lg:text-4xl text-center">{user.name}</p></li>
             ))}
           </ul>
         )}

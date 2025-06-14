@@ -31,7 +31,7 @@ const QrScanner: React.FC<QrScannerProps> = ({ onScan }) => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto my-8 flex flex-col items-center space-y-5"> 
+    <div className="w-full max-w-md mx-auto my-2 flex flex-col items-center space-y-5"> 
       {isClient && (
         <div className="w-full aspect-square rounded-xl overflow-hidden shadow-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
           <QrReader
@@ -45,7 +45,7 @@ const QrScanner: React.FC<QrScannerProps> = ({ onScan }) => {
         </div>
       )}
       {scanError && <p className="text-red-500 dark:text-red-400 text-center mt-4 text-sm">{scanError}</p>}
-      <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">Apuntá al QR</p>
+      <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-2">Apuntá al QR</p>
     </div>
   );
 };

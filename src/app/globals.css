@@ -8,6 +8,15 @@ body {
   font-family: var(--font-nunito, "Nunito", sans-serif);
 }
 
+::-webkit-scrollbar {
+  display: none;
+}
+
+html {
+  scrollbar-width: none; 
+  -ms-overflow-style: none;  
+}
+
 @theme {
   --color-accent-green: #80d8c3;
   --color-accent-yellow: #ffd66b;
