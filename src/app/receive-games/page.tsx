@@ -108,7 +108,7 @@ export default function ReceiveGamesPage() {
           onBackClick={() => router.push('/')}
         />
       )}
-      <div className="w-full max-w-5xl text-center">
+      <div className="w-full max-w-5xl text-center mt-2">
         <div className="my-6 sm:my-8 text-center">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-700 dark:text-gray-200">Recibir Juegos</h1>
           <hr className="w-24 sm:w-32 h-1 mx-auto my-2 border-0 rounded bg-secondary-blue dark:bg-sky-500" />
