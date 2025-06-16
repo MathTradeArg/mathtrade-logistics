@@ -36,7 +36,7 @@ const QrScanner: React.FC<QrScannerProps> = ({ onScan }) => {
             onError={handleError} 
             onScan={handleScanFromLibrary} 
             constraints={{ video: { facingMode: "environment" } }}
-            className="w-full h-full" // El div raíz de QrReader llenará el contenedor. El fondo ya está en el div padre.
+            className="w-full h-full" 
           /> 
         </div>
       )}

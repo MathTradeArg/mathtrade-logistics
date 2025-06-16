@@ -14,7 +14,7 @@ interface UserDetails {
   id: number | string;
   first_name: string;
   last_name?: string;
-  math_admin: boolean; // Asegúrate que la API devuelve esta propiedad
+  math_admin: boolean;
 }
 
 interface AuthContextType {
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsAuthenticated(true);
       setUserName(storedUserName);
       setUserId(storedUserId);
-      setisAdmin(storedIsAdmin === 'true'); // Corregido: Usar el valor de localStorage
+      setisAdmin(storedIsAdmin === 'true');
     } else {
       setIsAuthenticated(false);
       setUserName(null);
@@ -92,14 +92,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else {
       localStorage.removeItem('userId');
     }
-    localStorage.setItem('isAdmin', userIsAdmin.toString()); // Corregido: Usar el valor de userDetails
+    localStorage.setItem('isAdmin', userIsAdmin.toString());
 
     setIsAuthenticated(true);
     setUserName(name);
     setisAdmin(userIsAdmin);
     setUserId(idStr);
     router.push('/');
-  }, [router]); // No es necesario añadir isAdmin a las dependencias aquí
+  }, [router]);
 
   const logout = useCallback(() => {
     localStorage.removeItem('authToken');

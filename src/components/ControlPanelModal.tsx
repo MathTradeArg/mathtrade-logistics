@@ -1,14 +1,14 @@
 "use client";
-import { useState, FormEvent, ChangeEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { X, Check, XCircle } from 'lucide-react'; 
 import Link from 'next/link'; 
-import { GameDetail, GameStatusCode, GameStatusMap } from '@/types';
+import { GameDetail, GameStatusCode, GameStatusMap, User } from '@/types';
 
 
 interface ControlPanelModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (actionWasSuccessful?: boolean) => void; 
   isAdmin: boolean;
   loggedInUserId: number | null;
   loggedInUserName: string | null;
@@ -21,8 +21,15 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
   const [actionSuccess, setActionSuccess] = useState('');
+  const [hasAnyActionSucceededThisSession, setHasAnyActionSucceededThisSession] = useState(false);
   const { isHighContrast, toggleHighContrast } = useAuth();
 
+
+  useEffect(() => {
+    if (isOpen) {
+      setHasAnyActionSucceededThisSession(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -35,8 +42,8 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
     setIsLoading(true);
     setError('');
     setGameDetails(null);
-    setActionError('');
-    setActionSuccess('');
+    setActionError(''); 
+    setActionSuccess(''); 
 
     try {
       const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
@@ -90,13 +97,19 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
         if (!prev) return null;
         const updatedDetails = { ...prev, status: newStatus };
         if (newStatus === 6 && loggedInUserId && loggedInUserName) {
+          if (!updatedDetails.change_by) {
+            updatedDetails.change_by = {} as User; 
+          }
           updatedDetails.change_by.id = loggedInUserId;
-          updatedDetails.change_by.first_name = loggedInUserName.slice(0, loggedInUserName.indexOf(' '));
-          updatedDetails.change_by.last_name = loggedInUserName.slice(1, loggedInUserName.indexOf(' '));
+          const spaceIndex = loggedInUserName.indexOf(' ');
+          updatedDetails.change_by.first_name = spaceIndex > -1 ? loggedInUserName.slice(0, spaceIndex) : loggedInUserName;
+          updatedDetails.change_by.last_name = spaceIndex > -1 ? loggedInUserName.slice(spaceIndex + 1) : '';
+
         }
         return updatedDetails;
       });      
       setActionSuccess(`Juego ${gameId} actualizado a: ${GameStatusMap[newStatus]}.`);
+      setHasAnyActionSucceededThisSession(true);
 
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Error al realizar la acción.");
@@ -108,12 +121,16 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
   const canDecreaseStatus = isAdmin == true;
   const currentStatusText = gameDetail ? GameStatusMap[gameDetail.status] || "Desconocido" : "";
 
+  const handleModalClose = () => {
+    onClose(hasAnyActionSucceededThisSession); 
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-secondary-blue dark:text-sky-400">Panel de Control</h2>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+          <button onClick={handleModalClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
             <X size={24} className="text-gray-600 dark:text-gray-400" />
           </button>
         </div>
@@ -138,7 +155,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
           <div className="mb-4 border-t border-b border-gray-200 dark:border-gray-700 py-4">
             <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">Vistas de Admin</h3>
             <Link href="/admin/ready-to-pickup" passHref>
-              <div onClick={onClose} className="block w-full text-left px-4 py-2 text-sm text-secondary-blue hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer">
+              <div onClick={handleModalClose} className="block w-full text-left px-4 py-2 text-sm text-secondary-blue hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer">
                 Ver Usuarios Listos para Retirar
               </div>
             </Link>
@@ -147,6 +164,8 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
         <form onSubmit={handleSearch} className="flex gap-2 mb-4">
           <input
             type="number"
+            inputMode="numeric" 
+            pattern="[0-9]*"
             value={searchId}
             onChange={(e) => setSearchId(e.target.value.replace(/\D/g, ''))} 
             placeholder="ID del Juego"

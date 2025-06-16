@@ -1,9 +1,9 @@
 "use client";
 
 import type { Trade } from "@/types";
-import { Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ConfirmationModal from './ConfirmationModal';
+import GameRowItem from "./GameRowItem";
 
 interface GameListProps {
   trades: Trade[];
@@ -14,7 +14,6 @@ interface GameListProps {
 
 const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, deliveredByUserId }) => {
   const pendingItems = trades.filter(trade =>  !['Delivered','In Event'].includes(trade.result.status_display));
-  console.log(pendingItems)
   const deliveredItemsCount = trades.length - pendingItems.length;
 
   const [selectedItems, setSelectedItems] = useState<Set<number>>(() => {
@@ -142,64 +141,22 @@ const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, de
             return orderA - orderB;
           })
           .map((trade: Trade) => (
-            <li
+            <GameRowItem
               key={trade.result.assigned_trade_code}
-              className={`flex rounded-xl shadow-md transition-all duration-200 overflow-hidden
-                            ${['Delivered','In Event'].includes(trade.result.status_display)
-                  ? 'bg-accent-green/30 dark:bg-accent-green/20 opacity-70'
-                  : `bg-gray-50 dark:bg-gray-700/50 hover:shadow-lg ${selectedItems.has(trade.result.assigned_trade_code) ? 'ring-2 ring-secondary-blue ring-offset-1 dark:ring-offset-gray-800' : ''}`}`}
-              onClick={!['Delivered','In Event'].includes(trade.result.status_display) ? () => handleToggleSelectedItem(trade.result.assigned_trade_code) : undefined}
-            >
-              <div className={`flex-shrink-0 w-16 sm:w-20 flex items-center justify-center p-3 sm:p-4
-                            ${['Delivered','In Event'].includes(trade.result.status_display) ? 'bg-secondary-blue/50' : 'bg-secondary-blue'} 
-                            ${['Delivered','In Event'].includes(trade.result.status_display) ? 'cursor-default' : 'cursor-pointer'}`}>
-                <span className={`text-2xl sm:text-3xl font-bold ${!['Delivered','In Event'].includes(trade.result.status_display) ? 'text-white/70' : 'text-white'}`}>
-                  {trade.result.assigned_trade_code}
-                </span>
-              </div>
-              <div className={`flex-grow p-3 sm:p-4 ${['Delivered','In Event'].includes(trade.result.status_display) ? 'cursor-default' : 'cursor-pointer'}`}>
-                <label htmlFor={!['Delivered','In Event'].includes(trade.result.status_display) ? `checkbox-item-${trade.result.assigned_trade_code}` : undefined} className={`${!['Delivered','In Event'].includes(trade.result.status_display) ? 'cursor-pointer' : 'cursor-default'}`}>
-                  <span className={`text-base sm:text-lg font-semibold leading-tight ${['Delivered','In Event'].includes(trade.result.status_display) ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-secondary-blue dark:text-sky-400'}`}>
-                    {trade.math_item_exchanged.title}
-                  </span>
-                </label>
-              </div>
-
-              <div className="flex-shrink-0 w-16 sm:w-20 flex items-center justify-center p-3 sm:p-4">
-                {['Delivered','In Event'].includes(trade.result.status_display) ? (
-                  <div className="w-8 h-8 sm:w-15 sm:h-10 rounded-full flex items-center justify-center border-2 bg-accent-green border-accent-green">
-                    <Check size={18} className="text-black" />
-                  </div>
-                ) : (
-                  <>
-                    <input
-                      type="checkbox"
-                      id={`checkbox-item-${trade.result.assigned_trade_code}`}
-                      className="sr-only peer"
-                      checked={selectedItems.has(trade.result.assigned_trade_code)}
-                      onChange={() => handleToggleSelectedItem(trade.result.assigned_trade_code)}
-                    />
-                    <label
-                      htmlFor={`checkbox-item-${trade.result.assigned_trade_code}`}
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 cursor-pointer
-                              transition-colors duration-150 ease-in-out
-                              peer-focus:ring-2 peer-focus:ring-offset-1 dark:peer-focus:ring-offset-gray-800
-                              ${selectedItems.has(trade.result.assigned_trade_code)
-                          ? 'bg-secondary-blue border-secondary-blue peer-focus:ring-secondary-blue'
-                          : 'bg-gray-200 dark:bg-gray-600 border-gray-300 dark:border-gray-500 peer-focus:ring-gray-400'}`}
-                    >
-                      {selectedItems.has(trade.result.assigned_trade_code) && <Check size={18} className="text-white" />}
-                    </label>
-                  </>
-                )}
-              </div>
-            </li>
+              id={trade.result.assigned_trade_code}
+              title={trade.math_item_exchanged.title}
+              statusDisplay={trade.result.status_display}
+              isSelected={selectedItems.has(trade.result.assigned_trade_code)}
+              onRowClick={!['Delivered','In Event'].includes(trade.result.status_display) ? () => handleToggleSelectedItem(trade.result.assigned_trade_code) : undefined}
+              onCheckboxChange={() => handleToggleSelectedItem(trade.result.assigned_trade_code)}
+              showCheckbox={true}
+            />
           ))}
       </ul>
       {pendingItems.length > 0 && selectedItems.size > 0 && (
         <button
           onClick={handleDeliverSelected}
-          className="w-full mt-8 px-6 py-3 bg-secondary-blue hover:opacity-85 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out"
+          className="w-full mt-4 px-6 py-3 bg-secondary-blue hover:opacity-85 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out"
         >
           Entregar lo marcado ({selectedItems.size})
         </button>

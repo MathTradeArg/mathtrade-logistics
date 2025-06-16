@@ -1,17 +1,18 @@
 "use client";
 
 import type { Trade } from "@/types";
-import { CheckCircle2, XCircle } from "lucide-react";
 import { useState } from "react";
 import ConfirmationModal from "./ConfirmationModal";
+import GameRowItem from "./GameRowItem";
 
 interface GamesToRetrieveListProps {
   trades: Trade[];
   volunteerId: number | null;
   onFinish: () => void;
+  onDeliverySuccess: (deliveredTradeCodes: number[]) => void;
 }
 
-const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volunteerId, onFinish }) => {
+const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volunteerId, onFinish, onDeliverySuccess }) => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isLoadingDelivery, setIsLoadingDelivery] = useState(false);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
@@ -34,6 +35,7 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
     setDeliverySuccess(null);
     try {
       const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
+      const codesToDeliver = availableToDeliverTrades.map(trade => trade.result.assigned_trade_code);
       const response = await fetch(`${MT_API_HOST}logistics/games/bulk-update-status/`, {
         method: 'PATCH',
         headers: {
@@ -41,7 +43,7 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
           'Authorization': `token ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({
-          assigned_trade_codes: availableToDeliverTrades.map(trade => trade.result.assigned_trade_code),
+          assigned_trade_codes: codesToDeliver,
           status: 6,
           change_by_id: volunteerId
         }),
@@ -51,6 +53,7 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
         throw new Error(errorData.message || `Error al marcar juegos como entregados.`);
       }
       setDeliverySuccess(`Juegos entregados a ${trades[0].to_member.first_name} ${trades[0].to_member.last_name}.`);
+      onDeliverySuccess(codesToDeliver); 
     } catch (err) {
       setDeliveryError(err instanceof Error ? err.message : "Error desconocido al entregar.");
     } finally {
@@ -79,51 +82,12 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
           </h3>
           <ul className="space-y-3">
             {availableToDeliverTrades.map((trade) => (
-              <li
+              <GameRowItem
                 key={`deliver-${trade.result.assigned_trade_code}`}
-                className="flex rounded-xl shadow-md bg-white dark:bg-gray-700"
-              >
-                <div className="flex-shrink-0 w-16 sm:w-20 flex items-center justify-center p-3 sm:p-4 bg-accent-green/80 dark:bg-accent-green/70 rounded-l-xl">
-                  <span className="text-2xl sm:text-3xl font-bold text-white">
-                    {trade.result.assigned_trade_code}
-                  </span>
-                </div>
-                <div className="flex-grow p-3 sm:p-4">
-                  <span className="text-base sm:text-lg font-semibold leading-tight text-gray-800 dark:text-gray-100">
-                    {trade.math_item_exchanged.title}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {otherStatusTrades.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-xl font-semibold text-gray-500 dark:text-gray-400 mb-3">
-            Juegos Pendientes ({otherStatusTrades.length}):
-          </h3>
-          <ul className="space-y-3">
-            {otherStatusTrades.map((trade) => (
-              <li
-                key={`other-${trade.result.assigned_trade_code}`}
-                className="flex rounded-xl shadow-sm bg-gray-100 dark:bg-gray-800 opacity-80"
-              >
-                <div className="flex-shrink-0 w-16 sm:w-20 flex items-center justify-center p-3 sm:p-4 bg-gray-400 dark:bg-gray-600 rounded-l-xl">
-                  <span className="text-2xl sm:text-3xl font-bold text-white">
-                    {trade.result.assigned_trade_code}
-                  </span>
-                </div>
-                <div className="flex-grow p-3 sm:p-4">
-                  <span className="text-base sm:text-lg font-medium leading-tight text-gray-500 dark:text-gray-400">
-                    {trade.math_item_exchanged.title}
-                  </span>
-                </div>
-                <div className="flex-shrink-0 px-3 flex items-center justify-center">
-                  <XCircle size={24} className="text-red-500" />
-                </div>
-              </li>
+                id={trade.result.assigned_trade_code}
+                title={trade.math_item_exchanged.title}
+                variant="default" 
+              />
             ))}
           </ul>
         </div>
@@ -136,24 +100,30 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
           </h3>
           <ul className="space-y-3">
             {alreadyDeliveredTrades.map((trade) => (
-              <li
-                key={`delivered-final-${trade.result.assigned_trade_code}`}
-                className="flex rounded-xl shadow-sm bg-gray-100 dark:bg-gray-800 opacity-70"
-              >
-                <div className="flex-shrink-0 w-16 sm:w-20 flex items-center justify-center p-3 sm:p-4 bg-gray-400 dark:bg-gray-600 rounded-l-xl">
-                  <span className="text-2xl sm:text-3xl font-bold text-white">
-                    {trade.result.assigned_trade_code}
-                  </span>
-                </div>
-                <div className="flex-grow p-3 sm:p-4">
-                  <span className="text-base sm:text-lg font-medium leading-tight text-gray-500 dark:text-gray-400 line-through">
-                    {trade.math_item_exchanged.title}
-                  </span>
-                </div>
-                <div className="flex-shrink-0 px-3 flex items-center justify-center">
-                  <CheckCircle2 size={24} className="text-green-500" />
-                </div>
-              </li>
+              <GameRowItem
+                key={`delivered-${trade.result.assigned_trade_code}`}
+                id={trade.result.assigned_trade_code}
+                title={trade.math_item_exchanged.title}
+                variant="delivered"
+              />
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {otherStatusTrades.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold text-gray-500 dark:text-gray-400 mb-3">
+            Juegos Pendientes({otherStatusTrades.length}):
+          </h3>
+          <ul className="space-y-3">
+            {otherStatusTrades.map((trade) => (
+              <GameRowItem
+                key={`other-${trade.result.assigned_trade_code}`}
+                id={trade.result.assigned_trade_code}
+                title={trade.math_item_exchanged.title}
+                variant="pendingOther"
+              />
             ))}
           </ul>
         </div>
@@ -166,7 +136,7 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
         <button
           onClick={handleOpenConfirmModal}
           disabled={isLoadingDelivery}
-          className="w-full mt-8 px-6 py-3 bg-accent-green text-gray-800 font-semibold rounded-lg shadow-lg hover:opacity-85 transition-opacity duration-150 ease-in-out disabled:opacity-50"
+          className="w-full mt-4 px-6 py-3 bg-accent-green text-gray-800 font-semibold rounded-lg shadow-lg hover:opacity-85 transition-opacity duration-150 ease-in-out disabled:opacity-50"
         >
           {isLoadingDelivery ? "Procesando..." : `Entregar ${availableToDeliverTrades.length === 1 ? "Juego" : `${availableToDeliverTrades.length} Juegos`} a ${trades[0].to_member.first_name}`}
         </button>
@@ -174,9 +144,9 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
 
       <button
         onClick={onFinish}
-        className="w-full mt-10 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out"
+        className="w-full mt-4 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out"
       >
-        {deliverySuccess ? 'Listo, escanear otro QR' : 'Volver / Escanear otro QR'}
+        Escanear otro QR
       </button>
 
       {isConfirmModalOpen && availableToDeliverTrades.length > 0 && (

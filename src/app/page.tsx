@@ -1,18 +1,30 @@
 "use client";
 
-import { ArrowRightCircle, QrCode } from 'lucide-react';
+import { ArrowRightCircle, QrCode, Settings, Sun, Moon } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import AppHeader from '../components/AppHeader';
 import ControlPanelModal from '../components/ControlPanelModal';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { useAuth } from '../hooks/useAuth';
 
 export default function LandingPage() {
-  const { isAuthenticated, userName, userId, isAdmin, logout, isLoading: authIsLoading } = useAuth();
+  const { isAuthenticated, userName, userId, isAdmin, logout, isLoading: authIsLoading, isHighContrast, toggleHighContrast } = useAuth();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   if (authIsLoading || isAuthenticated === null) {
-    return <div className="flex justify-center items-center min-h-screen"><p>Cargando...</p></div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
+        <LoadingSpinner message="Cargando aplicación..." />
+      </div>
+    );
+  }
+
+  const handleModalClose = (actionWasSuccessful?: boolean) => {
+    setIsPanelOpen(false);
+    if (actionWasSuccessful) {
+      window.location.reload();
+    }
   }
 
   return (
@@ -52,7 +64,7 @@ export default function LandingPage() {
       {isPanelOpen && isAdmin && (
         <ControlPanelModal
           isOpen={isPanelOpen}
-          onClose={() => setIsPanelOpen(false)}
+          onClose={handleModalClose}
           isAdmin={isAdmin}
           loggedInUserId={userId ? parseInt(userId, 10) : null}
           loggedInUserName={userName}
