@@ -33,8 +33,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
         <div className="max-h-60 overflow-y-auto mb-6 p-3 bg-gray-100 dark:bg-gray-700/30 rounded-lg space-y-1">
           {itemsToDeliver.length > 0 ? (
             itemsToDeliver.map(item => (
-              <div key={`confirm-${item.math_item_exchanged.id}`} className="flex items-center p-1.5 bg-white dark:bg-gray-700/60 rounded-md shadow-sm text-sm">
-                <span className="font-bold text-secondary-blue dark:text-sky-400 w-10 text-center shrink-0 mr-2">{item.math_item_exchanged.id}</span>
+              <div key={`confirm-${item.result.assigned_trade_code}`} className="flex items-center p-1.5 bg-white dark:bg-gray-700/60 rounded-md shadow-sm text-sm">
+                <span className="font-bold text-secondary-blue dark:text-sky-400 w-10 text-center shrink-0 mr-2">{item.result.assigned_trade_code}</span>
                 <span className="truncate min-w-0 flex-grow text-gray-700 dark:text-gray-200">{item.math_item_exchanged.title}</span>
               </div>
             ))

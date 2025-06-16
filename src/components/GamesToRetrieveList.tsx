@@ -99,6 +99,36 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
         </div>
       )}
 
+      {otherStatusTrades.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-xl font-semibold text-gray-500 dark:text-gray-400 mb-3">
+            Juegos Pendientes ({otherStatusTrades.length}):
+          </h3>
+          <ul className="space-y-3">
+            {otherStatusTrades.map((trade) => (
+              <li
+                key={`other-${trade.result.assigned_trade_code}`}
+                className="flex rounded-xl shadow-sm bg-gray-100 dark:bg-gray-800 opacity-80"
+              >
+                <div className="flex-shrink-0 w-16 sm:w-20 flex items-center justify-center p-3 sm:p-4 bg-gray-400 dark:bg-gray-600 rounded-l-xl">
+                  <span className="text-2xl sm:text-3xl font-bold text-white">
+                    {trade.result.assigned_trade_code}
+                  </span>
+                </div>
+                <div className="flex-grow p-3 sm:p-4">
+                  <span className="text-base sm:text-lg font-medium leading-tight text-gray-500 dark:text-gray-400">
+                    {trade.math_item_exchanged.title}
+                  </span>
+                </div>
+                <div className="flex-shrink-0 px-3 flex items-center justify-center">
+                  <XCircle size={24} className="text-red-500" />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {alreadyDeliveredTrades.length > 0 && (
         <div className="mb-6">
           <h3 className="text-xl font-semibold text-gray-500 dark:text-gray-400 mb-3">
@@ -107,7 +137,7 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
           <ul className="space-y-3">
             {alreadyDeliveredTrades.map((trade) => (
               <li
-                key={`delivered-${trade.result.assigned_trade_code}`}
+                key={`delivered-final-${trade.result.assigned_trade_code}`}
                 className="flex rounded-xl shadow-sm bg-gray-100 dark:bg-gray-800 opacity-70"
               >
                 <div className="flex-shrink-0 w-16 sm:w-20 flex items-center justify-center p-3 sm:p-4 bg-gray-400 dark:bg-gray-600 rounded-l-xl">
@@ -122,36 +152,6 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
                 </div>
                 <div className="flex-shrink-0 px-3 flex items-center justify-center">
                   <CheckCircle2 size={24} className="text-green-500" />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {otherStatusTrades.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-xl font-semibold text-gray-500 dark:text-gray-400 mb-3">
-            Juegos aún no disponibles ({otherStatusTrades.length}):
-          </h3>
-          <ul className="space-y-3">
-            {otherStatusTrades.map((trade) => (
-              <li
-                key={`delivered-${trade.result.assigned_trade_code}`}
-                className="flex rounded-xl shadow-sm bg-gray-100 dark:bg-gray-800 opacity-70"
-              >
-                <div className="flex-shrink-0 w-16 sm:w-20 flex items-center justify-center p-3 sm:p-4 bg-gray-400 dark:bg-gray-600 rounded-l-xl">
-                  <span className="text-2xl sm:text-3xl font-bold text-white">
-                    {trade.result.assigned_trade_code}
-                  </span>
-                </div>
-                <div className="flex-grow p-3 sm:p-4">
-                  <span className="text-base sm:text-lg font-medium leading-tight text-gray-500 dark:text-gray-400 line-through">
-                    {trade.math_item_exchanged.title}
-                  </span>
-                </div>
-                <div className="flex-shrink-0 px-3 flex items-center justify-center">
-                  <XCircle size={24} className="text-red-500" />
                 </div>
               </li>
             ))}

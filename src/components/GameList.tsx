@@ -131,7 +131,16 @@ const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, de
       <ul className="space-y-3">
         {trades
           .slice()
-          .sort((a, b) => ((a.result.status_display == "Delivered") === (b.result.status_display == "Delivered") ? 0 : (a.result.status_display == "Delivered") ? 1 : -1))
+          .sort((a, b) => {
+            const getOrderStatus = (status_display: string): number => {
+              if (status_display === "Delivered") return 3;
+              if (status_display === "In Event") return 2;
+              return 1; 
+            };
+            const orderA = getOrderStatus(a.result.status_display);
+            const orderB = getOrderStatus(b.result.status_display);
+            return orderA - orderB;
+          })
           .map((trade: Trade) => (
             <li
               key={trade.result.assigned_trade_code}
