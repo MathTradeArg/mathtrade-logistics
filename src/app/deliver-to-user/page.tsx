@@ -95,7 +95,7 @@ function DeliverToUserPageContent() {
     setIsPanelOpen(false);
     if (actionWasSuccessful) {
       if (qrData) {
-        window.location.href = `${pathname}?qr=${qrData}`;
+        router.replace(`${pathname}?qr=${qrData}`);
       } else {
         window.location.reload();
       }

@@ -7,7 +7,9 @@ import { useAuth } from '../../../hooks/useAuth';
 
 interface ReadyUser {
   id: string | number;
-  name: string;
+  first_name: string;
+  last_name: string;
+  username: string;
 }
 
 const POLLING_INTERVAL = 1000 * 15; // 15 segundos
@@ -29,7 +31,6 @@ export default function ReadyToPickupPage() {
   const fetchData = async () => {
     if (isAdmin == false) return;
 
-    setError(null);
     try {
       const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
       const response = await fetch(`${MT_API_HOST}logistics/users/ready-to-pickup/`, {
@@ -61,7 +62,9 @@ export default function ReadyToPickupPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido.');
     } finally {
-      setIsLoadingData(false);
+      if (isLoadingData) {
+        setIsLoadingData(false);
+      }
     }
   };
   useEffect(() => {
@@ -69,6 +72,9 @@ export default function ReadyToPickupPage() {
       fetchData();
       const intervalId = setInterval(fetchData, POLLING_INTERVAL);
       return () => clearInterval(intervalId);
+    }
+    if (!authIsLoading && (isAuthenticated === false || isAdmin === false)) {
+      setIsLoadingData(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, isAdmin]);
@@ -102,8 +108,10 @@ export default function ReadyToPickupPage() {
         {readyUsers.length > 0 && (
           <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             {readyUsers.map(user => (
-              <li key={user.id} className="p-1.5 sm:p-2 bg-gray-600 rounded-lg shadow-md flex items-center justify-center min-h-[70px] md:min-h-[80px] lg:min-h-[90px]">
-                <p className="font-bold text-sky-300 text-xl sm:text-2xl md:text-4xl lg:text-4xl text-center">{user.name}</p></li>
+              <li key={user.id} className="p-2 sm:p-3 bg-gray-600 rounded-lg shadow-md flex flex-col items-center justify-center min-h-[80px] md:min-h-[90px] lg:min-h-[100px]">
+                <p className="font-bold text-sky-300 text-xl sm:text-2xl md:text-3xl lg:text-3xl text-center leading-tight">{user.first_name} {user.last_name}</p>
+                <p className="text-xs sm:text-sm text-gray-400 mt-1 text-center">{user.username}</p>
+              </li>
             ))}
           </ul>
         )}
