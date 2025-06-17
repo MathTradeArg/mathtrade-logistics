@@ -31,10 +31,10 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onToggleDarkMode, isDarkMode, use
                 aria-label="Atrás"
                 onClick={onBackClick}
                 disabled={!onBackClick}
-                className={`p-2 rounded-full transition-all duration-150 ease-in-out active:scale-90 
+                className={`p-2 rounded-full transition-all duration-150 ease-in-out active:scale-90 active:bg-gray-300 dark:active:bg-gray-600
                             ${!onBackClick 
                                 ? 'text-gray-300 dark:text-gray-500 cursor-not-allowed' 
-                                : 'text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                : 'text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                             }`}
               >
                 <ArrowLeft size={20} />
@@ -56,7 +56,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onToggleDarkMode, isDarkMode, use
             <button
               aria-label={isDarkMode ? "Activar modo claro" : "Activar modo oscuro"}
               onClick={onToggleDarkMode}
-              className="p-2 text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90"
+              className="p-2 text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90 active:bg-gray-300 dark:active:bg-gray-600"
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
@@ -66,7 +66,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onToggleDarkMode, isDarkMode, use
             <button
               aria-label="Panel de Control"
               onClick={onPanelClick}
-              className="p-2 text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90"
+              className="p-2 text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90 active:bg-gray-300 dark:active:bg-gray-600"
             >
               <LayoutDashboard size={20} />
             </button>
@@ -74,7 +74,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onToggleDarkMode, isDarkMode, use
           <button
             aria-label="Salir"
             onClick={onLogoutClick}
-            className="p-2 text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90"
+            className="p-2 text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90 active:bg-gray-300 dark:active:bg-gray-600"
           >
             <LogOut size={20} />
           </button>

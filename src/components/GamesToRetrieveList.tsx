@@ -139,7 +139,7 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
         <button
           onClick={handleOpenConfirmModal}
           disabled={isLoadingDelivery}
-          className="w-full mt-4 px-6 py-3 bg-accent-green text-gray-800 font-semibold rounded-lg shadow-lg hover:opacity-85 transition-opacity duration-150 ease-in-out disabled:opacity-50"
+          className="w-full mt-4 px-6 py-3 bg-accent-green text-gray-800 font-semibold rounded-lg shadow-lg hover:opacity-85 transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:active:scale-100"
         >
           {isLoadingDelivery ? "Procesando..." : `Entregar ${availableToDeliverTrades.length === 1 ? "Juego" : `${availableToDeliverTrades.length} Juegos`} a ${trades[0].to_member.first_name}`}
         </button>
@@ -147,7 +147,7 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
 
       <button
         onClick={onFinish}
-        className="w-full mt-4 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out"
+        className="w-full mt-4 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out active:scale-95"
       >
         Escanear otro QR
       </button>

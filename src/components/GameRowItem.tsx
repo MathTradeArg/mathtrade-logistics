@@ -24,7 +24,7 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
   onCheckboxChange,
   showCheckbox = false,
 }) => {
-  const baseLiClasses = "flex rounded-xl shadow-md overflow-hidden transition-all duration-200";
+  const baseLiClasses = "flex rounded-xl shadow-md overflow-hidden transition-all duration-150 ease-in-out";
   const baseIdBoxClasses = "flex-shrink-0 w-16 sm:w-20 flex items-center justify-center p-3 sm:p-4 rounded-l-xl";
   const baseTitleTextClasses = "text-base sm:text-lg font-semibold leading-tight";
   const baseActionAreaClasses = "flex-shrink-0 w-16 sm:w-20 flex items-center justify-center p-3 sm:p-4 rounded-r-xl";
@@ -39,7 +39,7 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
 
   if (showCheckbox) { 
     if (isGameListItemActionable) {
-      variantLiClasses = `bg-gray-50 dark:bg-gray-700/50 hover:shadow-lg`;
+      variantLiClasses = `bg-gray-50 dark:bg-gray-700/50 hover:shadow-lg active:scale-[0.98] active:shadow-md`;
       variantIdBoxClasses = `bg-secondary-blue cursor-pointer`;
       variantTitleTextClasses = `text-secondary-blue dark:text-sky-400 cursor-pointer`;
     } else { 
@@ -95,7 +95,7 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
               />
               <label
                 htmlFor={`checkbox-item-${id}`}
-                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 cursor-pointer transition-colors duration-150 ease-in-out peer-focus:ring-2 peer-focus:ring-offset-1 dark:peer-focus:ring-offset-gray-800 ${isSelected ? 'bg-secondary-blue border-secondary-blue peer-focus:ring-secondary-blue' : 'bg-gray-200 dark:bg-gray-600 border-gray-300 dark:border-gray-500 peer-focus:ring-gray-400'}`}
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 cursor-pointer transition-all duration-150 ease-in-out active:scale-90 peer-focus:ring-2 peer-focus:ring-offset-1 dark:peer-focus:ring-offset-gray-800 ${isSelected ? 'bg-secondary-blue border-secondary-blue peer-focus:ring-secondary-blue' : 'bg-gray-200 dark:bg-gray-600 border-gray-300 dark:border-gray-500 peer-focus:ring-gray-400'}`}
               >
                 {isSelected && <Check size={18} className="text-white" />}
               </label>

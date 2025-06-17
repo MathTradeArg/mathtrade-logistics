@@ -130,7 +130,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
       <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-secondary-blue dark:text-sky-400">Panel de Control</h2>
-          <button onClick={handleModalClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+          <button onClick={handleModalClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90">
             <X size={24} className="text-gray-600 dark:text-gray-400" />
           </button>
         </div>
@@ -155,7 +155,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
           <div className="mb-4 border-t border-b border-gray-200 dark:border-gray-700 py-4">
             <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">Vistas de Admin</h3>
             <Link href="/admin/ready-to-pickup" passHref>
-              <div onClick={handleModalClose} className="block w-full text-left px-4 py-2 text-sm text-secondary-blue hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer">
+              <div onClick={handleModalClose} className="block w-full text-left px-4 py-2 text-sm text-secondary-blue hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer transition-colors duration-150 ease-in-out">
                 Ver Usuarios Listos para Retirar
               </div>
             </Link>
@@ -174,7 +174,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
           <button
             type="submit"
             disabled={isLoading}
-            className="px-4 py-2 bg-secondary-blue text-white font-semibold rounded-md shadow-sm hover:opacity-85 disabled:opacity-50"
+            className="px-4 py-2 bg-secondary-blue text-white font-semibold rounded-md shadow-sm hover:opacity-85 disabled:opacity-50 transition-all duration-150 ease-in-out active:scale-95 disabled:active:scale-100"
           >
             {isLoading && !gameDetail ? 'Buscando...' : 'Buscar'}
           </button>
@@ -211,14 +211,14 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
                       <button
                         onClick={() => handleGameAction(gameDetail.assigned_trade_code, 5)}
                         disabled={isLoading}
-                        className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-md shadow-sm hover:bg-blue-600 disabled:opacity-50"
+                        className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-md shadow-sm hover:bg-blue-600 disabled:opacity-50 transition-all duration-150 ease-in-out active:scale-95 disabled:active:scale-100"
                       >
                         {isLoading ? 'Procesando...' : 'A "Recibido por Org."'}
                       </button>
                       <button
                         onClick={() => handleGameAction(gameDetail.assigned_trade_code, 6)}
                         disabled={isLoading}
-                        className="px-4 py-2 bg-accent-green text-white font-semibold rounded-md shadow-sm hover:bg-green-700 disabled:opacity-50"
+                        className="px-4 py-2 bg-accent-green text-white font-semibold rounded-md shadow-sm hover:bg-green-700 disabled:opacity-50 transition-all duration-150 ease-in-out active:scale-95 disabled:active:scale-100"
                       >
                         {isLoading ? 'Procesando...' : 'A "Entregado a Usuario"'}
                       </button>
@@ -229,7 +229,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
                        <button
                         onClick={() => handleGameAction(gameDetail.assigned_trade_code, 4)}
                         disabled={isLoading || !canDecreaseStatus}
-                        className={`px-4 py-2 font-semibold rounded-md shadow-sm ${canDecreaseStatus ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-400 text-gray-700 cursor-not-allowed'}`}
+                        className={`px-4 py-2 font-semibold rounded-md shadow-sm transition-all duration-150 ease-in-out active:scale-95 disabled:active:scale-100 ${canDecreaseStatus ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-400 text-gray-700 cursor-not-allowed'}`}
                         title={!canDecreaseStatus ? "Solo administradores pueden retroceder estados" : ""}
                       >
                         {isLoading ? 'Procesando...' : 'A "Pendiente"'}
@@ -237,7 +237,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
                       <button
                         onClick={() => handleGameAction(gameDetail.assigned_trade_code, 6)}
                         disabled={isLoading}
-                        className="px-4 py-2 bg-accent-green text-white font-semibold rounded-md shadow-sm hover:bg-green-700 disabled:opacity-50"
+                        className="px-4 py-2 bg-accent-green text-white font-semibold rounded-md shadow-sm hover:bg-green-700 disabled:opacity-50 transition-all duration-150 ease-in-out active:scale-95 disabled:active:scale-100"
                       >
                         {isLoading ? 'Procesando...' : 'A "Entregado a Usuario"'}
                       </button>
@@ -248,7 +248,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
                       <button
                         onClick={() => handleGameAction(gameDetail.assigned_trade_code, 4)}
                         disabled={isLoading || !canDecreaseStatus}
-                        className={`px-4 py-2 font-semibold rounded-md shadow-sm ${canDecreaseStatus ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-400 text-gray-700 cursor-not-allowed'}`}
+                        className={`px-4 py-2 font-semibold rounded-md shadow-sm transition-all duration-150 ease-in-out active:scale-95 disabled:active:scale-100 ${canDecreaseStatus ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-400 text-gray-700 cursor-not-allowed'}`}
                         title={!canDecreaseStatus ? "Solo administradores pueden retroceder estados" : ""}
                       >
                         {isLoading ? 'Procesando...' : 'A "Pendiente"'}
@@ -256,7 +256,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
                     <button
                       onClick={() => handleGameAction(gameDetail.assigned_trade_code, 5)}
                       disabled={isLoading || !canDecreaseStatus}
-                      className={`px-4 py-2 font-semibold rounded-md shadow-sm ${canDecreaseStatus ? 'bg-accent-yellow text-gray-800 hover:opacity-85' : 'bg-gray-400 text-gray-700 cursor-not-allowed'}`}
+                      className={`px-4 py-2 font-semibold rounded-md shadow-sm transition-all duration-150 ease-in-out active:scale-95 disabled:active:scale-100 ${canDecreaseStatus ? 'bg-accent-yellow text-gray-800 hover:opacity-85' : 'bg-gray-400 text-gray-700 cursor-not-allowed'}`}
                       title={!canDecreaseStatus ? "Solo administradores pueden retroceder estados" : ""}
                     >
                       {isLoading ? 'Procesando...' : 'A "Recibido por Org."'}

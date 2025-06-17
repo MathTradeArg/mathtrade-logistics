@@ -24,7 +24,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
             <AlertTriangle size={24} className="mr-2 text-accent-yellow" />
             {"Confirmar Entrega"}
           </h2>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90">
             <X size={24} className="text-gray-600 dark:text-gray-400" />
           </button>
         </div>
@@ -46,7 +46,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
         <div className="flex justify-end space-x-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg shadow-sm transition-colors"
+            className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg shadow-sm transition-all duration-150 ease-in-out active:scale-95"
           >
             Cancelar
           </button>
@@ -56,7 +56,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
               onClose(); 
             }}
             disabled={itemsToDeliver.length === 0}
-            className={`px-4 py-2 font-semibold rounded-lg shadow-sm transition-colors
+            className={`px-4 py-2 font-semibold rounded-lg shadow-sm transition-all duration-150 ease-in-out active:scale-95 disabled:active:scale-100
                         ${itemsToDeliver.length === 0 
                             ? 'bg-gray-400 text-gray-700 cursor-not-allowed' 
                             : (actionType === 'all' 

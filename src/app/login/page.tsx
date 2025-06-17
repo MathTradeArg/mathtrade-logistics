@@ -151,7 +151,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading || (isMounted && !RECAPTCHA_SITE_KEY)}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-base font-semibold text-white bg-secondary-blue hover:opacity-85 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary-blue focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 ease-in-out"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-base font-semibold text-white bg-secondary-blue hover:opacity-85 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary-blue focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 ease-in-out active:scale-95 active:opacity-75 disabled:active:scale-100"
             >
               {isLoading ? 'Entrando...' : 'Entrar'}
             </button>

@@ -118,7 +118,7 @@ const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, de
       {pendingItems.length > 0 && (
         <button
           onClick={handleDeliverAllPending}
-          className="w-full mb-6 px-6 py-3 bg-accent-yellow text-gray-800 font-semibold rounded-lg shadow-md hover:opacity-85 transition-opacity duration-150 ease-in-out"
+          className="w-full mb-6 px-6 py-3 bg-accent-yellow text-gray-800 font-semibold rounded-lg shadow-md hover:opacity-85 transition-all duration-150 ease-in-out active:scale-95"
         >
           Entregar TODO lo pendiente ({pendingItems.length})
         </button>
@@ -156,7 +156,7 @@ const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, de
       {pendingItems.length > 0 && selectedItems.size > 0 && (
         <button
           onClick={handleDeliverSelected}
-          className="w-full mt-4 px-6 py-3 bg-secondary-blue hover:opacity-85 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out"
+          className="w-full mt-4 px-6 py-3 bg-secondary-blue hover:opacity-85 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out active:scale-95"
         >
           Entregar lo marcado ({selectedItems.size})
         </button>
@@ -165,7 +165,7 @@ const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, de
       <button
         onClick={onFinish}
         id="finish-button"
-        className="w-full mt-4 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out"
+        className="w-full mt-4 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out active:scale-95"
       >
         {pendingItems.length === 0 && trades.length > 0 ? 'Todo entregado. Siguiente QR' : 'Listo, otro QR'}
       </button>
