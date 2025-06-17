@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, LogOut, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, LogOut, Moon, Sun } from 'lucide-react';
 
 interface AppHeaderProps {
   userName: string | null;
@@ -10,9 +10,11 @@ interface AppHeaderProps {
   showPanelButton?: boolean;
   showBackButton?: boolean;
   onBackClick?: () => void;
+  isDarkMode?: boolean;
+  onToggleDarkMode?: () => void;
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({ userName, isAdmin, onLogoutClick, onPanelClick, showPanelButton = true, showBackButton = false, onBackClick }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({ onToggleDarkMode, isDarkMode, userName, isAdmin, onLogoutClick, onPanelClick, showPanelButton = true, showBackButton = false, onBackClick }) => {
   if (!userName) {
     return null;
   }
@@ -44,7 +46,17 @@ const AppHeader: React.FC<AppHeaderProps> = ({ userName, isAdmin, onLogoutClick,
             )}
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
+          {typeof isDarkMode !== 'undefined' && onToggleDarkMode && (
+            <button
+              aria-label={isDarkMode ? "Activar modo claro" : "Activar modo oscuro"}
+              onClick={onToggleDarkMode}
+              className="p-2 text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          )}
+
           {showPanelButton && onPanelClick && (
             <button
               aria-label="Panel de Control"

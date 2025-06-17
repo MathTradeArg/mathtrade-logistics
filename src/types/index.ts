@@ -40,16 +40,16 @@ export const GameStatusMap: Record<GameStatusCode, string> = {
   2: "En viaje al evento",
   3: "En viaje de vuelta",
   4: "En viaje",
-  5: "En el evento",
-  6: "Entregado",
+  5: "Recibido por Org.",
+  6: "Entregado a Usuario",
 };
 export const GameStatusDisplayMap: Record<string, string> = {
   "Created": "Creado",
   "Transit to Event": "En viaje al evento",
   "Transit Back": "En viaje de vuelta",
   "Transit Direct": "En viaje",
-  "In Event": "En el evento",
-  "Delivered": "Entregado",
+  "In Event": "Recibido por Org.",
+  "Delivered": "Entregado a Usuario",
 };
 
 export function getGameStatusText(statusCode: GameStatusCode): string {

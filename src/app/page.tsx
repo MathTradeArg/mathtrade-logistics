@@ -9,7 +9,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { useAuth } from '../hooks/useAuth';
 
 export default function LandingPage() {
-  const { isAuthenticated, userName, userId, isAdmin, logout, isLoading: authIsLoading, isHighContrast, toggleHighContrast } = useAuth();
+  const { isAuthenticated, userName, userId, isAdmin, logout, isLoading: authIsLoading, isDarkMode, toggleDarkMode } = useAuth();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   if (authIsLoading || isAuthenticated === null) {
@@ -35,6 +35,8 @@ export default function LandingPage() {
           isAdmin={isAdmin}
           onLogoutClick={logout}
           onPanelClick={() => setIsPanelOpen(true)}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={toggleDarkMode}
           showPanelButton={true}
         />
       )}
@@ -61,7 +63,7 @@ export default function LandingPage() {
         </Link>
       </section>
 
-      {isPanelOpen && isAdmin && (
+      {isPanelOpen && (
         <ControlPanelModal
           isOpen={isPanelOpen}
           onClose={handleModalClose}

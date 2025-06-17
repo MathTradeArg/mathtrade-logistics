@@ -135,7 +135,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
           </button>
         </div>
 
-        <div className="border-t dark:border-gray-700 mt-4 pt-4">
+        <div className="border-t dark:border-gray-700 mt-4 pt-4 mb-4">
         <h3 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-3">Preferencias de Visualización</h3>
         <label className="flex items-center justify-between cursor-pointer p-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
           <span className="text-gray-700 dark:text-gray-300">Modo Alto Contraste</span>
@@ -187,6 +187,9 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
             <div className="space-y-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <p><strong>ID:</strong> {gameDetail.assigned_trade_code}</p>
               <p><strong>Título:</strong> {gameDetail.item_to.title}</p>
+              {gameDetail.table_number && (
+                <p><strong>Ubicación:</strong> {gameDetail.table_number}</p>
+              )}
               <p><strong>Estado:</strong> <span className={`font-semibold ${
                   gameDetail.status === 6 ? 'text-accent-green' : 
                   gameDetail.status === 5 ? 'text-blue-500' : 
@@ -210,14 +213,14 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
                         disabled={isLoading}
                         className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-md shadow-sm hover:bg-blue-600 disabled:opacity-50"
                       >
-                        {isLoading ? 'Procesando...' : 'A "En Evento"'}
+                        {isLoading ? 'Procesando...' : 'A "Recibido por Org."'}
                       </button>
                       <button
                         onClick={() => handleGameAction(gameDetail.assigned_trade_code, 6)}
                         disabled={isLoading}
                         className="px-4 py-2 bg-accent-green text-white font-semibold rounded-md shadow-sm hover:bg-green-700 disabled:opacity-50"
                       >
-                        {isLoading ? 'Procesando...' : 'A "Entregado"'}
+                        {isLoading ? 'Procesando...' : 'A "Entregado a Usuario"'}
                       </button>
                     </>
                   )}
@@ -236,7 +239,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
                         disabled={isLoading}
                         className="px-4 py-2 bg-accent-green text-white font-semibold rounded-md shadow-sm hover:bg-green-700 disabled:opacity-50"
                       >
-                        {isLoading ? 'Procesando...' : 'A "Entregado"'}
+                        {isLoading ? 'Procesando...' : 'A "Entregado a Usuario"'}
                       </button>
                     </>
                   )}
@@ -256,7 +259,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
                       className={`px-4 py-2 font-semibold rounded-md shadow-sm ${canDecreaseStatus ? 'bg-accent-yellow text-gray-800 hover:opacity-85' : 'bg-gray-400 text-gray-700 cursor-not-allowed'}`}
                       title={!canDecreaseStatus ? "Solo administradores pueden retroceder estados" : ""}
                     >
-                      {isLoading ? 'Procesando...' : 'A "En Evento"'}
+                      {isLoading ? 'Procesando...' : 'A "Recibido por Org."'}
                     </button>
                   </>
                   )}

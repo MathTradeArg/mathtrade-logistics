@@ -3,8 +3,8 @@
 import { useAuth } from "../hooks/useAuth"; 
 import { useEffect } from "react";
 
-export default function HighContrastManager() {
-  const { isHighContrast } = useAuth();
+export default function ThemeManager() {
+  const { isHighContrast, isDarkMode } = useAuth();
 
   useEffect(() => {
     if (isHighContrast) {
@@ -13,6 +13,14 @@ export default function HighContrastManager() {
       document.documentElement.classList.remove('high-contrast');
     }
   }, [isHighContrast]);
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
   return null; 
 }

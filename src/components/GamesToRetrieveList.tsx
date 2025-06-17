@@ -67,6 +67,9 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
         <h2 className="text-2xl sm:text-3xl font-bold text-secondary-blue dark:text-sky-400">
           {trades[0].to_member.first_name} {trades[0].to_member.last_name}
         </h2>
+        {trades && trades.length > 0 && trades[0].result.table_number && (
+          <p className="text-md text-gray-600 dark:text-gray-400 mt-1">Mesa: <span className="font-semibold">{trades[0].result.table_number}</span></p>
+        )}
       </div>
 
       {trades.length === 0 ? (

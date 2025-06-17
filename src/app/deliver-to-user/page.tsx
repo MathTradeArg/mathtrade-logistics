@@ -19,7 +19,7 @@ export default function DeliverToUserPage() {
 }
 
 function DeliverToUserPageContent() {
-  const { isAuthenticated, userName, userId, isAdmin, logout, isLoading: authIsLoading, isHighContrast, toggleHighContrast } = useAuth();
+  const { isAuthenticated, userName, userId, isAdmin, logout, isLoading: authIsLoading, isDarkMode, toggleDarkMode } = useAuth();
   const [qrData, setQrData] = useState<string | null>(null);
   const [trades, setTrades] = useState<Trade[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -117,6 +117,8 @@ function DeliverToUserPageContent() {
           showPanelButton={true}
           showBackButton={true}
           onBackClick={() => router.push('/')}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={toggleDarkMode}
         />
       )}
       <div className="w-full max-w-5xl text-center">
@@ -146,7 +148,7 @@ function DeliverToUserPageContent() {
         )}
       </section>
 
-      {isPanelOpen && isAdmin && (
+      {isPanelOpen && (
         <ControlPanelModal
           isOpen={isPanelOpen}
           onClose={handleModalClose}

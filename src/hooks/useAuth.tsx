@@ -17,19 +17,21 @@ interface UserDetails {
   math_admin: boolean;
 }
 
-interface AuthContextType {
+interface AuthContextType { 
   isAuthenticated: boolean | null;
   userName: string | null;
   userId: string | null;
   isAdmin: boolean;
   isLoading: boolean;
   isHighContrast: boolean;
-  login: (token: string, userDetails: UserDetails) => void;
+  isDarkMode: boolean;
+  login: (token: string, userDetails: UserDetails) => void; 
   logout: () => void;
   toggleHighContrast: () => void;
+  toggleDarkMode: () => void;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -45,6 +47,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return localStorage.getItem('highContrastEnabled') === 'true';
     }
     return false;
+  });
+
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('darkModeEnabled') === 'true';
+    }
+    return false; 
   });
 
   useEffect(() => {
@@ -75,6 +84,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const newState = !prev;
       if (typeof window !== 'undefined') {
         localStorage.setItem('highContrastEnabled', String(newState));
+      }
+      return newState;
+    });
+  }, []);
+
+  const toggleDarkMode = useCallback(() => {
+    setIsDarkMode(prev => {
+      const newState = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('darkModeEnabled', String(newState));
       }
       return newState;
     });
@@ -122,9 +141,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAdmin,
         isLoading,
         isHighContrast,
+        isDarkMode,
         login,
         logout,
         toggleHighContrast,
+        toggleDarkMode,
       }}
     >
       {children}
