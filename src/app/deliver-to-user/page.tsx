@@ -1,13 +1,14 @@
 "use client";
 
-import type { Trade } from '@/types';
+import type { Trade } from "@/types";
+import { ArrowRightCircle } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
 import ControlPanelModal from '../../components/ControlPanelModal';
 import GamesToRetrieveList from '../../components/GamesToRetrieveList';
-import QrScanner from '../../components/QrScanner';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import QrScanner from '../../components/QrScanner';
 import { useAuth } from '../../hooks/useAuth';
 
 export default function DeliverToUserPage() {
@@ -107,12 +108,14 @@ function DeliverToUserPageContent() {
   }
 
   return (
-    <main className="container mx-auto p-4 sm:p-6 flex flex-col items-center min-h-dvh bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <main className="flex flex-col min-h-dvh bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       {isAuthenticated && (
         <AppHeader
           userName={userName}
           isAdmin={isAdmin}
           onLogoutClick={logout}
+          pageTitle="Entrega"
+          pageIcon={ArrowRightCircle}
           onPanelClick={() => setIsPanelOpen(true)}
           showPanelButton={true}
           showBackButton={true}
@@ -121,15 +124,11 @@ function DeliverToUserPageContent() {
           onToggleDarkMode={toggleDarkMode}
         />
       )}
-      <div className="w-full max-w-5xl text-center">
-        <div className="my-6 sm:my-8 text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-700 dark:text-gray-200">Entregar Juegos</h1>
-          <hr className="w-24 sm:w-32 h-1 mx-auto my-2 border-0 rounded bg-secondary-blue dark:bg-sky-500" />
-        </div>
+      <div className="w-full max-w-3xl mx-auto text-center px-4">
       </div>
 
       <section className="w-full max-w-xl p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl">
-        {isLoading && <LoadingSpinner message="Buscando juegos..." />}
+        {isLoading && <LoadingSpinner message="Buscando información..." />}
         {error && <p className="text-base sm:text-lg text-red-600 dark:text-red-400 my-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-600 rounded-lg text-center">{error}</p>}
 
         {!isLoading && !error && isAuthenticated && (

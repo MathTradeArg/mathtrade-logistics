@@ -88,7 +88,8 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
               <GameRowItem
                 key={`deliver-${trade.result.assigned_trade_code}`}
                 id={trade.result.assigned_trade_code}
-                title={trade.math_item_exchanged.title}
+                title={trade.math_item_exchanged.title.replace(/\s*\(\d{4}\)$/, '')}
+                ownerName={`${trade.from_member.first_name} ${trade.from_member.last_name}`}
                 variant="default" 
               />
             ))}
@@ -106,7 +107,8 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
               <GameRowItem
                 key={`delivered-${trade.result.assigned_trade_code}`}
                 id={trade.result.assigned_trade_code}
-                title={trade.math_item_exchanged.title}
+                title={trade.math_item_exchanged.title.replace(/\s*\(\d{4}\)$/, '')}
+                ownerName={`${trade.from_member.first_name} ${trade.from_member.last_name}`}
                 variant="delivered"
               />
             ))}
@@ -124,7 +126,8 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
               <GameRowItem
                 key={`other-${trade.result.assigned_trade_code}`}
                 id={trade.result.assigned_trade_code}
-                title={trade.math_item_exchanged.title}
+                title={trade.math_item_exchanged.title.replace(/\s*\(\d{4}\)$/, '')}
+                ownerName={`${trade.from_member.first_name} ${trade.from_member.last_name}`}
                 variant="pendingOther"
               />
             ))}

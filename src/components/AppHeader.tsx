@@ -1,20 +1,23 @@
 "use client";
 
 import { ArrowLeft, LayoutDashboard, LogOut, Moon, Sun } from 'lucide-react';
+import React from 'react';
 
 interface AppHeaderProps {
   userName: string | null;
   isAdmin: boolean;
   onLogoutClick: () => void;
+  pageTitle?: string;
   onPanelClick?: () => void;
   showPanelButton?: boolean;
+  pageIcon?: React.ComponentType;
   showBackButton?: boolean;
   onBackClick?: () => void;
   isDarkMode?: boolean;
   onToggleDarkMode?: () => void;
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({ onToggleDarkMode, isDarkMode, userName, isAdmin, onLogoutClick, onPanelClick, showPanelButton = true, showBackButton = false, onBackClick }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({ onToggleDarkMode, isDarkMode, userName, isAdmin, onLogoutClick, onPanelClick, showPanelButton = true, showBackButton = false, onBackClick, pageTitle, pageIcon }) => {
   if (!userName) {
     return null;
   }
@@ -32,21 +35,28 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onToggleDarkMode, isDarkMode, use
                 onClick={onBackClick}
                 disabled={!onBackClick}
                 className={`p-2 rounded-full transition-all duration-150 ease-in-out active:scale-90 active:bg-gray-300 dark:active:bg-gray-600
-                            ${!onBackClick 
-                                ? 'text-gray-300 dark:text-gray-500 cursor-not-allowed' 
-                                : 'text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                            }`}
+                            ${!onBackClick
+                    ? 'text-gray-300 dark:text-gray-500 cursor-not-allowed'
+                    : 'text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
               >
                 <ArrowLeft size={20} />
               </button>
             )}
           </div>
           <div className="flex items-baseline min-w-0">
-            <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-nowrap">Hola,&nbsp;</span>
-            <span className="text-sm sm:text-base font-bold text-secondary-blue dark:text-sky-400 truncate" title={firstName || ''}>{firstName}</span>
-            <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-nowrap">!</span>
-            {isAdmin && (
-              <span className="ml-2 text-xs bg-accent-yellow text-gray-700 px-1.5 py-0.5 rounded-full align-middle whitespace-nowrap flex-shrink-0">ADMIN</span>
+            {pageTitle ? (
+              <h1 className="text-lg sm:text-xl font-bold text-gray-700 dark:text-gray-200 truncate flex items-center">
+                {pageIcon && <span className="mr-2">{React.createElement(pageIcon, { size: 24 } as any)}</span>}
+                {pageTitle}
+              </h1>
+            ) : (
+              <>
+                <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-nowrap">Hola,&nbsp;</span>
+                <span className="text-sm sm:text-base font-bold text-secondary-blue dark:text-sky-400 truncate" title={firstName || ''}>{firstName}</span>
+                <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-nowrap">!</span>
+                {isAdmin && (<span className="ml-2 text-xs bg-accent-yellow text-gray-700 px-1.5 py-0.5 rounded-full align-middle whitespace-nowrap flex-shrink-0">ADMIN</span>)}
+              </>
 
             )}
           </div>

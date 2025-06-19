@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRightCircle, QrCode, Settings, Sun, Moon } from 'lucide-react';
+import { ArrowRightCircle, AlertTriangle, QrCode, Archive } from 'lucide-react';
 import { useState } from 'react';
 import AppHeader from '../components/AppHeader';
 import ControlPanelModal from '../components/ControlPanelModal';
@@ -28,7 +28,7 @@ export default function LandingPage() {
   }
 
   return (
-    <main className="container mx-auto p-4 sm:p-6 flex flex-col items-center min-h-dvh bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <main className="flex flex-col min-h-dvh bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       {isAuthenticated && (
         <AppHeader
           userName={userName}
@@ -38,25 +38,39 @@ export default function LandingPage() {
           isDarkMode={isDarkMode}
           onToggleDarkMode={toggleDarkMode}
           showPanelButton={true}
-          showBackButton={true} 
+          showBackButton={true}
         />
       )}
 
-      <section className="w-full max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mt-8">
-    <LandingPageLink
-      href="/receive-games"
-      icon={<QrCode size={48} className="text-secondary-blue mb-4" />}
-      title="Recibir Juegos"
-      description="Escaneá el QR de un usuario para ver los juegos que debe entregar."
-      titleClassName="text-secondary-blue dark:text-sky-400"
-    />
-    <LandingPageLink
-      href="/deliver-to-user"
-      icon={<ArrowRightCircle size={48} className="text-accent-green mb-4" />}
-      title="Entregar Juegos"
-      description="Escaneá el QR de un usuario para ver la lista de juegos que debe retirar."
-      titleClassName="text-accent-green dark:text-green-400"
-    />
+      <section className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 sm:gap-4 mt-4 mb-4 px-4 sm:px-6 flex-grow items-stretch">
+        <LandingPageLink
+          href="/receive-games"
+          icon={<QrCode size={48} className="text-secondary-blue dark:text-sky-400 md:mb-4" />}
+          title="Recibir Juegos"
+          description="Recibí los juegos de un usuario escaneando su QR."
+          titleClassName="text-secondary-blue dark:text-sky-400"
+        />
+        <LandingPageLink
+          href="/deliver-to-user"
+          icon={<ArrowRightCircle size={48} className="text-accent-green dark:text-green-400 md:mb-4" />}
+          title="Entregar Juegos"
+          description="Entregale sus juegos a un usuario escaneando su QR."
+          titleClassName="text-accent-green dark:text-green-400"
+        />
+        <LandingPageLink
+          href="/boxes"
+          icon={<Archive size={48} className="text-teal-600 dark:text-teal-400 md:mb-4" />}
+          title="Gestión de Cajas"
+          description="Gestioná el armado y desarmado de cajas."
+          titleClassName="text-teal-600 dark:text-teal-400"
+        />
+        <LandingPageLink
+          href="/reports"
+          icon={<AlertTriangle size={48} className="text-orange-500 dark:text-orange-400 md:mb-4" />}
+          title="Reportar"
+          description="Reportá un ítem o un usuario."
+          titleClassName="text-orange-500 dark:text-orange-400"
+        />
       </section>
 
       {isPanelOpen && (
