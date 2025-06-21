@@ -1,6 +1,9 @@
 
 import HighContrastManager from "@/components/ThemeManager";
 import { AuthProvider } from "@/hooks/useAuth";
+import { EventPhaseProvider } from "@/contexts/EventPhaseContext";
+import { ControlPanelProvider } from "@/contexts/ControlPanelContext";
+import { GlobalControlPanel } from "@/components/ControlPanel/GlobalControlPanel";
 import type { Metadata } from "next";
 import { Nunito } from 'next/font/google';
 import "./globals.css";
@@ -77,12 +80,17 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <HighContrastManager />
-      <html lang="es" className={`${nunito.variable} antialiased h-full`}>
-        <body className="bg-neutral-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 h-full">
-          {children}
-        </body>
-      </html>
+      <EventPhaseProvider>
+        <ControlPanelProvider>
+          <HighContrastManager />
+          <html lang="es" className={`${nunito.variable} antialiased h-full`}>
+            <body className="bg-neutral-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 h-full">
+              {children}
+              <GlobalControlPanel />
+            </body>
+          </html>
+        </ControlPanelProvider>
+      </EventPhaseProvider>
     </AuthProvider>
   );
 };

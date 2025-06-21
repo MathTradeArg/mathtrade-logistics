@@ -1,11 +1,11 @@
 "use client";
 
+import { LoadingSpinner } from '@/components/ui';
 import { Loader2 } from 'lucide-react';
 import React, { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useActionStatus } from '../contexts/ActionStatusContext';
 import type { Box, Item as PackingItem } from '../types/logistics';
 import GameRowItem from './GameRowItem';
-import LoadingSpinner from './LoadingSpinner';
 
 interface AssembleBoxSectionProps {
   itemsReadyForPacking: PackingItem[];
@@ -82,21 +82,21 @@ const AssembleBoxSection: React.FC<AssembleBoxSectionProps> = ({
     }
 
     return items.sort((a, b) => {
-        const statusA = a.status === 5 ? 0 : 1;
-        const statusB = b.status === 5 ? 0 : 1;
-        if (statusA !== statusB) { return statusA - statusB; }
-        return a.assigned_trade_code - b.assigned_trade_code;
-      });
-  }, [itemsReadyForPacking, newBoxDestination, searchTerm]); 
+      const statusA = a.status === 5 ? 0 : 1;
+      const statusB = b.status === 5 ? 0 : 1;
+      if (statusA !== statusB) { return statusA - statusB; }
+      return a.assigned_trade_code - b.assigned_trade_code;
+    });
+  }, [itemsReadyForPacking, newBoxDestination, searchTerm]);
 
-  const toggleItemForPacking = useCallback((itemId: number) => { 
+  const toggleItemForPacking = useCallback((itemId: number) => {
     setSelectedItemsToPack(prev => {
       const newSet = new Set(prev);
       if (newSet.has(itemId)) {
         newSet.delete(itemId);
       } else {
         const item = itemsReadyForPacking.find(i => i.id === itemId);
-        if (item && item.status === 5 && item.box_number == null) { 
+        if (item && item.status === 5 && item.box_number == null) {
           newSet.add(itemId);
         }
       }
@@ -124,7 +124,7 @@ const AssembleBoxSection: React.FC<AssembleBoxSectionProps> = ({
     const currentAvailableAndFilteredIds = new Set(
       filteredItemsForDisplay
         .filter(item => item.status === 5 && item.box_number == null)
-        .map(i => i.id) 
+        .map(i => i.id)
     );
     setSelectedItemsToPack(prev => new Set([...prev].filter(id => currentAvailableAndFilteredIds.has(id))));
   }, [filteredItemsForDisplay, isProcessingAction]);
@@ -195,19 +195,19 @@ const AssembleBoxSection: React.FC<AssembleBoxSectionProps> = ({
               <ul className="max-h-80 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-1 space-y-2 bg-gray-50 dark:bg-gray-800">
                 {filteredItemsForDisplay.length > 0 ? (
                   filteredItemsForDisplay.map(item => {
-                  const isAvailable = item.status === 5 && item.box_number == null;
-                  return (
-                    <GameRowItem
-                      key={item.assigned_trade_code}
-                      id={item.assigned_trade_code}
-                      title={item.title}
-                      ownerName={`${item.first_name} ${item.last_name}`}
-                      variant={isAvailable ? 'actionable' : 'pendingOther'}
-                      isSelected={selectedItemsToPack.has(item.id)}
-                      onRowClick={isAvailable ? () => toggleItemForPacking(item.id) : undefined}
-                    />
-                  );
-                })
+                    const isAvailable = item.status === 5 && item.box_number == null;
+                    return (
+                      <GameRowItem
+                        key={item.assigned_trade_code}
+                        id={item.assigned_trade_code}
+                        title={item.title}
+                        ownerName={`${item.first_name} ${item.last_name}`}
+                        variant={isAvailable ? 'actionable' : 'pendingOther'}
+                        isSelected={selectedItemsToPack.has(item.id)}
+                        onRowClick={isAvailable ? () => toggleItemForPacking(item.id) : undefined}
+                      />
+                    );
+                  })
                 ) : (
                   <p className="text-center text-gray-500 dark:text-gray-400 py-4">
                     No se encontraron ítems que coincidan.

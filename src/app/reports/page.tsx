@@ -1,14 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import ControlPanelModal from "@/components/ControlPanelModal";
 import { AlertTriangle, ArrowLeft, Camera, CheckCircle2, FileSearch, UserSearch, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { ChangeEvent, FormEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import AppHeader from '../../components/AppHeader';
-import FullScreenImageModal from '../../components/FullScreenImageModal';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import { useAuth } from '../../hooks/useAuth';
+import AppHeader from '@/components/AppHeader';
+import FullScreenImageModal from '@/components/FullScreenImageModal'; 
+import { LoadingSpinner } from '@/components/ui'; 
+import { useAuth } from '@/hooks/useAuth';
 
 interface User {
   id: number;
@@ -32,8 +30,7 @@ export default function ReportsPage() {
 }
 
 function ReportsPageContent() {
-  const { isAuthenticated, userName, userId, isAdmin, logout, isLoading: authIsLoading, isDarkMode, toggleDarkMode } = useAuth();
-  const router = useRouter();
+  const { isAuthenticated, isLoading: authIsLoading } = useAuth();
 
   type ReportStep = 'initial' | 'find_item' | 'find_user' | 'take_photo' | 'describe_problem' | 'submitted';
 
@@ -51,8 +48,6 @@ function ReportsPageContent() {
 
   const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [reportError, setReportError] = useState('');
-  const [reportSuccess, setReportSuccess] = useState('');
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
@@ -88,13 +83,10 @@ function ReportsPageContent() {
     setItemPhotos([]);
     setPhotoPreviews([]);
     setReportReason('');
-    setReportError('');
-    setReportSuccess('');
   };
 
   const handleBack = () => {
     setReportError('');
-    setReportSuccess('');
     switch (currentStep) {
       case 'find_item':
       case 'find_user':
@@ -249,7 +241,6 @@ function ReportsPageContent() {
     e.preventDefault();
     setIsLoadingReport(true);
     setReportError('');
-    setReportSuccess('');
 
     console.log("Enviando reporte:", { type: reportType, itemId: selectedItem?.id, userId: selectedUser?.id, photos: itemPhotos, reason: reportReason });
 
@@ -264,20 +255,12 @@ function ReportsPageContent() {
   }
 
   return (
-    <main className="flex flex-col min-h-dvh bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <main className="flex flex-col items-center min-h-dvh bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       {isAuthenticated && (
         <AppHeader
-          userName={userName}
-          isAdmin={isAdmin}
-          onLogoutClick={logout}
-          isDarkMode={isDarkMode}
-          pageTitle="Crear Reporte"
-          pageIcon={AlertTriangle}
-          onToggleDarkMode={toggleDarkMode}
-          showPanelButton={true}
+          pageTitle="Reportar"
+          pageIcon={AlertTriangle as any}
           showBackButton={true}
-          onBackClick={() => router.push('/')}
-          onPanelClick={() => setIsPanelOpen(true)}
         />
       )}
 
@@ -452,19 +435,8 @@ function ReportsPageContent() {
 
         <div className="mt-4 text-center">
           {reportError && <p className="text-red-500 dark:text-red-400 p-3 bg-red-50 dark:bg-red-900/30 rounded-md">{reportError}</p>}
-          {reportSuccess && <p className="text-green-600 dark:text-green-400 p-3 bg-green-50 dark:bg-green-900/30 rounded-md">{reportSuccess}</p>}
         </div>
       </section>
-
-      {isPanelOpen && (
-        <ControlPanelModal
-          isOpen={isPanelOpen}
-          onClose={() => { setIsPanelOpen(false) }}
-          isAdmin={isAdmin}
-          loggedInUserId={userId ? parseInt(userId, 10) : null}
-          loggedInUserName={userName}
-        />
-      )}
 
       <FullScreenImageModal
         imageUrl={fullScreenPhoto}

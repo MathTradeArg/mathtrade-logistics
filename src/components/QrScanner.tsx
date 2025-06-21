@@ -2,12 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import styles from './QrScanner.module.css';
-import { QrScanner as QrReader } from 'react-qrcode-scanner-mi'; 
+import { QrScanner as QrReader } from 'react-qrcode-scanner-mi';
+import { CameraOff } from 'lucide-react';
+
 interface QrScannerProps {
   onScan: (data: string) => void;
+  disabled?: boolean;
+  disabledMessage?: string;
 }
 
-const QrScanner: React.FC<QrScannerProps> = ({ onScan }) => {
+const QrScanner: React.FC<QrScannerProps> = ({ onScan, disabled = false, disabledMessage = "El escaneo de QR está deshabilitado en la fase actual." }) => {
   const [isClient, setIsClient] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
 
@@ -16,7 +20,7 @@ const QrScanner: React.FC<QrScannerProps> = ({ onScan }) => {
   }, []);
 
   const handleScanFromLibrary = (scannedData: string | null) => {
-    if (scannedData) {
+    if (scannedData && !disabled) {
       onScan(scannedData);
       setScanError(null);
     }
@@ -30,18 +34,27 @@ const QrScanner: React.FC<QrScannerProps> = ({ onScan }) => {
   return (
     <div className="w-full max-w-md mx-auto my-2 flex flex-col items-center space-y-5"> 
       {isClient && (
-        <div className={`${styles.qrReaderContainer} w-full aspect-square rounded-xl overflow-hidden shadow-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800`}>
-          <QrReader
-            delay={300}
-            onError={handleError} 
-            onScan={handleScanFromLibrary} 
-            constraints={{ video: { facingMode: "environment" } }}
-            className="w-full h-full" 
-          /> 
+        <div className={`${styles.qrReaderContainer} w-full aspect-square rounded-xl overflow-hidden shadow-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center justify-center`}>
+          {disabled ? (
+            <div className="text-center p-4 text-gray-500 dark:text-gray-400">
+              <CameraOff size={48} className="mx-auto mb-4" />
+              <p>{disabledMessage}</p>
+            </div>
+          ) : (
+            <QrReader
+              delay={300}
+              onError={handleError}
+              onScan={handleScanFromLibrary}
+              constraints={{ video: { facingMode: "environment" } }}
+              className="w-full h-full"
+            />
+          )}
         </div>
       )}
       {scanError && <p className="text-red-500 dark:text-red-400 text-center mt-4 text-sm">{scanError}</p>}
-      <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-2">Apuntá al QR</p>
+      {!disabled && (
+        <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-2">Apuntá al QR</p>
+      )}
     </div>
   );
 };

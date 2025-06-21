@@ -1,7 +1,7 @@
+import { LoadingSpinner } from '@/components/ui';
 import React from 'react';
 import type { Box } from '../types/logistics';
-import LoadingSpinner from './LoadingSpinner';
-import SimpleBoxDisplayCard from './SimpleBoxDisplayCard'; 
+import SimpleBoxDisplayCard from './SimpleBoxDisplayCard';
 
 interface CreatedBoxesSectionProps {
   createdBoxes: Box[];

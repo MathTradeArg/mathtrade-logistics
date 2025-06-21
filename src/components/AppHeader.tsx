@@ -1,94 +1,138 @@
 "use client";
 
-import { ArrowLeft, LayoutDashboard, LogOut, Moon, Sun } from 'lucide-react';
-import React from 'react';
+import { useEventPhase } from '@/contexts/EventPhaseContext';
+import { useAuth } from '@/hooks/useAuth';
+import { ArrowLeft, ChevronDown, Crown, LogOut, Moon, Search, Sun, User, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import React, { ComponentType, FormEvent, useState } from 'react';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useControlPanel } from '@/contexts/ControlPanelContext';
 
 interface AppHeaderProps {
-  userName: string | null;
-  isAdmin: boolean;
-  onLogoutClick: () => void;
   pageTitle?: string;
-  onPanelClick?: () => void;
-  showPanelButton?: boolean;
-  pageIcon?: React.ComponentType;
+  pageIcon?: ComponentType<{ size?: number; className?: string }>;
   showBackButton?: boolean;
   onBackClick?: () => void;
-  isDarkMode?: boolean;
-  onToggleDarkMode?: () => void;
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({ onToggleDarkMode, isDarkMode, userName, isAdmin, onLogoutClick, onPanelClick, showPanelButton = true, showBackButton = false, onBackClick, pageTitle, pageIcon }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({
+  pageTitle,
+  pageIcon,
+  showBackButton = false,
+  onBackClick,
+}) => {
+  const { userName, isAdmin, logout, isDarkMode, toggleDarkMode } = useAuth();
+  const { eventPhaseDisplay, isLoadingEventPhase } = useEventPhase();
+  const { openPanel } = useControlPanel();
+  const router = useRouter();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+
+  const handleBack = onBackClick ?? (() => router.push('/'));
+
+  const handleSearchSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (searchValue.trim()) {
+      openPanel(searchValue.trim());
+      setSearchValue('');
+      setIsSearchVisible(false);
+    }
+  };
+
   if (!userName) {
     return null;
   }
 
-  const firstName = userName?.split(' ')[0];
-
   return (
-    <header className="w-full sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-md">
-      <div className="max-w-5xl mx-auto flex justify-between items-center p-4">
-        <div className="flex items-center min-w-0">
-          <div className="w-10 h-10 flex items-center justify-center mr-2">
+    <header className="w-full bg-white dark:bg-gray-800 shadow-md p-4 flex justify-between items-center sticky top-0 z-50">
+      <div className="flex items-center gap-4">
+        {!isSearchVisible && (
+          <>
             {showBackButton && (
-              <button
-                aria-label="Atrás"
-                onClick={onBackClick}
-                disabled={!onBackClick}
-                className={`p-2 rounded-full transition-all duration-150 ease-in-out active:scale-90 active:bg-gray-300 dark:active:bg-gray-600
-                            ${!onBackClick
-                    ? 'text-gray-300 dark:text-gray-500 cursor-not-allowed'
-                    : 'text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                  }`}
-              >
-                <ArrowLeft size={20} />
+              <button onClick={handleBack} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <ArrowLeft size={24} />
               </button>
             )}
-          </div>
-          <div className="flex items-baseline min-w-0">
-            {pageTitle ? (
-              <h1 className="text-lg sm:text-xl font-bold text-gray-700 dark:text-gray-200 truncate flex items-center">
-                {pageIcon && <span className="mr-2">{React.createElement(pageIcon, { size: 24 } as any)}</span>}
-                {pageTitle}
-              </h1>
-            ) : (
-              <>
-                <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-nowrap">Hola,&nbsp;</span>
-                <span className="text-sm sm:text-base font-bold text-secondary-blue dark:text-sky-400 truncate" title={firstName || ''}>{firstName}</span>
-                <span className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-nowrap">!</span>
-                {isAdmin && (<span className="ml-2 text-xs bg-accent-yellow text-gray-700 px-1.5 py-0.5 rounded-full align-middle whitespace-nowrap flex-shrink-0">ADMIN</span>)}
-              </>
+            {pageIcon && React.createElement(pageIcon, { size: 28, className: "text-gray-700 dark:text-gray-300" })}
+            {pageTitle && <h1 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200">{pageTitle}</h1>}
+          </>
+        )}
+        {isSearchVisible && (
+          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 w-full">
+            <Search size={20} className="text-gray-500" />
+            <input
+              type="number"
+              autoFocus
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              placeholder="Buscar juego por ID..."
+              className="w-full bg-transparent focus:outline-none text-gray-800 dark:text-gray-200"
+            />
+          </form>
+        )}
+      </div>
 
+      <div className="flex items-center gap-4">
+        {!isSearchVisible && (isLoadingEventPhase ? (
+          <LoadingSpinner />
+        ) : (
+          eventPhaseDisplay && (
+            <div className="hidden sm:block px-3 py-1.5 bg-secondary-blue/10 dark:bg-sky-400/20 text-secondary-blue dark:text-sky-300 rounded-full text-sm font-semibold">
+              {eventPhaseDisplay}
+            </div>
+          )
+        ))}
+
+        <button onClick={() => setIsSearchVisible(!isSearchVisible)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          {isSearchVisible ? <X size={20} /> : <Search size={20} />}
+        </button>
+
+        {!isSearchVisible && (
+          <>
+        <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+
+        <div className="relative">
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="flex items-center gap-2 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <User size={20} />
+            <span className="hidden md:inline font-semibold">{userName}</span>
+            {isAdmin && (
+              <span className="p-1 bg-yellow-400 rounded-full" title="Administrador">
+                <Crown size={12} className="text-gray-800" />
+              </span>
             )}
-          </div>
-        </div>
-        <div className="flex items-center space-x-1 sm:space-x-2">
-          {typeof isDarkMode !== 'undefined' && onToggleDarkMode && (
-            <button
-              aria-label={isDarkMode ? "Activar modo claro" : "Activar modo oscuro"}
-              onClick={onToggleDarkMode}
-              className="p-2 text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90 active:bg-gray-300 dark:active:bg-gray-600"
-            >
-              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-          )}
-
-          {showPanelButton && onPanelClick && (
-            <button
-              aria-label="Panel de Control"
-              onClick={onPanelClick}
-              className="p-2 text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90 active:bg-gray-300 dark:active:bg-gray-600"
-            >
-              <LayoutDashboard size={20} />
-            </button>
-          )}
-          <button
-            aria-label="Salir"
-            onClick={onLogoutClick}
-            className="p-2 text-gray-500 hover:text-secondary-blue dark:text-gray-400 dark:hover:text-sky-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90 active:bg-gray-300 dark:active:bg-gray-600"
-          >
-            <LogOut size={20} />
+            <ChevronDown size={16} className={`transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
           </button>
+          {isMenuOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg py-1 z-50 border border-gray-200 dark:border-gray-600">
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    openPanel();
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                >
+                  Panel de Control
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  logout();
+                  setIsMenuOpen(false);
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2"
+              >
+                <LogOut size={16} />
+                Cerrar Sesión
+              </button>
+            </div>
+          )}
         </div>
+          </>
+        )}
       </div>
     </header>
   );

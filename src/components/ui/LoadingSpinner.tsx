@@ -13,4 +13,4 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ message = "Cargando..."
   );
 };
 
-export default LoadingSpinner;
+export { LoadingSpinner };

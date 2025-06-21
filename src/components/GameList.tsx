@@ -1,5 +1,6 @@
 "use client";
 
+import { useEventPhase } from "../contexts/EventPhaseContext";
 import type { Trade } from "@/types";
 import { useEffect, useState } from 'react';
 import ConfirmationModal from './ConfirmationModal';
@@ -13,6 +14,7 @@ interface GameListProps {
 }
 
 const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, deliveredByUserId }) => {
+  const { eventPhase } = useEventPhase();
   const pendingItems = trades.filter(trade =>  !['Delivered','In Event'].includes(trade.result.status_display));
   const deliveredItemsCount = trades.length - pendingItems.length;
 
@@ -118,7 +120,9 @@ const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, de
       {pendingItems.length > 0 && (
         <button
           onClick={handleDeliverAllPending}
-          className="w-full mb-6 px-6 py-3 bg-accent-yellow text-gray-800 font-semibold rounded-lg shadow-md hover:opacity-85 transition-all duration-150 ease-in-out active:scale-95"
+          className="w-full mb-6 px-6 py-3 bg-accent-yellow text-gray-800 font-semibold rounded-lg shadow-md hover:opacity-85 transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={eventPhase !== 1}
+          title={eventPhase !== 1 ? "La recepción de juegos está deshabilitada en la fase actual del evento" : ""}
         >
           Entregar TODO lo pendiente ({pendingItems.length})
         </button>
@@ -156,7 +160,9 @@ const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, de
       {pendingItems.length > 0 && selectedItems.size > 0 && (
         <button
           onClick={handleDeliverSelected}
-          className="w-full mt-4 px-6 py-3 bg-secondary-blue hover:opacity-85 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out active:scale-95"
+          className="w-full mt-4 px-6 py-3 bg-secondary-blue hover:opacity-85 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={eventPhase !== 1}
+          title={eventPhase !== 1 ? "La recepción de juegos está deshabilitada en la fase actual del evento" : ""}
         >
           Entregar lo marcado ({selectedItems.size})
         </button>

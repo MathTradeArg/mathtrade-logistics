@@ -1,10 +1,10 @@
 "use client";
 
+import { LoadingSpinner } from '@/components/ui';
 import React, { useCallback, useMemo } from 'react';
 import { useActionStatus } from '../contexts/ActionStatusContext';
 import type { Box } from '../types/logistics';
 import BoxCard from './BoxCard';
-import LoadingSpinner from './LoadingSpinner';
 
 interface IncomingBoxesSectionProps {
   allIncomingBoxes: Box[];

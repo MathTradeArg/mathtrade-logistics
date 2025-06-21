@@ -1,15 +1,15 @@
 "use client";
 
 import type { Trade } from '@/types';
+import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { QrCode } from 'lucide-react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
-import AppHeader from '../../components/AppHeader';
-import ControlPanelModal from '../../components/ControlPanelModal';
-import GameList from '../../components/GameList';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import QrScanner from '../../components/QrScanner';
-import { useAuth } from '../../hooks/useAuth';
+import AppHeader from '@/components/AppHeader';
+import GameList from '@/components/GameList'; 
+import { LoadingSpinner } from '@/components/ui'; 
+import QrScanner from '@/components/QrScanner';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ReceiveGamesPage() {
   return (
@@ -20,16 +20,15 @@ export default function ReceiveGamesPage() {
 }
 
 function ReceiveGamesPageContent() {
-  const { isAuthenticated, userName, userId, isAdmin, logout, isLoading: authIsLoading, isDarkMode, toggleDarkMode } = useAuth();
+  const { isAuthenticated, userId, isLoading: authIsLoading } = useAuth();
   const [qrData, setQrData] = useState<string | null>(null);
   const [trades, setTrades] = useState<Trade[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [initialQrProcessed, setInitialQrProcessed] = useState(false);
+  const { eventPhase, isLoadingEventPhase, eventPhaseDisplay } = useEventPhase();
 
   const handleScan = useCallback(async (data: string) => {
     const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
@@ -124,18 +123,9 @@ function ReceiveGamesPageContent() {
     }
   }, [qrData, trades]);
 
-  const handleModalClose = (actionWasSuccessful?: boolean) => {
-    setIsPanelOpen(false);
-    if (actionWasSuccessful) {
-      if (qrData) {
-        window.location.href = `${pathname}?qr=${qrData}`;
-      } else {
-        window.location.reload();
-      }
-    }
-  };
+  const isReceivingEnabled = eventPhase === 1 || eventPhase === 2;
 
-  if (isAuthenticated === null || (isAuthenticated === false && typeof window !== 'undefined')) {
+  if (isAuthenticated === null || (isAuthenticated === false && typeof window !== 'undefined') || isLoadingEventPhase) {
     return (
       <div className="flex justify-center items-center min-h-dvh bg-gray-100 dark:bg-gray-900">
         <LoadingSpinner message="Validando..." />
@@ -143,25 +133,13 @@ function ReceiveGamesPageContent() {
     );
   }
 
-  if (authIsLoading) {
-    return <div className="flex justify-center items-center min-h-screen"><LoadingSpinner message="Validando sesión..." /></div>;
-  }
-
   return (
-    <main className="flex flex-col min-h-dvh bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <main className="flex flex-col items-center min-h-dvh bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       {isAuthenticated && (
         <AppHeader
-          userName={userName}
-          isAdmin={isAdmin}
-          onLogoutClick={logout}
           pageTitle="Recepción"
-          pageIcon={QrCode}
-          onPanelClick={() => setIsPanelOpen(true)}
-          showPanelButton={true}
+          pageIcon={QrCode as any}
           showBackButton={true}
-          onBackClick={() => router.push('/')}
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={toggleDarkMode}
         />
       )}
       <div className="w-full max-w-3xl mx-auto text-center px-4">
@@ -173,7 +151,10 @@ function ReceiveGamesPageContent() {
         {!isLoading && !error && isAuthenticated && (
           <>
             {!qrData ? (
-              <QrScanner onScan={handleScan} />
+              <QrScanner
+                onScan={handleScan}
+                disabled={!isReceivingEnabled}
+                disabledMessage="La recepción de juegos no está habilitada en la fase actual del evento." />
             ) : trades && (
               <GameList
                 trades={trades}
@@ -185,15 +166,6 @@ function ReceiveGamesPageContent() {
           </>
         )}
       </section>
-      {isPanelOpen && (
-        <ControlPanelModal
-          isOpen={isPanelOpen}
-          onClose={handleModalClose}
-          isAdmin={isAdmin}
-          loggedInUserId={userId ? parseInt(userId, 10) : null}
-          loggedInUserName={userName}
-        />
-      )}
     </main>
   );
 }

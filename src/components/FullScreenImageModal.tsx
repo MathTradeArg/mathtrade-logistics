@@ -15,7 +15,7 @@ const FullScreenImageModal: React.FC<FullScreenImageModalProps> = ({ imageUrl, o
       className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center p-4 z-50"
       onClick={onClose} 
     >
-      <div className="relative max-w-full max-h-full" onClick={(e) => e.stopPropagation()}> {/* Prevent modal close when clicking on image */}
+      <div className="relative max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
         <img src={imageUrl} alt="Vista ampliada" className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-xl" />
         <button
           onClick={onClose}

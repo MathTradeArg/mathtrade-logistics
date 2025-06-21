@@ -21,6 +21,7 @@
     "@tailwindcss/vite": "^4.1.10",
     "clsx": "^2.1.1",
     "lucide-react": "^0.514.0",
+    "msw": "^2.10.2",
     "next": "^15.3.3",
     "react": "~18.2.0",
     "react-dom": "~18.2.0",

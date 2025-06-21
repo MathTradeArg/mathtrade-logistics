@@ -1,18 +1,18 @@
 "use client";
 
-import ControlPanelModal from "@/components/ControlPanelModal";
+import AppHeader from '@/components/AppHeader';
+import AssembleBoxSection from '@/components/AssembleBoxSection';
+import CreatedBoxesSection from '@/components/CreatedBoxesSection';
+import IncomingBoxesSection from '@/components/IncomingBoxesSection';
+import NonPackableDestinationsModal from '@/components/NonPackableDestinationsModal';
+import { LoadingSpinner } from '@/components/ui';
+import { ActionStatusProvider, useActionStatus } from '@/contexts/ActionStatusContext';
+import { useEventPhase } from "@/contexts/EventPhaseContext";
+import { useAuth } from '@/hooks/useAuth';
+import type { Box, Box as ImportedBox, Item } from '@/types/logistics';
 import { AlertCircle, Archive, CheckCircle2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import router from "next/router";
 import { Suspense, useCallback, useEffect, useState } from 'react';
-import AppHeader from '../../components/AppHeader';
-import AssembleBoxSection from '../../components/AssembleBoxSection';
-import CreatedBoxesSection from '../../components/CreatedBoxesSection';
-import IncomingBoxesSection from '../../components/IncomingBoxesSection';
-import LoadingSpinner from '../../components/LoadingSpinner';
-import { ActionStatusProvider, useActionStatus } from '../../contexts/ActionStatusContext';
-import { useAuth } from '../../hooks/useAuth';
-import type { Box, Item, Box as ImportedBox } from '../../types/logistics';
-import NonPackableDestinationsModal from '../../components/NonPackableDestinationsModal';
 
 export default function BoxesPage() {
   return (
@@ -25,13 +25,11 @@ export default function BoxesPage() {
 }
 
 function BoxesPageContent() {
-  const { isAuthenticated, userName, userId, isAdmin, logout, isLoading: authIsLoading, isDarkMode, toggleDarkMode } = useAuth();
-  const router = useRouter();
+  const { isAuthenticated, userId, isLoading: authIsLoading } = useAuth();
 
   const [incomingBoxes, setIncomingBoxes] = useState<Box[]>([]);
   const [isLoadingIncoming, setIsLoadingIncoming] = useState(false);
   const [errorIncoming, setErrorIncoming] = useState<string | null>(null);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<string>('');
   const [selectedBoxId, setSelectedBoxId] = useState<string>('');
 
@@ -42,7 +40,7 @@ function BoxesPageContent() {
         return savedTab;
       }
     }
-    return 'review'; 
+    return 'review';
   });
   const [itemsReadyForPacking, setItemsReadyForPacking] = useState<Item[]>([]);
   const [createdBoxes, setCreatedBoxes] = useState<ImportedBox[]>([]);
@@ -58,6 +56,7 @@ function BoxesPageContent() {
   const [recentlyCreatedBoxes, setRecentlyCreatedBoxes] = useState<Box[]>([]);
 
   const { isProcessingAction, actionError, actionSuccess, setIsProcessing, setError, setSuccess, clearMessages } = useActionStatus();
+  const { eventPhase, eventPhaseDisplay, isLoadingEventPhase, errorEventPhase, refetchEventPhase } = useEventPhase();
 
   useEffect(() => {
     localStorage.setItem('boxesPageActiveTab', activeTab);
@@ -232,7 +231,7 @@ function BoxesPageContent() {
       const boxesForFinalLocation = nextLocationToSelect
         ? incomingBoxes.filter(box => box.origin_name === nextLocationToSelect)
         : incomingBoxes;
-      
+
       const sortedBoxes = [...boxesForFinalLocation].sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       const currentBoxSelectionExists = selectedBoxId && sortedBoxes.some(b => b.id.toString() === selectedBoxId);
 
@@ -249,21 +248,27 @@ function BoxesPageContent() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      if (activeTab === 'review') {
-        fetchIncomingBoxes();
-      } else if (activeTab === 'assemble') {
-        fetchItemsForPacking();
-      } else if (activeTab === 'created') {
-        fetchCreatedBoxes();
+      if (eventPhase !== null) {
+        const isTabEnabled = eventPhase === 1 || eventPhase === 2;
+
+        if (!isTabEnabled) return;
+
+        if (activeTab === 'review') {
+          fetchIncomingBoxes();
+        } else if (activeTab === 'assemble' && isTabEnabled) {
+          fetchItemsForPacking();
+        } else if (activeTab === 'created' && isTabEnabled) {
+          fetchCreatedBoxes();
+        }
       }
     }
-  }, [isAuthenticated, activeTab, fetchIncomingBoxes, fetchItemsForPacking, fetchCreatedBoxes]);
+  }, [isAuthenticated, activeTab, eventPhase, fetchIncomingBoxes, fetchItemsForPacking, fetchCreatedBoxes]);
 
   useEffect(() => {
     if (!authIsLoading && isAuthenticated === false) {
       router.push('/');
     }
-  }, [isAuthenticated, authIsLoading, router]);
+  }, [isAuthenticated, authIsLoading]);
 
   const handleToggleItemSelectionInBox = useCallback((boxId: number, itemId: number, origin: number | null) => {
     setIncomingBoxes(prevBoxes =>
@@ -387,17 +392,6 @@ function BoxesPageContent() {
     }
   }, [fetchItemsForPacking, setIsProcessing, setError, setSuccess, clearMessages]);
 
-  const handleModalCloseAndRefetch = useCallback(() => {
-    setIsPanelOpen(false);
-    if (activeTab === 'review') {
-      fetchIncomingBoxes();
-    } else if (activeTab === 'assemble') {
-      fetchItemsForPacking();
-    } else if (activeTab === 'created') {
-      fetchCreatedBoxes();
-    }
-  }, [activeTab, fetchIncomingBoxes, fetchItemsForPacking, fetchCreatedBoxes]);
-
   if (authIsLoading || isAuthenticated === null) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -407,23 +401,16 @@ function BoxesPageContent() {
   }
 
   return (
-    <main className="flex flex-col min-h-dvh bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <main className="flex flex-col items-center min-h-dvh bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <AppHeader
-        userName={userName}
-        isAdmin={isAdmin}
-        onLogoutClick={logout}
-        onPanelClick={() => setIsPanelOpen(true)}
-        pageIcon={Archive}
-        pageTitle="Gestión de Cajas"
-        showPanelButton={true}
+        pageIcon={Archive as any}
+        pageTitle="Cajas"
         showBackButton={true}
-        onBackClick={() => router.push('/')}
-        isDarkMode={isDarkMode}
-        onToggleDarkMode={toggleDarkMode}
       />
 
       <div className="container mx-auto py-8">
 
+        {isLoadingEventPhase && <div className="mb-4"><LoadingSpinner message="Cargando fase del evento..." /></div>}
         {actionSuccess && <p className="mb-4 p-3 bg-green-100 dark:bg-green-700/30 text-green-700 dark:text-green-300 rounded-md text-sm flex items-center"><CheckCircle2 size={18} className="mr-2" />{actionSuccess}</p>}
         {actionError && <p className="mb-4 p-3 bg-red-100 dark:bg-red-700/30 text-red-700 dark:text-red-300 rounded-md text-sm flex items-center"><AlertCircle size={18} className="mr-2" />{actionError}</p>}
 
@@ -431,31 +418,34 @@ function BoxesPageContent() {
           <nav className="flex justify-center border-b border-gray-200 dark:border-gray-700" aria-label="Tabs">
             <button
               onClick={() => setActiveTab('review')}
+              disabled={eventPhase === 0 || isLoadingEventPhase || eventPhase === null}
               className={`py-3 px-6 sm:px-8 font-semibold text-sm focus:outline-none rounded-t-lg transition-colors duration-150 ease-in-out text-center
-                ${activeTab === 'review'
+                ${activeTab === 'review' && (eventPhase === 1 || eventPhase === 2)
                   ? 'bg-white dark:bg-gray-800 text-secondary-blue dark:text-sky-400 border-l border-t border-r border-white dark:border-gray-800 relative -mb-px z-20'
                   : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-750 border-b border-gray-200 dark:border-gray-700'
-                }`}
+                } ${eventPhase === 0 || eventPhase === null ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Cajas Entrantes
             </button>
             <button
               onClick={() => setActiveTab('assemble')}
+              disabled={eventPhase === 0 || isLoadingEventPhase || eventPhase === null}
               className={`py-3 px-6 sm:px-8 font-semibold text-sm focus:outline-none rounded-t-lg transition-colors duration-150 ease-in-out text-center
-                ${activeTab === 'assemble'
+                ${activeTab === 'assemble' && (eventPhase === 1 || eventPhase === 2)
                   ? 'bg-white dark:bg-gray-800 text-secondary-blue dark:text-sky-400 border-l border-t border-r border-white dark:border-gray-800 relative -mb-px z-20'
                   : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-750 border-b border-gray-200 dark:border-gray-700'
-                }`}
+                } ${eventPhase === 0 || eventPhase === null ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Armar Caja Saliente
             </button>
             <button
               onClick={() => setActiveTab('created')}
+              disabled={eventPhase === 0 || isLoadingEventPhase || eventPhase === null}
               className={`py-3 px-6 sm:px-8 font-semibold text-sm focus:outline-none rounded-t-lg transition-colors duration-150 ease-in-out text-center
-                ${activeTab === 'created'
+                ${activeTab === 'created' && (eventPhase === 1 || eventPhase === 2)
                   ? 'bg-white dark:bg-gray-800 text-secondary-blue dark:text-sky-400 border-l border-t border-r border-white dark:border-gray-800 relative -mb-px z-20'
                   : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-750 border-b border-gray-200 dark:border-gray-700'
-                }`}
+                } ${eventPhase === 0 || eventPhase === null ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Cajas Creadas
             </button>
@@ -463,7 +453,7 @@ function BoxesPageContent() {
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-b-lg shadow-lg relative z-10">
-          {activeTab === 'review' && (
+          {activeTab === 'review' && (eventPhase === 1 || eventPhase === 2) && (
             <IncomingBoxesSection
               allIncomingBoxes={incomingBoxes}
               isLoadingIncoming={isLoadingIncoming}
@@ -477,37 +467,42 @@ function BoxesPageContent() {
               onClearAllSelections={handleClearAllSelections}
             />
           )}
-          {activeTab === 'assemble' && (
-            <AssembleBoxSection
-              isLoading={isLoadingPackingItems}
-              error={errorPackingItems}
-              itemsReadyForPacking={itemsReadyForPacking}
-              onCreateBox={handleCreateBoxSubmit}
-              nonPackableDestinationsCount={nonPackableDestinations.fullyPacked.length + nonPackableDestinations.notReady.length}
-              onOpenNonPackableModal={() => setIsNonPackableModalOpen(true)}
-              recentlyCreatedBoxes={recentlyCreatedBoxes}
-            />
+          {activeTab === 'assemble' && (eventPhase === 1 || eventPhase === 2) && (
+            <>
+              {isLoadingPackingItems ? (
+                <div className="flex justify-center items-center p-4"><LoadingSpinner message="Cargando ítems para armar caja..." /></div>
+              ) : (
+                <AssembleBoxSection
+                  isLoading={isLoadingPackingItems}
+                  error={errorPackingItems}
+                  itemsReadyForPacking={itemsReadyForPacking}
+                  onCreateBox={handleCreateBoxSubmit}
+                  nonPackableDestinationsCount={nonPackableDestinations.fullyPacked.length + nonPackableDestinations.notReady.length}
+                  onOpenNonPackableModal={() => setIsNonPackableModalOpen(true)}
+                  recentlyCreatedBoxes={recentlyCreatedBoxes}
+                />
+              )}
+            </>
           )}
-          {activeTab === 'created' && (
+          {activeTab === 'created' && (eventPhase === 1 || eventPhase === 2) && (
             <CreatedBoxesSection
               createdBoxes={createdBoxes}
               isLoadingCreated={isLoadingCreated}
               errorCreated={errorCreated}
             />
           )}
+          {eventPhase === 0 && (
+            <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+              La sección de {activeTab === 'review' ? 'Cajas Entrantes' : activeTab === 'assemble' ? 'Armar Caja Saliente' : 'Cajas Creadas'} está deshabilitada en la fase actual del evento ({eventPhaseDisplay}).
+            </p>
+          )}
+          {eventPhase === null && !isLoadingEventPhase && !errorEventPhase && (
+            <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+              Cargando la fase del evento... (Asegúrate de que el EventPhaseProvider esté correctamente configurado en el layout raíz)
+            </p>
+          )}
         </div>
       </div>
-
-
-      {isPanelOpen && (
-        <ControlPanelModal
-          isOpen={isPanelOpen}
-          onClose={handleModalCloseAndRefetch}
-          isAdmin={isAdmin}
-          loggedInUserId={userId ? parseInt(userId, 10) : null}
-          loggedInUserName={userName}
-        />
-      )}
 
       <NonPackableDestinationsModal
         isOpen={isNonPackableModalOpen}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEventPhase } from "@/contexts/EventPhaseContext";
 import type { Trade } from "@/types";
 import { useState } from "react";
 import ConfirmationModal from "./ConfirmationModal";
@@ -17,6 +18,7 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
   const [isLoadingDelivery, setIsLoadingDelivery] = useState(false);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
   const [deliverySuccess, setDeliverySuccess] = useState<string | null>(null);
+  const { eventPhase } = useEventPhase();
 
   const availableToDeliverTrades = trades.filter(trade => trade.result.status_display === "In Event");
   const alreadyDeliveredTrades = trades.filter(trade => trade.result.status_display === "Delivered");
@@ -88,8 +90,7 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
               <GameRowItem
                 key={`deliver-${trade.result.assigned_trade_code}`}
                 id={trade.result.assigned_trade_code}
-                title={trade.math_item_exchanged.title.replace(/\s*\(\d{4}\)$/, '')}
-                ownerName={`${trade.from_member.first_name} ${trade.from_member.last_name}`}
+                title={trade.math_item_exchanged.title}
                 variant="default" 
               />
             ))}
@@ -107,8 +108,7 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
               <GameRowItem
                 key={`delivered-${trade.result.assigned_trade_code}`}
                 id={trade.result.assigned_trade_code}
-                title={trade.math_item_exchanged.title.replace(/\s*\(\d{4}\)$/, '')}
-                ownerName={`${trade.from_member.first_name} ${trade.from_member.last_name}`}
+                title={trade.math_item_exchanged.title}
                 variant="delivered"
               />
             ))}
@@ -126,8 +126,7 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
               <GameRowItem
                 key={`other-${trade.result.assigned_trade_code}`}
                 id={trade.result.assigned_trade_code}
-                title={trade.math_item_exchanged.title.replace(/\s*\(\d{4}\)$/, '')}
-                ownerName={`${trade.from_member.first_name} ${trade.from_member.last_name}`}
+                title={trade.math_item_exchanged.title}
                 variant="pendingOther"
               />
             ))}
@@ -141,8 +140,9 @@ const GamesToRetrieveList: React.FC<GamesToRetrieveListProps> = ({ trades, volun
       {availableToDeliverTrades.length > 0 && !deliverySuccess && (
         <button
           onClick={handleOpenConfirmModal}
-          disabled={isLoadingDelivery}
-          className="w-full mt-4 px-6 py-3 bg-accent-green text-gray-800 font-semibold rounded-lg shadow-lg hover:opacity-85 transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+          disabled={isLoadingDelivery || eventPhase !== 2}
+          className="w-full mt-4 px-6 py-3 bg-accent-green text-gray-800 font-semibold rounded-lg shadow-lg hover:opacity-85 transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+          title={eventPhase !== 2 ? "La entrega de juegos está deshabilitada en la fase actual del evento" : ""}
         >
           {isLoadingDelivery ? "Procesando..." : `Entregar ${availableToDeliverTrades.length === 1 ? "Juego" : `${availableToDeliverTrades.length} Juegos`} a ${trades[0].to_member.first_name}`}
         </button>
