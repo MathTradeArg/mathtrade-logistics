@@ -12,6 +12,9 @@ export interface Item {
 }
 
 export interface Box {
+  created_by_username: string | null;
+  created_by_first_name: string | null;
+  created_by_last_name: string | null;
   id: number;
   number: number | null;
   origin: number;

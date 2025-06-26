@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback, useMemo } from 'react';
+import { useCallback, useState } from 'react';
 
 interface UseApiOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   headers?: Record<string, string>;
-  isPublic?: boolean; 
+  isPublic?: boolean;
 }
 
 interface UseApiReturn<T> {
@@ -46,10 +46,18 @@ export const useApi = <T>(endpoint: string, options: UseApiOptions = { method: '
         requestHeaders['Authorization'] = `token ${token}`;
       }
 
+      let requestBody: BodyInit | undefined;
+      if (body instanceof FormData) {
+        requestBody = body;
+        delete requestHeaders['Content-Type'];
+      } else if (body) {
+        requestBody = JSON.stringify(body);
+      }
+
       const response = await fetch(`${MT_API_HOST}${endpoint}${pathParams}`, {
         method: method,
-        headers: requestHeaders, 
-        body: body ? JSON.stringify(body) : undefined,
+        headers: requestHeaders,
+        body: requestBody,
       });
 
       if (!response.ok) {
@@ -71,4 +79,5 @@ export const useApi = <T>(endpoint: string, options: UseApiOptions = { method: '
   }, [endpoint, method, headers, isPublic]);
 
   return { data, isLoading, error, execute, clearError, setData };
+
 };

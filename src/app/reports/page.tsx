@@ -1,25 +1,51 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import { AlertTriangle, ArrowLeft, Camera, CheckCircle2, FileSearch, UserSearch, X } from 'lucide-react';
-import { ChangeEvent, FormEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AppHeader from '@/components/AppHeader';
-import FullScreenImageModal from '@/components/FullScreenImageModal'; 
-import { LoadingSpinner } from '@/components/ui'; 
+import FullScreenImageModal from '@/components/FullScreenImageModal';
+import { LoadingSpinner } from '@/components/ui';
+import { useApi } from "@/hooks/useApi";
 import { useAuth } from '@/hooks/useAuth';
+import { generateHashedFilename } from "@/utils/file";
+import { compressImage } from '@/utils/imageCompressor';
+import { AlertTriangle, ArrowLeft, Camera, CheckCircle2, Crown, FileSearch, UserSearch, X } from "lucide-react";
+import Link from 'next/link';
+import { ChangeEvent, FormEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+const normalizeSearchString = (str: string): string => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+};
+
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('Error al leer el archivo de imagen.'));
+      }
+    };
+    reader.onerror = (error) => reject(error);
+  });
 
 interface User {
   id: number;
   first_name: string;
   last_name: string;
+  bgg_user?: string;
+  email?: string;
 }
-
 interface Item {
   id: number;
   title: string;
   assigned_trade_code: number;
 }
-
 
 export default function ReportsPage() {
   return (
@@ -30,7 +56,7 @@ export default function ReportsPage() {
 }
 
 function ReportsPageContent() {
-  const { isAuthenticated, isLoading: authIsLoading } = useAuth();
+  const { isAuthenticated, isLoading: authIsLoading, isAdmin } = useAuth();
 
   type ReportStep = 'initial' | 'find_item' | 'find_user' | 'take_photo' | 'describe_problem' | 'submitted';
 
@@ -46,18 +72,16 @@ function ReportsPageContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [reportReason, setReportReason] = useState('');
 
-  const [isLoadingReport, setIsLoadingReport] = useState(false);
   const [reportError, setReportError] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState('');
 
-  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-  const [errorUsers, setErrorUsers] = useState<string | null>(null);
+  const { data: availableUsers, isLoading: isLoadingUsers, error: errorUsers, execute: fetchAvailableUsers } = useApi<User[]>('mathtrades/7/users/');
+  const { data: availableItems, isLoading: isLoadingItems, error: errorItems, execute: fetchAvailableItems } = useApi<Item[]>('logistics/items');
+  const { execute: uploadImageApi, error: uploadImageApiError, clearError: clearUploadImageError } = useApi<any>('users/images/', { method: 'POST' });
+  const { execute: submitReportApi, error: submitReportApiError, clearError: clearSubmitReportError } = useApi<any>('reports/', { method: 'POST' });
 
-  const [availableItems, setAvailableItems] = useState<Item[]>([]);
-  const [isLoadingItems, setIsLoadingItems] = useState(false);
-  const [errorItems, setErrorItems] = useState<string | null>(null);
-
-  const handleSelectReportType = (type: 'item' | 'user') => {
+  const handleSelectReportType = (type: "item" | "user") => {
     setReportType(type);
     setCurrentStep(type === 'item' ? 'find_item' : 'find_user');
   };
@@ -65,8 +89,14 @@ function ReportsPageContent() {
   const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      const newPhotos = [...itemPhotos, ...files];
-      const newPreviews = [...photoPreviews, ...files.map(file => URL.createObjectURL(file))];
+      const newPhotosWithHashedNames = files.map(file => new File([file], generateHashedFilename(file.name), {
+        type: file.type,
+        lastModified: file.lastModified,
+      }));
+
+      const newPhotos = [...itemPhotos, ...newPhotosWithHashedNames];
+      const newPreviews = [...photoPreviews, ...newPhotosWithHashedNames.map(file => URL.createObjectURL(file))];
+
       setItemPhotos(newPhotos);
       setPhotoPreviews(newPreviews);
     }
@@ -83,6 +113,11 @@ function ReportsPageContent() {
     setItemPhotos([]);
     setPhotoPreviews([]);
     setReportReason('');
+    setReportError('');
+    setIsProcessing(false);
+    setProcessingMessage('');
+    clearUploadImageError();
+    clearSubmitReportError();
   };
 
   const handleBack = () => {
@@ -93,7 +128,7 @@ function ReportsPageContent() {
         resetForm();
         break;
       case 'take_photo':
-        setCurrentStep('find_item');
+        setCurrentStep(reportType === 'item' ? 'find_item' : 'initial');
         break;
       case 'describe_problem':
         if (reportType === 'item') {
@@ -116,97 +151,42 @@ function ReportsPageContent() {
     }
   };
 
-  const fetchAvailableUsers = useCallback(async () => {
-    setIsLoadingUsers(true);
-    setErrorUsers(null);
-    if (!isAuthenticated) {
-      setErrorUsers("No autenticado. No se pueden cargar los usuarios.");
-      setIsLoadingUsers(false);
-      return;
-    }
-    try {
-      const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
-      const response = await fetch(`${MT_API_HOST}mathtrades/7/users/`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `token ${localStorage.getItem('authToken')}`
-        }
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Error al cargar los usuarios.' }));
-        throw new Error(errorData.message || `Error ${response.status}`);
-      }
-      const data: User[] = await response.json();
-      setAvailableUsers(data);
-    } catch (err) {
-      setErrorUsers(err instanceof Error ? err.message : "Error desconocido al cargar usuarios.");
-    } finally {
-      setIsLoadingUsers(false);
-    }
-  }, [isAuthenticated]);
-
-  const fetchAvailableItems = useCallback(async () => {
-    setIsLoadingItems(true);
-    setErrorItems(null);
-    if (!isAuthenticated) {
-      setErrorItems("No autenticado. No se pueden cargar los ítems.");
-      setIsLoadingItems(false);
-      return;
-    }
-    try {
-      const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
-      const response = await fetch(`${MT_API_HOST}logistics/items`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `token ${localStorage.getItem('authToken')}`
-        }
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Error al cargar los ítems.' }));
-        throw new Error(errorData.message || `Error ${response.status}`);
-      }
-      const data: Item[] = await response.json();
-      setAvailableItems(data);
-    } catch (err) {
-      setErrorItems(err instanceof Error ? err.message : "Error desconocido al cargar ítems.");
-    } finally {
-      setIsLoadingItems(false);
-    }
-  }, [isAuthenticated]);
-
   useEffect(() => {
-    if (currentStep === 'find_user' && availableUsers.length === 0 && !isLoadingUsers && !errorUsers) {
+    if (currentStep === 'find_user' && !availableUsers && !isLoadingUsers && !errorUsers) {
       fetchAvailableUsers();
     }
-  }, [currentStep, availableUsers.length, isLoadingUsers, errorUsers, fetchAvailableUsers]);
+  }, [currentStep, availableUsers, isLoadingUsers, errorUsers, fetchAvailableUsers]);
 
   useEffect(() => {
-    if (currentStep === 'find_item' && availableItems.length === 0 && !isLoadingItems && !errorItems) {
+    if (currentStep === 'find_item' && !availableItems && !isLoadingItems && !errorItems) {
       fetchAvailableItems();
     }
-  }, [currentStep, availableItems.length, isLoadingItems, errorItems, fetchAvailableItems]);
+  }, [currentStep, availableItems, isLoadingItems, errorItems, fetchAvailableItems]);
 
   const filteredUsersForDisplay = useMemo(() => {
+    const users = availableUsers || [];
     if (!searchTermUsers.trim()) {
-      return availableUsers;
+      return users;
     }
-    const lowerCaseSearchTerm = searchTermUsers.toLowerCase();
-    return availableUsers.filter(user =>
-      user.first_name.toLowerCase().includes(lowerCaseSearchTerm) ||
-      user.last_name.toLowerCase().includes(lowerCaseSearchTerm)
-    );
+    const normalizedSearchTerm = normalizeSearchString(searchTermUsers);
+    return users.filter(user => {
+      const fullNameMatch = normalizeSearchString(`${user.first_name} ${user.last_name}`).includes(normalizedSearchTerm);
+      const bggUserMatch = normalizeSearchString(user.bgg_user || '').includes(normalizedSearchTerm);
+      const emailMatch = normalizeSearchString(user.email || '').includes(normalizedSearchTerm);
+
+      return fullNameMatch || bggUserMatch || emailMatch;
+    });
   }, [availableUsers, searchTermUsers]);
 
   const filteredItemsForDisplay = useMemo(() => {
+    const items = availableItems || [];
     if (!searchTermItems.trim()) {
-      return availableItems;
+      return items;
     }
-    const lowerCaseSearchTerm = searchTermItems.toLowerCase();
-    return availableItems.filter(item =>
-      item.title.toLowerCase().includes(lowerCaseSearchTerm) ||
-      item.assigned_trade_code.toString().includes(lowerCaseSearchTerm)
+    const normalizedSearchTerm = normalizeSearchString(searchTermItems);
+    return items.filter(item =>
+      normalizeSearchString(item.title).includes(normalizedSearchTerm) ||
+      item.assigned_trade_code.toString().includes(searchTermItems.toLowerCase())
     );
   }, [availableItems, searchTermItems]);
 
@@ -222,6 +202,7 @@ function ReportsPageContent() {
 
   const handleFindSubmit = (e: FormEvent) => {
     e.preventDefault();
+    setReportError('');
     if (reportType === 'item') {
       if (!selectedItem) {
         setReportError("Por favor, seleccioná un ítem.");
@@ -237,18 +218,82 @@ function ReportsPageContent() {
     }
   };
 
-  const handleReportSubmit = async (e: FormEvent) => {
+  const handleReportSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
-    setIsLoadingReport(true);
     setReportError('');
+    clearUploadImageError();
+    clearSubmitReportError();
 
-    console.log("Enviando reporte:", { type: reportType, itemId: selectedItem?.id, userId: selectedUser?.id, photos: itemPhotos, reason: reportReason });
+    if (!isAuthenticated) {
+      setReportError("No autenticado. No se puede enviar el reporte.");
+      return;
+    }
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setReportError("Función de reporte aún no implementada."); // Placeholder
-    setIsLoadingReport(false);
-    // setCurrentStep('submitted'); // Descomentar cuando la API esté lista
-  };
+    setIsProcessing(true);
+    try {
+      const uploadedImageIds: string[] = await Promise.all(
+        itemPhotos.map(async (photo, index) => {
+          setProcessingMessage(`Comprimiendo imagen ${index + 1}/${itemPhotos.length}...`);
+          const compressedPhoto = await compressImage(photo);
+
+          const MAX_SIZE_BYTES = 500 * 1024;
+          if (compressedPhoto.size > MAX_SIZE_BYTES) {
+            throw new Error(`La imagen '${photo.name}' no pudo ser comprimida por debajo de 500KB. Por favor, intente con una imagen de menor resolución.`);
+          }
+
+          setProcessingMessage(`Subiendo imagen ${index + 1}/${itemPhotos.length}...`);
+          const imgCode = await fileToBase64(compressedPhoto);
+          const imageUploadResult = await uploadImageApi({ img_code: imgCode });
+
+          if (imageUploadResult && imageUploadResult.asset_url) {
+            return imageUploadResult.asset_url;
+          }
+          if (typeof imageUploadResult === 'string') {
+            return imageUploadResult;
+          }
+
+          console.warn("Unexpected image upload result:", imageUploadResult);
+          throw new Error(`Respuesta inesperada al subir la imagen '${photo.name}'.`);
+        })
+      );
+
+      setProcessingMessage('Enviando reporte...');
+      const reportBody: {
+        comment: string;
+        reported_user?: number;
+        item?: number;
+        images?: string;
+      } = {
+        comment: reportReason,
+      };
+
+      if (reportType === 'user' && selectedUser) {
+        reportBody.reported_user = selectedUser.id;
+      } else if (reportType === 'item' && selectedItem) {
+        reportBody.item = selectedItem.id;
+      }
+
+      if (uploadedImageIds.length > 0) {
+        reportBody.images = uploadedImageIds.join(',');
+      }
+
+      await submitReportApi(reportBody);
+
+      setCurrentStep('submitted');
+    } catch (err) {
+      if (uploadImageApiError || submitReportApiError) {
+      } else if (err instanceof Error) {
+        setReportError(err.message);
+      } else {
+        setReportError('Ocurrió un error inesperado.');
+      }
+    } finally {
+      setIsProcessing(false);
+      setProcessingMessage('');
+    }
+  }, [clearUploadImageError, clearSubmitReportError, isAuthenticated, itemPhotos, reportReason, reportType, selectedUser, selectedItem, submitReportApi, uploadImageApi, uploadImageApiError, submitReportApiError]);
+
+  const overallError = uploadImageApiError || submitReportApiError || reportError;
 
   if (authIsLoading || isAuthenticated === null) {
     return <div className="flex justify-center items-center min-h-screen"><LoadingSpinner message="Validando sesión..." /></div>;
@@ -284,6 +329,14 @@ function ReportsPageContent() {
                 <span className="text-lg font-semibold">Un Usuario</span>
               </button>
             </div>
+            {isAdmin && (
+              <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
+                <Link href="/reports/all" className="w-full flex items-center justify-center p-6 bg-yellow-500/20 dark:bg-yellow-400/20 rounded-xl shadow-lg hover:shadow-xl transition-shadow active:scale-95 text-yellow-600 dark:text-yellow-300 border border-yellow-500/30">
+                  <Crown size={32} className="mr-4" />
+                  <span className="text-lg font-semibold">Ver todos los reportes</span>
+                </Link>
+              </div>
+            )}
           </div>
         )}
 
@@ -336,11 +389,11 @@ function ReportsPageContent() {
               <form onSubmit={handleFindSubmit} className="space-y-4">
                 <div>
                   <label htmlFor="searchTermUsers" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Buscar Usuario</label>
-                  <input type="text" id="searchTermUsers" value={searchTermUsers} onChange={(e) => setSearchTermUsers(e.target.value)} placeholder="Nombre o apellido" className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+                  <input type="text" id="searchTermUsers" value={searchTermUsers} onChange={(e) => setSearchTermUsers(e.target.value)} placeholder="Nombre, BGG user o email" className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
                 </div>
                 {selectedUser && (
                   <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-200">
-                    <span>Usuario seleccionado: <span className="font-semibold">{selectedUser.first_name} {selectedUser.last_name}</span></span>
+                    <span>Usuario seleccionado: <span className="font-semibold">{selectedUser.first_name} {selectedUser.last_name} {selectedUser.bgg_user && `(${selectedUser.bgg_user})`}</span></span>
                     <button
                       type="button"
                       onClick={handleClearUserSelection}
@@ -358,7 +411,7 @@ function ReportsPageContent() {
                         onClick={() => setSelectedUser(user)}
                         className={`w-full text-left p-2 rounded-md transition-colors ${selectedUser?.id === user.id ? 'bg-secondary-blue text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200'}`}
                       >
-                        {user.first_name} {user.last_name}
+                        {user.first_name} {user.last_name} {user.bgg_user && `(${user.bgg_user})`}
                       </button>
                     ))
                   ) : (
@@ -389,10 +442,9 @@ function ReportsPageContent() {
                       <img src={previewUrl} alt={`Vista previa ${index + 1}`} className="w-full h-24 object-cover rounded-lg shadow-md" />
                       <button
                         type="button"
-                        onClick={() => handleClearPhoto(index)}
+                        onClickCapture={(e) => { e.stopPropagation(); handleClearPhoto(index); }}
                         className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 transition-colors focus:ring-2 focus:ring-white"
                         aria-label={`Quitar foto ${index + 1}`}
-                        onClickCapture={(e) => e.stopPropagation()}
                       >
                         <X size={16} />
                       </button>
@@ -411,12 +463,20 @@ function ReportsPageContent() {
           <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl">
             <h2 className="text-xl font-semibold text-orange-600 dark:text-orange-400 mb-4">Describí el problema</h2>
             <form onSubmit={handleReportSubmit} className="space-y-4">
-              <div>
+              <div className="mb-4">
                 <label htmlFor="reportReason" className="sr-only">Motivo del Reporte</label>
                 <textarea id="reportReason" value={reportReason} onChange={(e) => setReportReason(e.target.value)} rows={4} required placeholder="Ej: El usuario no se presentó, llegó tarde, etc." className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100"></textarea>
               </div>
-              <button type="submit" disabled={isLoadingReport} className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg shadow-md transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50">
-                {isLoadingReport ? 'Enviando...' : 'Enviar Reporte'}
+              <button type="submit" disabled={isProcessing} className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg shadow-md transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 flex justify-center items-center">
+                {isProcessing ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    {processingMessage || 'Enviando...'}
+                  </>
+                ) : 'Enviar Reporte'}
               </button>
             </form>
           </div>
@@ -434,7 +494,7 @@ function ReportsPageContent() {
         )}
 
         <div className="mt-4 text-center">
-          {reportError && <p className="text-red-500 dark:text-red-400 p-3 bg-red-50 dark:bg-red-900/30 rounded-md">{reportError}</p>}
+          {overallError && <p className="text-red-500 dark:text-red-400 p-3 bg-red-50 dark:bg-red-900/30 rounded-md">{overallError}</p>}
         </div>
       </section>
 

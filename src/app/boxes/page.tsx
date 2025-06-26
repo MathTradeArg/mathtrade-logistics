@@ -364,7 +364,6 @@ function BoxesPageContent() {
           'Authorization': `token ${token}`
         },
         body: JSON.stringify({
-          number: Math.floor(Math.random() * 100) + 1,
           math_items: Array.from(itemIds),
           destiny: destinationId
         })

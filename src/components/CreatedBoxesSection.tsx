@@ -2,7 +2,7 @@ import { LoadingSpinner } from '@/components/ui';
 import React from 'react';
 import type { Box } from '../types/logistics';
 import SimpleBoxDisplayCard from './SimpleBoxDisplayCard';
-
+import { User } from 'lucide-react';
 interface CreatedBoxesSectionProps {
   createdBoxes: Box[];
   isLoadingCreated: boolean;
