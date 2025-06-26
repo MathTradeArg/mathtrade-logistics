@@ -1,9 +1,9 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/ui';
+import { useActionStatus } from '@/contexts/ActionStatusContext';
+import type { Box } from '@/types/logistics';
 import React, { useCallback, useMemo } from 'react';
-import { useActionStatus } from '../contexts/ActionStatusContext';
-import type { Box } from '../types/logistics';
 import BoxCard from './BoxCard';
 
 interface IncomingBoxesSectionProps {

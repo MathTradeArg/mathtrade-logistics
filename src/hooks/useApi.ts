@@ -61,8 +61,10 @@ export const useApi = <T>(endpoint: string, options: UseApiOptions = { method: '
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.detail || `Error: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({ detail: `Request failed with status ${response.status}` }));
+        const error = new Error(errorData.message || errorData.detail || `Error: ${response.statusText}`);
+        (error as any).body = errorData;
+        throw error;
       }
 
       if (response.status === 204) { setData(null); return undefined; }

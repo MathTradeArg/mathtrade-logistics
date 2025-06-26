@@ -22,9 +22,9 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-secondary-blue dark:text-sky-400 flex items-center">
             <AlertTriangle size={24} className="mr-2 text-accent-yellow" />
-            {"Confirmar Entrega"}
+            {title}
           </h2>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90">
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90" aria-label="Cerrar">
             <X size={24} className="text-gray-600 dark:text-gray-400" />
           </button>
         </div>

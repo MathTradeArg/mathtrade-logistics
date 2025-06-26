@@ -1,6 +1,6 @@
 "use client";
-import { AdminSection } from '@/components/ControlPanel/AdminSection';
-import { GameDetailsDisplay } from '@/components/ControlPanel/GameDetailsDisplay';
+import { AdminSection } from '@/components/control-panel/AdminSection';
+import { GameDetailsDisplay } from '@/components/control-panel/GameDetailsDisplay';
 import { LoadingSpinner } from '@/components/ui';
 import { useControlPanel } from '@/contexts/ControlPanelContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
@@ -42,10 +42,14 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
 
   if (!isOpen) return null;
 
-  const handleGameAction = async (gameId: number, newStatus: GameStatusCode) => {
+const handleGameAction = async (gameId: number, newStatus: GameStatusCode) => {
+  try {
     await updateGameStatus(gameId, newStatus);
     setHasAnyActionSucceededThisSession(true);
-  };
+  } catch (error) {
+    console.error("Error al actualizar el estado del juego:", error);
+  }
+};
 
   const handlePhaseChange = async (newPhase: number) => {
     setIsUpdatingPhase(true);

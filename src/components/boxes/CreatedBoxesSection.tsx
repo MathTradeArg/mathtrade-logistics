@@ -1,13 +1,14 @@
 import { LoadingSpinner } from '@/components/ui';
+import type { Box } from '@/types/logistics';
 import React from 'react';
-import type { Box } from '../types/logistics';
 import SimpleBoxDisplayCard from './SimpleBoxDisplayCard';
-import { User } from 'lucide-react';
 interface CreatedBoxesSectionProps {
   createdBoxes: Box[];
   isLoadingCreated: boolean;
   errorCreated: string | null;
 }
+
+
 
 const CreatedBoxesSection: React.FC<CreatedBoxesSectionProps> = ({
   createdBoxes,

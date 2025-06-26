@@ -1,8 +1,7 @@
 "use client";
 
-import { useEventPhase } from "../contexts/EventPhaseContext";
 import type { Trade } from "@/types";
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ConfirmationModal from './ConfirmationModal';
 import GameRowItem from "./GameRowItem";
 
@@ -11,24 +10,70 @@ interface GameListProps {
   onUpdateItems: (itemIds: number[], deliveredByUserId: number) => Promise<void>;
   onFinish: () => void;
   deliveredByUserId: number | null;
+  disabled?: boolean;
+  mode: 'receive' | 'deliver';
 }
 
-const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, deliveredByUserId }) => {
-  const { eventPhase } = useEventPhase();
-  const pendingItems = trades.filter(trade =>  !['Delivered','In Event'].includes(trade.result.status_display));
-  const deliveredItemsCount = trades.length - pendingItems.length;
+const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, onFinish, deliveredByUserId, mode }) => {
+  const config = useMemo(() => {
+    const receiveConfig = {
+      isUnavailable: (trade: Trade) => false,
+      isPending: (trade: Trade) => !['Delivered', 'In Event'].includes(trade.result.status_display),
+      isCompleted: (trade: Trade) => ['Delivered', 'In Event'].includes(trade.result.status_display),
+      isSelectable: (trade: Trade) => !['Delivered', 'In Event'].includes(trade.result.status_display),
+      texts: {
+        pendingSingular: 'juego pendiente',
+        pendingPlural: 'juegos pendientes',
+        completedSingular: 'recibido',
+        completedPlural: 'recibidos',
+        mainAction: 'Recibir TODO lo pendiente',
+        secondaryAction: 'Recibir lo marcado',
+        noItems: 'Este usuario no tiene juegos para entregar en el evento.',
+        finishButtonIdle: 'Listo, otro QR',
+        finishButtonCompleted: 'Todo recibido. Siguiente QR',
+        confirmTitle: 'Confirmar Recepción',
+        disabledMessage: 'La recepción de juegos está deshabilitada en la fase actual del evento',
+      },
+      itemSortOrder: (status: string) => {
+        if (['Delivered', 'In Event'].includes(status)) return 2;
+        return 1;
+      },
+      mainButtonClass: 'bg-accent-yellow text-gray-800',
+    };
 
-  const [selectedItems, setSelectedItems] = useState<Set<number>>(() => {
-    const initialSelected = new Set<number>();
-    if (trades) {
-      trades.forEach(trade => {
-        if (!['Delivered','In Event'].includes(trade.result.status_display)) {
-          initialSelected.add(trade.result.assigned_trade_code);
-        }
-      });
-    }
-    return initialSelected;
-  });
+    const deliverConfig = {
+      isUnavailable: (trade: Trade) => !['Delivered', 'In Event'].includes(trade.result.status_display),
+      isPending: (trade: Trade) => trade.result.status_display === 'In Event',
+      isCompleted: (trade: Trade) => trade.result.status_display === 'Delivered',
+      isSelectable: (trade: Trade) => trade.result.status_display === 'In Event',
+      texts: {
+        pendingSingular: 'juego para entregar',
+        pendingPlural: 'juegos para entregar',
+        completedSingular: 'entregado',
+        completedPlural: 'entregados',
+        mainAction: 'Entregar TODO lo listo',
+        secondaryAction: 'Entregar lo marcado',
+        noItems: 'Este usuario no tiene juegos pendientes de retirar.',
+        finishButtonIdle: 'Escanear otro QR',
+        finishButtonCompleted: 'Todo entregado. Siguiente QR',
+        confirmTitle: `Confirmar Entrega a ${trades[0]?.to_member.first_name || ''}`,
+        disabledMessage: 'La entrega de juegos está deshabilitada en la fase actual del evento',
+      },
+      itemSortOrder: (status: string) => {
+        if (status === 'Delivered') return 3;
+        if (status === 'In Event') return 1;
+        return 2;
+      },
+      mainButtonClass: 'bg-accent-green text-gray-800',
+    };
+
+    return mode === 'receive' ? receiveConfig : deliverConfig;
+  }, [mode, trades]);
+
+  const pendingItems = useMemo(() => trades.filter(config.isPending), [trades, config]);
+  const completedItemsCount = useMemo(() => trades.filter(config.isCompleted).length, [trades, config]);
+
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
 
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [itemsToConfirm, setItemsToConfirm] = useState<Trade[]>([]);
@@ -38,11 +83,14 @@ const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, de
     const initialSelected = new Set<number>();
     pendingItems.forEach(trade => initialSelected.add(trade.result.assigned_trade_code));
     setSelectedItems(initialSelected);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trades]);
-
+  }, [pendingItems]);
 
   const handleToggleSelectedItem = (itemId: number) => {
+    const trade = trades.find(t => t.result.assigned_trade_code === itemId);
+    if (!trade || !config.isSelectable(trade)) {
+      return;
+    }
+
     setSelectedItems(prevSelected => {
       const newSelected = new Set(prevSelected);
       if (newSelected.has(itemId)) {
@@ -54,17 +102,16 @@ const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, de
     });
   };
 
-  const handleDeliverAllPending = async () => {
-    const itemsToConfirmDelivery = trades.filter(trade =>  !['Delivered','In Event'].includes(trade.result.status_display));
-    if (itemsToConfirmDelivery.length > 0) {
-      setItemsToConfirm(itemsToConfirmDelivery);
+  const handleConfirmAllPending = () => {
+    if (pendingItems.length > 0) {
+      setItemsToConfirm(pendingItems);
       setConfirmActionType('all');
       setIsConfirmModalOpen(true);
     }
   };
 
-  const handleDeliverSelected = async () => {
-    const itemsToConfirmDelivery = trades.filter(trade => selectedItems.has(trade.result.assigned_trade_code) && !['Delivered','In Event'].includes(trade.result.status_display));
+  const handleConfirmSelected = () => {
+    const itemsToConfirmDelivery = trades.filter(trade => selectedItems.has(trade.result.assigned_trade_code) && config.isSelectable(trade));
     if (itemsToConfirmDelivery.length > 0) {
       setItemsToConfirm(itemsToConfirmDelivery);
       setConfirmActionType('selected');
@@ -72,11 +119,17 @@ const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, de
     }
   };
 
-  const executeConfirmedDelivery = async () => {
-    const itemIdsToDeliver = itemsToConfirm.map(trade => trade.result.assigned_trade_code);
-    if (itemIdsToDeliver.length > 0 && deliveredByUserId !== null) {
-      await onUpdateItems(itemIdsToDeliver, deliveredByUserId);
-      setSelectedItems(new Set());
+  const executeConfirmedAction = async () => {
+    const itemIdsToUpdate = itemsToConfirm.map(trade => trade.result.assigned_trade_code);
+    if (itemIdsToUpdate.length > 0 && deliveredByUserId !== null) {
+      await onUpdateItems(itemIdsToUpdate, deliveredByUserId);
+
+      setSelectedItems(prev => {
+        const newSet = new Set(prev);
+        itemIdsToUpdate.forEach(id => newSet.delete(id));
+        return newSet;
+      });
+
       if (confirmActionType === 'all') {
         setTimeout(() => {
           const finishButton = document.getElementById('finish-button');
@@ -86,17 +139,30 @@ const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, de
     }
   };
 
+  const sortedTrades = useMemo(() =>
+    [...trades].sort((a, b) => {
+      const orderA = config.itemSortOrder(a.result.status_display);
+      const orderB = config.itemSortOrder(b.result.status_display);
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return a.result.assigned_trade_code - b.result.assigned_trade_code;
+    }), [trades, config]);
+
   return (
     <div className="w-full">
       <div className="mb-6 text-center">
         <h2 className="text-2xl sm:text-3xl font-bold text-secondary-blue dark:text-sky-400">
-          {trades[0].to_member.first_name} {trades[0].to_member.last_name}
+          {trades[0]?.to_member.first_name} {trades[0]?.to_member.last_name}
         </h2>
+        {mode === 'deliver' && trades[0]?.result.table_number && (
+          <p className="text-md text-gray-600 dark:text-gray-400 mt-1">Mesa: <span className="font-semibold">{trades[0].result.table_number}</span></p>
+        )}
       </div>
 
       <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-700/30 rounded-lg">
         <p className="text-lg font-semibold text-gray-700 dark:text-gray-200">
-          Resumen: {pendingItems.length} {pendingItems.length === 1 ? 'juego pendiente' : 'juegos pendientes'} de {trades.length} en total:
+          Resumen: {pendingItems.length} {pendingItems.length === 1 ? config.texts.pendingSingular : config.texts.pendingPlural} de {trades.length} en total:
         </p>
         {pendingItems.length > 0 && (
           <ul className="mt-3 space-y-2 text-sm">
@@ -110,61 +176,93 @@ const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, de
             ))}
           </ul>
         )}
-        {deliveredItemsCount > 0 && (
+        {completedItemsCount > 0 && (
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-            ({deliveredItemsCount} ya {deliveredItemsCount === 1 ? 'entregado' : 'entregados'})
+            ({completedItemsCount} ya {completedItemsCount === 1 ? config.texts.completedSingular : config.texts.completedPlural})
           </p>
         )}
       </div>
 
       {pendingItems.length > 0 && (
         <button
-          onClick={handleDeliverAllPending}
-          className="w-full mb-6 px-6 py-3 bg-accent-yellow text-gray-800 font-semibold rounded-lg shadow-md hover:opacity-85 transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={eventPhase !== 1}
-          title={eventPhase !== 1 ? "La recepción de juegos está deshabilitada en la fase actual del evento" : ""}
+          onClick={handleConfirmAllPending}
+          className={`w-full mb-6 px-6 py-3 font-semibold rounded-lg shadow-md hover:opacity-85 transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${config.mainButtonClass}`}
+          disabled={disabled}
+          title={disabled ? config.texts.disabledMessage : ""}
         >
-          Entregar TODO lo pendiente ({pendingItems.length})
+          {config.texts.mainAction} ({pendingItems.length})
         </button>
       )}
 
       {trades.length === 0 && (
-        <p className="text-center text-gray-600 dark:text-gray-400 my-8 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">Este usuario no tiene juegos para entregar.</p>
+        <p className="text-center text-gray-600 dark:text-gray-400 my-8 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">{config.texts.noItems}</p>
       )}
       <ul className="space-y-3">
-        {trades
-          .slice()
-          .sort((a, b) => {
-            const getOrderStatus = (status_display: string): number => {
-              if (status_display === "Delivered") return 3;
-              if (status_display === "In Event") return 2;
-              return 1; 
-            };
-            const orderA = getOrderStatus(a.result.status_display);
-            const orderB = getOrderStatus(b.result.status_display);
-            return orderA - orderB;
-          })
-          .map((trade: Trade) => (
-            <GameRowItem
-              key={trade.result.assigned_trade_code}
-              id={trade.result.assigned_trade_code}
-              title={trade.math_item_exchanged.title}
-              statusDisplay={trade.result.status_display}
-              isSelected={selectedItems.has(trade.result.assigned_trade_code)}
-              onRowClick={!['Delivered','In Event'].includes(trade.result.status_display) ? () => handleToggleSelectedItem(trade.result.assigned_trade_code) : undefined}
-              onCheckboxChange={() => handleToggleSelectedItem(trade.result.assigned_trade_code)}
-              showCheckbox={true}
-            />
-          ))}
+        {sortedTrades.map((trade: Trade) => (
+          mode === 'receive' ? (
+            config.isPending(trade) ? (
+              <GameRowItem
+                key={trade.result.assigned_trade_code}
+                id={trade.result.assigned_trade_code}
+                title={trade.math_item_exchanged.title}
+                statusDisplay={trade.result.status_display}
+                isSelected={selectedItems.has(trade.result.assigned_trade_code)}
+                onRowClick={() => handleToggleSelectedItem(trade.result.assigned_trade_code)}
+                onCheckboxChange={() => handleToggleSelectedItem(trade.result.assigned_trade_code)}
+                showCheckbox={true}
+              />
+            ) : (
+              <GameRowItem
+                key={trade.result.assigned_trade_code}
+                id={trade.result.assigned_trade_code}
+                title={trade.math_item_exchanged.title}
+                statusDisplay={trade.result.status_display}
+                showCheckbox={false}
+                variant="delivered"
+              />
+            )
+          ) : (
+            config.isUnavailable(trade) ? (
+              <GameRowItem
+                key={trade.result.assigned_trade_code}
+                id={trade.result.assigned_trade_code}
+                title={trade.math_item_exchanged.title}
+                statusDisplay={trade.result.status_display}
+                showCheckbox={false}
+                variant="pendingOther"
+              />
+            ) : config.isCompleted(trade) ? (
+              <GameRowItem
+                key={trade.result.assigned_trade_code}
+                id={trade.result.assigned_trade_code}
+                title={trade.math_item_exchanged.title}
+                statusDisplay={trade.result.status_display}
+                showCheckbox={false}
+                variant="delivered"
+              />
+            ) : (
+              <GameRowItem
+                key={trade.result.assigned_trade_code}
+                id={trade.result.assigned_trade_code}
+                title={trade.math_item_exchanged.title}
+                statusDisplay={trade.result.status_display}
+                isSelected={selectedItems.has(trade.result.assigned_trade_code)}
+                onRowClick={config.isSelectable(trade) ? () => handleToggleSelectedItem(trade.result.assigned_trade_code) : undefined}
+                onCheckboxChange={() => handleToggleSelectedItem(trade.result.assigned_trade_code)}
+                showCheckbox={true}
+              />
+            )
+          )
+        ))}
       </ul>
       {pendingItems.length > 0 && selectedItems.size > 0 && (
         <button
-          onClick={handleDeliverSelected}
+          onClick={handleConfirmSelected}
           className="w-full mt-4 px-6 py-3 bg-secondary-blue hover:opacity-85 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={eventPhase !== 1}
-          title={eventPhase !== 1 ? "La recepción de juegos está deshabilitada en la fase actual del evento" : ""}
+          disabled={disabled}
+          title={disabled ? config.texts.disabledMessage : ""}
         >
-          Entregar lo marcado ({selectedItems.size})
+          {config.texts.secondaryAction} ({selectedItems.size})
         </button>
       )}
 
@@ -173,15 +271,16 @@ const GameList: React.FC<GameListProps> = ({ trades, onUpdateItems, onFinish, de
         id="finish-button"
         className="w-full mt-4 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out active:scale-95"
       >
-        {pendingItems.length === 0 && trades.length > 0 ? 'Todo entregado. Siguiente QR' : 'Listo, otro QR'}
+        {pendingItems.length === 0 && trades.length > 0 ? config.texts.finishButtonCompleted : config.texts.finishButtonIdle}
       </button>
 
       <ConfirmationModal
         isOpen={isConfirmModalOpen}
         onClose={() => setIsConfirmModalOpen(false)}
-        onConfirm={executeConfirmedDelivery}
+        onConfirm={executeConfirmedAction}
         itemsToDeliver={itemsToConfirm}
         actionType={confirmActionType || 'selected'}
+        modalTitle={config.texts.confirmTitle}
       />
     </div>
   );

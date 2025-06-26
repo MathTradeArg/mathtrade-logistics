@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from 'clsx';
-import { Check, CheckCircle2, XCircle } from 'lucide-react';
+import { Check, CheckCircle2, X, XCircle } from 'lucide-react';
 import React from 'react';
 
 interface GameRowItemProps {
@@ -17,6 +17,7 @@ interface GameRowItemProps {
   boxId?: number;
   itemId?: number;
   onItemToggle?: (boxId: number, itemId: number) => void;
+  disabled?: boolean;
 }
 
 const GameRowItem: React.FC<GameRowItemProps> = ({
@@ -32,6 +33,7 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
   boxId,
   itemId,
   onItemToggle,
+  disabled = false,
 
 }) => {
   const baseLiClasses = "flex rounded-lg shadow-md overflow-hidden transition-all duration-150 ease-in-out";
@@ -39,19 +41,18 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
   const baseTitleTextClasses = "text-sm sm:text-base font-medium leading-tight";
   const baseActionAreaClasses = "flex-shrink-0 w-12 sm:w-16 flex items-center justify-center p-2 sm:p-3 rounded-r-lg";
 
-  const isInactiveByStatus = !!statusDisplay && ['Delivered', 'In Event'].includes(statusDisplay);
   const isInactiveByVariant = variant === 'delivered' || variant === 'pendingOther';
 
   const calculateIsVisuallyInactive = (): boolean => {
-    if (isInactiveByVariant) return true; 
-    if (showCheckbox && isInactiveByStatus) return true; 
-    if (variant === 'actionable' && !isSelected && !showCheckbox) return true; 
+    if (isInactiveByVariant) return true;
+    if (showCheckbox && disabled) return true;
+    if (variant === 'actionable' && !isSelected && !showCheckbox) return true;
     return false;
   };
   const finalIsVisuallyInactive = calculateIsVisuallyInactive();
 
-  const isCheckboxInteractive = showCheckbox && !isInactiveByStatus && !!onCheckboxChange;
-  const isRowSelectable = variant === 'actionable' && !!onRowClick && !isInactiveByStatus;
+  const isCheckboxInteractive = showCheckbox && !disabled && !!onCheckboxChange;
+  const isRowSelectable = variant === 'actionable' && !!onRowClick && !disabled;
 
   const TextContainerTag = isCheckboxInteractive ? 'label' : 'div';
 
@@ -61,8 +62,11 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
   let actionContent = null;
 
   if (showCheckbox) {
-    variantLiClasses = 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-600/30 active:scale-[0.98]';
-    if (isSelected) variantLiClasses += ' ring-2 ring-secondary-blue dark:ring-sky-500 ring-offset-1 dark:ring-offset-gray-800';
+    if (disabled) {
+      variantLiClasses = 'bg-gray-200/50 dark:bg-gray-800/50 opacity-60';
+    } else {
+      variantLiClasses = 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-600/30 active:scale-[0.98]';
+    } if (isSelected) variantLiClasses += ' ring-2 ring-secondary-blue dark:ring-sky-500 ring-offset-1 dark:ring-offset-gray-800';
     variantIdBoxClasses = 'bg-secondary-blue dark:bg-sky-600';
     variantTitleTextClasses = 'text-secondary-blue dark:text-sky-400';
   } else {
@@ -72,24 +76,32 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
           variantLiClasses = 'bg-secondary-blue/20 dark:bg-sky-700/50 hover:bg-secondary-blue/30 dark:hover:bg-sky-700/60 active:scale-[0.98]';
           variantIdBoxClasses = 'bg-secondary-blue dark:bg-sky-600';
           variantTitleTextClasses = 'text-secondary-blue dark:text-sky-700';
-        } else { 
+        } else {
           variantLiClasses = 'bg-gray-100 dark:bg-gray-800/70 opacity-60 hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700/80 active:scale-[0.98]';
-          variantIdBoxClasses = 'bg-gray-400 dark:bg-gray-500'; 
+          variantIdBoxClasses = 'bg-gray-400 dark:bg-gray-500';
           variantTitleTextClasses = 'text-gray-500 dark:text-gray-400';
         }
         if (isRowSelectable) variantLiClasses += ' cursor-pointer';
         break;
       case 'delivered':
         variantLiClasses = 'bg-accent-green/30 dark:bg-accent-green/20 opacity-70';
-        variantIdBoxClasses = 'bg-secondary-blue/50 dark:bg-secondary-blue/50'; 
+        variantIdBoxClasses = 'bg-secondary-blue/50 dark:bg-secondary-blue/50';
         variantTitleTextClasses = 'text-gray-500 dark:text-gray-400 line-through';
-        actionContent = <CheckCircle2 size={20} className="text-green-500" />;
+        actionContent = (
+          <div className="w-5 h-5 rounded-full flex items-center justify-center bg-green-500">
+            <Check size={16} className="text-white" />
+          </div>
+        );
         break;
       case 'pendingOther':
         variantLiClasses = 'bg-gray-100 dark:bg-gray-800 opacity-80';
         variantIdBoxClasses = 'bg-gray-400 dark:bg-gray-600';
         variantTitleTextClasses = 'text-gray-500 dark:text-gray-400 line-through';
-        actionContent = <XCircle size={20} className="text-red-500" />;
+        actionContent = (
+          <div className="w-5 h-5 rounded-full flex items-center justify-center bg-red-500">
+            <X size={16} className="text-white" />
+          </div>
+        );
         break;
       case 'default':
       default:
@@ -138,14 +150,19 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
                 <input
                   type="checkbox"
                   id={`checkbox-item-${id}`}
+                  disabled={disabled}
                   className="sr-only peer"
                   checked={isSelected}
                   onChange={onCheckboxChange}
                 />
                 <label
                   htmlFor={`checkbox-item-${id}`}
-                  className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center border-2 cursor-pointer transition-all duration-150 ease-in-out active:scale-90 peer-focus:ring-2 peer-focus:ring-offset-1 dark:peer-focus:ring-offset-gray-800 ${isSelected ? 'bg-secondary-blue border-secondary-blue dark:bg-sky-500 dark:border-sky-500 peer-focus:ring-secondary-blue dark:peer-focus:ring-sky-500' : 'bg-gray-200 dark:bg-gray-600 border-gray-300 dark:border-gray-500 peer-focus:ring-gray-400'}`}
-                >
+                  className={clsx('w-5 h-5 rounded-full flex items-center justify-center border-2 transition-all duration-150 ease-in-out peer-focus:ring-2 peer-focus:ring-offset-1 dark:peer-focus:ring-offset-gray-800', {
+                    'bg-secondary-blue border-secondary-blue dark:bg-sky-500 dark:border-sky-500 peer-focus:ring-secondary-blue dark:peer-focus:ring-sky-500': isSelected,
+                    'bg-gray-200 dark:bg-gray-600 border-gray-300 dark:border-gray-500 peer-focus:ring-gray-400': !isSelected,
+                    'cursor-pointer active:scale-90': !disabled,
+                    'cursor-not-allowed': disabled,
+                  })}                >
                   {isSelected && <Check size={16} className="text-white" />}
                 </label>
               </>

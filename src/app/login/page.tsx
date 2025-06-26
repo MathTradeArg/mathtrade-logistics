@@ -1,29 +1,37 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { FormEvent, useRef, useState, useEffect } from 'react';
-import { useAuth } from '../../hooks/useAuth'; 
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import ReCAPTCHA from "react-google-recaptcha";
+import { useApi } from '@/hooks/useApi';
+import { useAuth } from '../../hooks/useAuth';
+interface LoginResponse {
+  token: string;
+  user: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    math_admin: boolean;
+  };
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const router = useRouter();
   const recaptchaRef = useRef<ReCAPTCHA>(null);
-  const { login: contextLogin } = useAuth(); 
-
+  const { login: contextLogin } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
+
+  const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+
+  const { execute: executeLogin, isLoading, error, clearError } = useApi<LoginResponse>('auth-token/volunteer/', {
+    method: 'POST',
+    isPublic: true, 
+  });
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
-
-  const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
-  const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
-
-  useEffect(() => {
     if (isMounted && !RECAPTCHA_SITE_KEY) {
       console.error("Error: La variable de entorno NEXT_PUBLIC_RECAPTCHA_SITE_KEY no está configurada o no es accesible.");
     }
@@ -31,12 +39,10 @@ export default function LoginPage() {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    setError('');
-    setIsLoading(true);
+    clearError(); 
 
     if (!RECAPTCHA_SITE_KEY) {
-      setError('Falta reCAPTCHA. Avisá al admin.');
-      setIsLoading(false);
+      alert('Falta la configuración de reCAPTCHA. Por favor, avise al administrador.');
       return;
     }
 
@@ -44,61 +50,30 @@ export default function LoginPage() {
 
     try {
       if (!recaptchaToken) {
-        try {
-          await recaptchaRef.current?.executeAsync();
-          recaptchaToken = recaptchaRef.current?.getValue();
-        } catch (e) {
-          console.error("Error durante la ejecución de reCAPTCHA:", e);
-          setError('Falló reCAPTCHA. Probá otra vez.');
-          setIsLoading(false);
-          recaptchaRef.current?.reset();
-          return;
-        }
+        await recaptchaRef.current?.executeAsync();
+        recaptchaToken = recaptchaRef.current?.getValue();
       }
 
       if (!recaptchaToken) {
-        setError('Completá el reCAPTCHA.');
-        setIsLoading(false);
-        recaptchaRef.current?.reset(); 
+        alert('No se pudo obtener el token de reCAPTCHA. Por favor, intente de nuevo.');
+        recaptchaRef.current?.reset();
         return;
       }
 
-      const body = JSON.stringify({ email, password, recaptcha: recaptchaToken })
-      const response = await fetch(MT_API_HOST + 'auth-token/volunteer/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: body,
-      });
+      const data = await executeLogin({ email, password, recaptcha: recaptchaToken });
 
-      setIsLoading(false);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Error del server.' }));
-        throw new Error(errorData.message || `Error  al entrar.`);
-      }
-
-      const data = await response.json();
-      if (data.token && data.user && data.user.first_name) {
+      if (data && data.token && data.user) {
         localStorage.setItem('authToken', data.token);
-
         const userName = `${data.user.first_name} ${data.user.last_name || ''}`.trim();
         localStorage.setItem('userName', userName);
-        if (data.user.isAdmin) localStorage.setItem('isAdmin', data.user.math_admin); 
+        if (data.user.math_admin) localStorage.setItem('isAdmin', 'true');
         if (data.user.id) localStorage.setItem('userId', data.user.id.toString());
         
         contextLogin(data.token, data.user);
         router.push('/');
-      } else {
-        throw new Error('Sin token del server.');
       }
-
     } catch (err) {
-      setIsLoading(false);
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Error inesperado al entrar.');
-      }
+      console.error("Falló el intento de login:", err);
       recaptchaRef.current?.reset();
     }
   };

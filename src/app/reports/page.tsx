@@ -281,19 +281,21 @@ function ReportsPageContent() {
 
       setCurrentStep('submitted');
     } catch (err) {
-      if (uploadImageApiError || submitReportApiError) {
+      const errorBody = (err as any)?.body;
+      if (errorBody && Array.isArray(errorBody.item) && errorBody.item.includes('reported item with this item already exists.')) {
+        setReportError('Ya existe un reporte para este ítem. No se puede crear un nuevo reporte.');
       } else if (err instanceof Error) {
         setReportError(err.message);
+      } else if (err) {
+        setReportError(`Ocurrió un error inesperado: ${JSON.stringify(err)}`);
       } else {
-        setReportError('Ocurrió un error inesperado.');
+        setReportError('Ocurrió un error inesperado. Por favor, intente de nuevo.');
       }
     } finally {
       setIsProcessing(false);
       setProcessingMessage('');
     }
-  }, [clearUploadImageError, clearSubmitReportError, isAuthenticated, itemPhotos, reportReason, reportType, selectedUser, selectedItem, submitReportApi, uploadImageApi, uploadImageApiError, submitReportApiError]);
-
-  const overallError = uploadImageApiError || submitReportApiError || reportError;
+  }, [clearUploadImageError, clearSubmitReportError, isAuthenticated, itemPhotos, reportReason, reportType, selectedUser, selectedItem, submitReportApi, uploadImageApi]);
 
   if (authIsLoading || isAuthenticated === null) {
     return <div className="flex justify-center items-center min-h-screen"><LoadingSpinner message="Validando sesión..." /></div>;
@@ -494,7 +496,7 @@ function ReportsPageContent() {
         )}
 
         <div className="mt-4 text-center">
-          {overallError && <p className="text-red-500 dark:text-red-400 p-3 bg-red-50 dark:bg-red-900/30 rounded-md">{overallError}</p>}
+          {reportError && <p className="text-red-500 dark:text-red-400 p-3 bg-red-50 dark:bg-red-900/30 rounded-md">{reportError}</p>}
         </div>
       </section>
 

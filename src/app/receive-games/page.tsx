@@ -123,7 +123,7 @@ function ReceiveGamesPageContent() {
     }
   }, [qrData, trades]);
 
-  const isReceivingEnabled = eventPhase === 1 || eventPhase === 2;
+  const isReceivingEnabled = eventPhase !== 0;
 
   if (isAuthenticated === null || (isAuthenticated === false && typeof window !== 'undefined') || isLoadingEventPhase) {
     return (
@@ -159,7 +159,9 @@ function ReceiveGamesPageContent() {
               <GameList
                 trades={trades}
                 onUpdateItems={handleUpdateItems}
+                disabled={!isReceivingEnabled}
                 onFinish={() => { setQrData(null); setTrades(null); setError(''); }}
+                mode="receive"
                 deliveredByUserId={userId ? parseInt(userId, 10) : null}
               />
             )}

@@ -6,7 +6,7 @@ import { ArrowRightCircle } from 'lucide-react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import AppHeader from '@/components/AppHeader';
-import GamesToRetrieveList from '@/components/GamesToRetrieveList'; 
+import GameList from '@/components/GameList';
 import { LoadingSpinner } from '@/components/ui'; 
 import QrScanner from '@/components/QrScanner'; 
 import { useAuth } from '@/hooks/useAuth';
@@ -91,6 +91,39 @@ function DeliverToUserPageContent() {
     });
   }, []);
 
+  const handleUpdateItems = useCallback(async (itemIds: number[], deliveredByUserId: number) => {
+    if (!qrData || !trades || !deliveredByUserId || trades.length === 0) {
+      setError('Faltan datos para la actualización.');
+      return;
+    }
+
+    const itemsToUpdate = trades.filter(trade => itemIds.includes(trade.result.assigned_trade_code));
+    const idsToUpdate = itemsToUpdate.map(trade => trade.result.assigned_trade_code);
+    if (idsToUpdate.length === 0) return;
+
+    try {
+      const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
+      const response = await fetch(`${MT_API_HOST}logistics/games/bulk-update-status/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `token ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          status: 6,
+          assigned_trade_codes: itemIds,
+          change_by_id: deliveredByUserId
+        }),
+      });
+
+      if (!response.ok) throw new Error('Error al actualizar el estado de los juegos.');
+
+      handleDeliverySuccess(itemIds);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falló la actualización.');
+    }
+  }, [qrData, trades, handleDeliverySuccess]);
+
   if (authIsLoading || isAuthenticated === null || isLoadingEventPhase) {
     return <div className="flex justify-center items-center min-h-screen"><LoadingSpinner message="Validando sesión..." /></div>;
   }
@@ -122,12 +155,13 @@ function DeliverToUserPageContent() {
                 disabled={!isDeliveringEnabled} 
                 disabledMessage="La entrega de juegos está deshabilitada en la fase actual del evento."
               />
-            ) : trades && (
-              <GamesToRetrieveList
+            ) : trades && trades.length > 0 && (
+              <GameList
                 trades={trades}
                 onFinish={() => { setQrData(null); setTrades(null); setError(''); }}
-                volunteerId={userId ? parseInt(userId, 10) : null}
-                onDeliverySuccess={handleDeliverySuccess}
+                deliveredByUserId={userId ? parseInt(userId, 10) : null}
+                onUpdateItems={handleUpdateItems}
+                mode="deliver"
               />
             )}
           </>

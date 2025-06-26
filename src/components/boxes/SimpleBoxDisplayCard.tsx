@@ -1,7 +1,7 @@
+import GameRowItem from '@/components/GameRowItem';
+import type { Box } from '@/types/logistics';
 import { User } from 'lucide-react';
 import React from 'react';
-import type { Box } from '../types/logistics';
-import GameRowItem from './GameRowItem';
 
 interface SimpleBoxDisplayCardProps {
   box: Box;

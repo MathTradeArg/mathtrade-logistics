@@ -3,7 +3,7 @@ import HighContrastManager from "@/components/ThemeManager";
 import { AuthProvider } from "@/hooks/useAuth";
 import { EventPhaseProvider } from "@/contexts/EventPhaseContext";
 import { ControlPanelProvider } from "@/contexts/ControlPanelContext";
-import { GlobalControlPanel } from "@/components/ControlPanel/GlobalControlPanel";
+import { GlobalControlPanel } from "@/components/control-panel/GlobalControlPanel";
 import type { Metadata } from "next";
 import { Nunito } from 'next/font/google';
 import "./globals.css";

@@ -50,7 +50,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
         {!isSearchVisible && (
           <>
             {showBackButton && (
-              <button onClick={handleBack} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+              <button onClick={handleBack} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Volver a la página anterior">
                 <ArrowLeft size={24} />
               </button>
             )}
@@ -84,13 +84,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           )
         ))}
 
-        <button onClick={() => setIsSearchVisible(!isSearchVisible)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <button onClick={() => setIsSearchVisible(!isSearchVisible)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label={isSearchVisible ? "Cerrar búsqueda" : "Abrir búsqueda"}>
           {isSearchVisible ? <X size={20} /> : <Search size={20} />}
         </button>
 
         {!isSearchVisible && (
           <>
-        <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+        <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label={isDarkMode ? "Activar modo claro" : "Activar modo oscuro"}>
           {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
         </button>
 

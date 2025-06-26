@@ -2,9 +2,9 @@
 
 import { Loader2 } from 'lucide-react';
 import React from 'react';
-import { useActionStatus } from '../contexts/ActionStatusContext';
-import type { Box } from '../types/logistics';
-import GameRowItem from './GameRowItem';
+import { useActionStatus } from '@/contexts/ActionStatusContext';
+import type { Box } from '@/types/logistics';
+import GameRowItem from '@/components/GameRowItem';
 interface BoxCardProps {
   box: Box;
   onToggleItemSelection: (boxId: number, itemId: number) => void;

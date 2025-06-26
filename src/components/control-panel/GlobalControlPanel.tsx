@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { useControlPanel } from "@/contexts/ControlPanelContext";
-import ControlPanelModal from "@/components/ControlPanel/ControlPanelModal";
+import ControlPanelModal from "@/components/control-panel/ControlPanelModal";
 
 export const GlobalControlPanel = () => {
   const { isPanelOpen, closePanel } = useControlPanel();
