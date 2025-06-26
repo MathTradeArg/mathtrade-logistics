@@ -1,6 +1,6 @@
 "use client";
 
-import { Switch } from "@/components/ui/Switch";
+import { Switch } from "@/components/common/ui/Switch";
 
 interface PreferenceToggleProps {
   isHighContrast: boolean;

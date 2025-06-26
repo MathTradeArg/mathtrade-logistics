@@ -1,10 +1,11 @@
 "use client";
 
-import { Loader2 } from 'lucide-react';
+import { SpinnerGap } from 'phosphor-react';
 import React from 'react';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
-import type { Box } from '@/types/logistics';
-import GameRowItem from '@/components/GameRowItem';
+import type { Box } from '@/types';
+import GameRowItem from '@/components/common/GameRowItem';
+import { useHapticClick } from '@/hooks/useHapticClick';
 interface BoxCardProps {
   box: Box;
   onToggleItemSelection: (boxId: number, itemId: number) => void;
@@ -13,10 +14,11 @@ interface BoxCardProps {
 
 const BoxCard: React.FC<BoxCardProps> = ({ box, onToggleItemSelection, onDeliverSelected }) => {
   const { isProcessingAction } = useActionStatus();
+  const handleDeliverSelected = useHapticClick(() => onDeliverSelected(box.id));
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col h-full">
-      <ul className="space-y-2 overflow-y-auto pr-1 flex-grow mb-4">
+    <div>
+      <ul className="space-y-2 w-full">
         {box.math_items
           .slice()
           .sort((a, b) => a.assigned_trade_code - b.assigned_trade_code)
@@ -36,10 +38,11 @@ const BoxCard: React.FC<BoxCardProps> = ({ box, onToggleItemSelection, onDeliver
               />
             );
           })}
-        {box.math_items.length === 0 && <p className="text-xs text-gray-400 dark:text-gray-500">Esta caja está vacía.</p>}
+        {box.math_items.length === 0 && <li className="text-xs text-gray-400 dark:text-gray-500">Esta caja está vacía.</li>}
       </ul>
-      <button onClick={() => onDeliverSelected(box.id)} disabled={isProcessingAction || box.selectedItemIds.size === 0} className="w-full px-4 py-2 text-sm bg-accent-green hover:bg-green-700 text-white font-semibold rounded-md shadow-sm transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0">
-        {isProcessingAction ? <Loader2 size={16} className="animate-spin mx-auto" /> : `Recibir Seleccionados (${box.selectedItemIds.size})`}
+      {box.math_items.length === 0 && <p className="text-xs text-gray-400 dark:text-gray-500">Esta caja está vacía.</p>}
+      <button onClick={handleDeliverSelected} disabled={isProcessingAction || box.selectedItemIds.size === 0} className="w-full mt-4 px-4 py-2 text-sm nm-btn nm-btn-primary flex items-center justify-center gap-2 font-semibold transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0">
+        {isProcessingAction ? <SpinnerGap size={16} className="animate-spin mx-auto" /> : `Recibir Seleccionados (${box.selectedItemIds.size})`}
       </button>
     </div>
   );

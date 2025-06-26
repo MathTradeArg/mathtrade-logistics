@@ -2,14 +2,16 @@
 
 import type { Trade } from '@/types';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
-import { QrCode } from 'lucide-react';
+import { QrCode } from 'phosphor-react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
-import AppHeader from '@/components/AppHeader';
-import GameList from '@/components/GameList'; 
-import { LoadingSpinner } from '@/components/ui'; 
-import QrScanner from '@/components/QrScanner';
+import AppHeader from '@/components/common/AppHeader';
+import GameList from '@/components/trades/GameList'; 
+import { LoadingSpinner } from '@/components/common/ui'; 
+import QrScanner from '@/components/qr/QrScanner';
 import { useAuth } from '@/hooks/useAuth';
+import { useApi } from '@/hooks/useApi';
+import { useActionStatus } from '@/contexts/ActionStatusContext';
 
 export default function ReceiveGamesPage() {
   return (
@@ -21,6 +23,7 @@ export default function ReceiveGamesPage() {
 
 function ReceiveGamesPageContent() {
   const { isAuthenticated, userId, isLoading: authIsLoading } = useAuth();
+  const { setSuccess, setError: setActionError } = useActionStatus();
   const [qrData, setQrData] = useState<string | null>(null);
   const [trades, setTrades] = useState<Trade[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -29,6 +32,7 @@ function ReceiveGamesPageContent() {
   const searchParams = useSearchParams();
   const [initialQrProcessed, setInitialQrProcessed] = useState(false);
   const { eventPhase, isLoadingEventPhase, eventPhaseDisplay } = useEventPhase();
+  const { execute: updateUserStatus } = useApi<any>('logistics/users/update-status/', { method: 'PATCH' });
 
   const handleScan = useCallback(async (data: string) => {
     const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
@@ -51,6 +55,15 @@ function ReceiveGamesPageContent() {
         }
         const tradesData: Trade[] = await response.json();
         setTrades(tradesData);
+        
+        try {
+          await updateUserStatus({
+            user_id: data,
+            status: 'present'
+          });
+        } catch (statusErr) {
+          console.error('Error al actualizar status del usuario:', statusErr);
+        }
       } catch (err) {
         if (err instanceof Error) {
           setError(err.message);
@@ -66,7 +79,7 @@ function ReceiveGamesPageContent() {
         setIsLoading(false);
       }
     }
-  }, [isLoading]);
+  }, [isLoading, updateUserStatus]);
 
   useEffect(() => {
     if (initialQrProcessed || isLoading || trades) return;
@@ -109,6 +122,9 @@ function ReceiveGamesPageContent() {
         throw new Error(errorData.message || 'Error al actualizar.');
       }
 
+      const updatedItems = itemsToUpdate.length;
+      setSuccess(`${updatedItems} item${updatedItems === 1 ? '' : 's'} marcado${updatedItems === 1 ? '' : 's'} como recibido${updatedItems === 1 ? '' : 's'}`);
+
       setTrades(prevTrades => {
         if (!prevTrades) return null;
         return prevTrades.map(trade =>
@@ -119,22 +135,24 @@ function ReceiveGamesPageContent() {
       });
       setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falló la actualización.');
+      const errorMessage = err instanceof Error ? err.message : 'Falló la actualización.';
+      setError(errorMessage);
+      setActionError(errorMessage);
     }
-  }, [qrData, trades]);
+  }, [qrData, trades, setSuccess, setActionError]);
 
   const isReceivingEnabled = eventPhase !== 0;
 
   if (isAuthenticated === null || (isAuthenticated === false && typeof window !== 'undefined') || isLoadingEventPhase) {
     return (
-      <div className="flex justify-center items-center min-h-dvh bg-gray-100 dark:bg-gray-900">
+      <div className="flex justify-center items-center min-h-dvh nm-surface">
         <LoadingSpinner message="Validando..." />
       </div>
     );
   }
 
   return (
-    <main className="flex flex-col items-center min-h-dvh bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <main className="flex flex-col items-center min-h-dvh nm-surface text-gray-900">
       {isAuthenticated && (
         <AppHeader
           pageTitle="Recepción"
@@ -144,9 +162,9 @@ function ReceiveGamesPageContent() {
       )}
       <div className="w-full max-w-3xl mx-auto text-center px-4">
       </div>
-      <section className="w-full max-w-xl p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+      <section className="w-full max-w-xl p-4 sm:p-6 nm-surface rounded-xl shadow-xl">
         {isLoading && <LoadingSpinner message="Buscando información..." />}
-        {error && <p className="text-base sm:text-lg text-red-600 dark:text-red-400 my-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-600 rounded-lg text-center">{error}</p>}
+        {error && <p className="text-base sm:text-lg text-red-600 my-4 p-4 bg-red-50 border border-red-300 rounded-lg text-center">{error}</p>}
 
         {!isLoading && !error && isAuthenticated && (
           <>

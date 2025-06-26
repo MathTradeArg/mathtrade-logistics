@@ -19,7 +19,7 @@ jest.mock('next/navigation', () => ({
   })),
 }));
 
-jest.mock('@/components/QrScanner', () => {
+jest.mock('@/components/qr/QrScanner', () => {
   return jest.fn(({ onScan, disabled, disabledMessage }) => (
     <div data-testid="qr-scanner">
       {disabled && <p>{disabledMessage}</p>}
@@ -30,7 +30,7 @@ jest.mock('@/components/QrScanner', () => {
   ));
 });
 
-jest.mock('@/components/GameList', () => {
+jest.mock('@/components/trades/GameList', () => {
   return jest.fn(({ trades, onUpdateItems, onFinish, deliveredByUserId }) => (
     <div data-testid="game-list">
       <p>Trades: {trades.length}</p>
@@ -42,11 +42,11 @@ jest.mock('@/components/GameList', () => {
   ));
 });
 
-jest.mock('@/components/AppHeader', () => {
+jest.mock('@/components/common/AppHeader', () => {
   return jest.fn(() => <header data-testid="app-header">App Header</header>);
 });
 
-jest.mock('@/components/ui', () => ({
+jest.mock('@/components/common/ui', () => ({
   LoadingSpinner: ({ message }: { message?: string }) => <div data-testid="loading-spinner">{message || 'Loading...'}</div>
 }));
 

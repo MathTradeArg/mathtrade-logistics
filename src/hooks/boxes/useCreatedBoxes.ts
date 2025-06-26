@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useApi } from '@/hooks/useApi';
-import type { Box } from '@/types/logistics';
+import type { Box } from '@/types';
 import { useCallback, useState } from 'react';
 
 export const useCreatedBoxes = () => {

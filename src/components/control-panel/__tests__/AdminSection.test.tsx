@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { AdminSection } from '../AdminSection';
+import AdminSection from '../AdminSection';
 import { useControlPanel } from '@/contexts/ControlPanelContext';
 
 jest.mock('next/navigation', () => ({
@@ -38,18 +38,18 @@ describe('AdminSection', () => {
   it('renders admin actions and TV views sections', () => {
     render(<AdminSection {...defaultProps} />);
     expect(screen.getByText('Acciones de Administrador')).toBeInTheDocument();
-    expect(screen.getByText('Vistas para TV')).toBeInTheDocument();
+    expect(screen.getByText('Administrar logística de entrega')).toBeInTheDocument();
   });
 
   it('calls onPhaseChange with correct phase when a phase button is clicked', () => {
     render(<AdminSection {...defaultProps} eventPhase={0} />);
     
     fireEvent.click(screen.getByRole('button', { name: 'Recepción' }));
-    expect(window.confirm).toHaveBeenCalledWith('¿Estás seguro que querés cambiar a la fase 1?');
+    expect(window.confirm).toHaveBeenCalledWith('¿Estás seguro que querés pasar a la fase de recepción?');
     expect(mockOnPhaseChange).toHaveBeenCalledWith(1);
 
     fireEvent.click(screen.getByRole('button', { name: 'Entrega' }));
-    expect(window.confirm).toHaveBeenCalledWith('¿Estás seguro que querés cambiar a la fase 2?');
+    expect(window.confirm).toHaveBeenCalledWith('¿Estás seguro que querés pasar a la fase de entrega?');
     expect(mockOnPhaseChange).toHaveBeenCalledWith(2);
   });
 
@@ -58,10 +58,10 @@ describe('AdminSection', () => {
     expect(screen.getByRole('button', { name: 'Recepción' })).toBeDisabled();
   });
 
-  it('navigates to ready-to-pickup page on TV view button click', () => {
+  it('navigates to ready-to-pickup page on admin panel button click', () => {
     render(<AdminSection {...defaultProps} />);
-    const tvViewButton = screen.getByRole('button', { name: /Ver Usuarios Listos para Retirar/i });
-    fireEvent.click(tvViewButton);
+    const adminButton = screen.getByRole('button', { name: /Panel Admin/i });
+    fireEvent.click(adminButton);
     expect(mockClosePanel).toHaveBeenCalled();
     expect(router.push).toHaveBeenCalledWith('/admin/ready-to-pickup');
   });

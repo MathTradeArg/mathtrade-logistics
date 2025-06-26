@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import CreatedBoxesSection from '../CreatedBoxesSection';
-import { Box } from '@/types/logistics';
+import { Box } from '@/types';
 
 jest.mock('../SimpleBoxDisplayCard', () => {
   return {
@@ -21,7 +21,8 @@ describe('CreatedBoxesSection', () => {
       origin: 0,
       origin_name: '',
       destination_name: ''
-    },
+    },  
+
     {
       id: 2, number: 102, math_items: [], selectedItemIds: new Set(),
       created_by_username: null,
@@ -30,7 +31,7 @@ describe('CreatedBoxesSection', () => {
       origin: 0,
       origin_name: '',
       destination_name: ''
-    },
+    },  
   ];
 
   it('shows loading spinner when loading', () => {
@@ -57,4 +58,3 @@ describe('CreatedBoxesSection', () => {
     expect(boxCards[1]).toHaveTextContent('Caja #102');
   });
 });
-

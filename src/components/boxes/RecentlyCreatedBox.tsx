@@ -1,7 +1,7 @@
 "use client";
 
-import type { Box } from '@/types/logistics';
-import GameRowItem from '@/components/GameRowItem';
+import GameRowItem from '@/components/common/GameRowItem';
+import type { Box } from '@/types';
 
 interface RecentlyCreatedBoxProps {
   box: Box;
@@ -31,4 +31,3 @@ export default function RecentlyCreatedBox({ box }: RecentlyCreatedBoxProps) {
     </div>
   );
 }
-

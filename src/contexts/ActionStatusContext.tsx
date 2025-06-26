@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useRef } from 'react';
 
 interface ActionStatusContextType {
   isProcessingAction: boolean;
@@ -19,11 +19,49 @@ export const ActionStatusProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
+  const errorTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const successTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const setIsProcessing = useCallback((isProcessing: boolean) => setIsProcessingAction(isProcessing), []);
-  const setError = useCallback((error: string | null) => setActionError(error), []);
-  const setSuccess = useCallback((success: string | null) => setActionSuccess(success), []);
+  
+  const setError = useCallback((error: string | null) => {
+    if (errorTimerRef.current) {
+      clearTimeout(errorTimerRef.current);
+    }
+    
+    setActionError(error);
+    if (error) {
+      errorTimerRef.current = setTimeout(() => {
+        setActionError(null);
+        errorTimerRef.current = null;
+      }, 5000);
+    }
+  }, []);
+  
+  const setSuccess = useCallback((success: string | null) => {
+    if (successTimerRef.current) {
+      clearTimeout(successTimerRef.current);
+    }
+    
+    setActionSuccess(success);
+    if (success) {
+      successTimerRef.current = setTimeout(() => {
+        setActionSuccess(null);
+        successTimerRef.current = null;
+      }, 3000);
+    }
+  }, []);
   
   const clearMessages = useCallback(() => {
+    if (errorTimerRef.current) {
+      clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = null;
+    }
+    if (successTimerRef.current) {
+      clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
+    
     setActionError(null);
     setActionSuccess(null);
   }, []);

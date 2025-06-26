@@ -1,5 +1,5 @@
-import { AlertCircle, X } from 'lucide-react';
 import React from 'react';
+import { useHapticClick } from '@/hooks/useHapticClick';
 
 interface NonPackableDestination {
   id: number;
@@ -20,22 +20,20 @@ const NonPackableDestinationsModal: React.FC<NonPackableDestinationsModalProps> 
   onClose,
   destinations,
 }) => {
+  const handleClose = useHapticClick(onClose);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-secondary-blue dark:text-sky-400 flex items-center">
-            <AlertCircle size={24} className="mr-2 text-accent-yellow" />
+    <div className="fixed inset-0 z-50 flex justify-center items-center p-4 glass-bg">
+      <div className="nm-surface dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
+        <div className="flex justify-center items-center mb-4">
+          <h2 className="text-xl font-bold flex items-center nm-text-shadow text-secondary-blue dark:text-sky-100 nm-surface px-4 py-2 rounded-lg shadow-md">
             Destinos no empaquetables
           </h2>
-          <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90">
-            <X size={24} className="text-gray-600 dark:text-gray-400" />
-          </button>
         </div>
 
-        <div className="overflow-y-auto flex-grow mb-4">
+        <div className="overflow-y-auto flex-grow p-6 mb-4">
           {destinations.fullyPacked.length === 0 && destinations.notReady.length === 0 ? (
             <p className="text-gray-600 dark:text-gray-400">
               ¡Excelente! Todos los destinos tienen al menos un ítem listo para empaquetar.
@@ -49,7 +47,7 @@ const NonPackableDestinationsModal: React.FC<NonPackableDestinationsModalProps> 
                   </h3>
                   <ul className="space-y-2 pt-2">
                     {destinations.fullyPacked.map((dest) => (
-                      <li key={dest.id} className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg shadow-sm">
+                      <li key={dest.id} className="p-3 mb-4 nm-surface">
                         <span className="font-semibold text-gray-800 dark:text-gray-200">{dest.name}</span>
                       </li>
                     ))}
@@ -63,7 +61,7 @@ const NonPackableDestinationsModal: React.FC<NonPackableDestinationsModalProps> 
                   </h3>
                   <ul className="space-y-2 pt-2">
                     {destinations.notReady.map((dest) => (
-                      <li key={dest.id} className="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg shadow-sm">
+                      <li key={dest.id} className="p-3 mb-4 nm-surface">
                         <span className="font-semibold text-gray-800 dark:text-gray-200">{dest.name}</span>
                       </li>
                     ))}
@@ -75,8 +73,8 @@ const NonPackableDestinationsModal: React.FC<NonPackableDestinationsModalProps> 
         </div>
 
         <button
-          onClick={onClose}
-          className="w-full px-6 py-3 bg-secondary-blue hover:bg-blue-600 text-white font-semibold rounded-lg shadow-md transition-all duration-150 ease-in-out active:scale-95"
+          onClick={handleClose}
+          className="w-full nm-btn-secondary"
         >
           Cerrar
         </button>

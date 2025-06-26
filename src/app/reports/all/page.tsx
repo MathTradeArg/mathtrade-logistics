@@ -1,32 +1,40 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import AppHeader from "@/components/AppHeader";
-import FullScreenImageModal from "@/components/FullScreenImageModal";
-import ReportCard from "@/components/ReportCard";
-import { LoadingSpinner } from "@/components/ui";
+import { FullScreenImageModal, ReportCard } from "@/components/common";
+import AppHeader from "@/components/common/AppHeader";
+import { LoadingSpinner } from "@/components/common/ui";
 import { useApi } from "@/hooks/useApi";
 import { useAuth } from "@/hooks/useAuth";
-import { EnrichedReport, ItemData, Report, UserData } from "@/types/index";
-import { AlertTriangle, Search } from "lucide-react";
+import { EnrichedReport, Item, Report, UserData } from "@/types/index";
+import { Warning, MagnifyingGlass } from "phosphor-react";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
+import { useHapticClick } from "@/hooks/useHapticClick";
+import { triggerHaptic } from "@/utils/haptics";
 
 function AllReportsContent() {
   const { isAdmin, isLoading: authIsLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [fullScreenPhoto, setFullScreenPhoto] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [localReports, setLocalReports] = useState<Report[] | null>(null);
+
+  const handleCloseFullScreen = useHapticClick(() => setFullScreenPhoto(null));
+  const handleImageClick = useHapticClick((imageUrl: string) => setFullScreenPhoto(imageUrl));
+  const handleReportDeleted = useHapticClick((deletedReportId: number) => {
+    if (localReports) {
+      setLocalReports(localReports.filter(report => report.id !== deletedReportId));
+    }
+  });
 
   const { data: reports, isLoading: isLoadingReports, error: reportsError, execute: fetchReports } = useApi<Report[]>('reports/');
-  const { data: users, isLoading: isLoadingUsers, error: usersError, execute: fetchUsers } = useApi<UserData[]>('mathtrades/7/users/');
-  const { data: items, isLoading: isLoadingItems, error: itemsError, execute: fetchItems } = useApi<ItemData[]>('logistics/items/');
+  const { data: items, isLoading: isLoadingItems, error: itemsError, execute: fetchItems } = useApi<Item[]>('logistics/items/');
 
   useEffect(() => {
     fetchReports();
-    fetchUsers();
     fetchItems();
-  }, [fetchReports, fetchUsers, fetchItems]);
+  }, [fetchReports, fetchItems]);
 
   useEffect(() => {
     if (!authIsLoading && (!isAuthenticated || !isAdmin)) {
@@ -34,16 +42,34 @@ function AllReportsContent() {
     }
   }, [isAdmin, authIsLoading, isAuthenticated, router]);
 
-  const usersMap = useMemo(() => new Map(users?.map(u => [u.id, u])), [users]);
+  useEffect(() => {
+    if (reports) {
+      setLocalReports(reports);
+    }
+  }, [reports]);
+
   const itemsMap = useMemo(() => new Map(items?.map(i => [i.id, i])), [items]);
 
   const enrichedReports = useMemo((): EnrichedReport[] => {
-    if (!reports) return [];
-    const allEnriched = reports.map(report => ({
-      ...report,
-      reportedUserData: report.reported_user ? usersMap.get(report.reported_user) : undefined,
-      itemData: report.item ? itemsMap.get(report.item) : undefined,
-    })).reverse();
+    const reportsToUse = localReports || reports;
+    if (!reportsToUse) return [];
+
+    const filteredReports = reportsToUse.filter(report => report.reported_user !== null || report.item !== null);
+
+    const allEnriched = filteredReports.map(report => {
+      const enriched: EnrichedReport = {
+        ...report,
+        reportedUserData: report.reported_user ? {
+          id: report.reported_user.id,
+          first_name: report.reported_user.first_name,
+          last_name: report.reported_user.last_name,
+          bgg_user: report.reported_user.bgg_user
+        } : undefined,
+        itemData: report.item ? itemsMap.get(report.item) : undefined,
+      };
+
+      return enriched;
+    }).reverse();
 
     if (!searchTerm.trim()) {
       return allEnriched;
@@ -64,9 +90,9 @@ function AllReportsContent() {
         normalizedItemTitle.includes(normalizedSearchTerm) ||
         itemCode.includes(normalizedSearchTerm);
     });
-  }, [reports, usersMap, itemsMap, searchTerm]);
+  }, [localReports, reports, itemsMap, searchTerm]);
 
-  if (authIsLoading || isLoadingReports || isLoadingUsers || isLoadingItems) {
+  if (authIsLoading || isLoadingReports || isLoadingItems) {
     return <div className="flex justify-center items-center min-h-screen"><LoadingSpinner message="Cargando reportes..." /></div>;
   }
 
@@ -74,42 +100,54 @@ function AllReportsContent() {
     return <div className="flex justify-center items-center min-h-screen"><LoadingSpinner message="Verificando permisos..." /></div>;
   }
 
-  const error = reportsError || usersError || itemsError;
+  const error = reportsError || itemsError;
   if (error) {
     return <div className="text-center text-red-500 mt-8">Error al cargar los datos: {error}</div>;
   }
 
   return (
-    <main className="flex flex-col items-center min-h-dvh bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-      <AppHeader pageTitle="Todos los Reportes" pageIcon={AlertTriangle as any} showBackButton={true} />
-      <section className="w-full max-w-4xl mx-auto p-4 sm:p-6">
-        <div className="mb-6">
+    <main className="flex flex-col min-h-dvh nm-surface text-gray-900 dark:text-gray-100">
+      <AppHeader pageTitle="Todos los Reportes" pageIcon={Warning as any} showBackButton={true} />
+
+      <div className="sticky top-16 z-10 nm-surface border-b border-gray-200 dark:border-gray-800 shadow-sm">
+        <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 pb-4">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
+              <MagnifyingGlass className="h-5 w-5 text-gray-400" />
             </div>
-            <input
-              type="text"
-              placeholder="Buscar por nombre, título de ítem o código..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white dark:bg-gray-800 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
-            />
+            <div className=" pl-12 ">
+              <input
+                type="text"
+                placeholder="Buscar por nombre, título de ítem o código..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => triggerHaptic()}
+                className="w-full pr-4 py-3 nm-input"
+              />
+            </div>
           </div>
         </div>
+      </div>
+
+      <section className="w-full max-w-4xl mx-auto p-4 sm:p-6 pt-6">
         {enrichedReports.length === 0 ? (
           <div className="text-center py-16"><p className="text-gray-500 dark:text-gray-400">{searchTerm ? 'No se encontraron reportes que coincidan con la búsqueda.' : 'No hay reportes para mostrar.'}</p></div>
         ) : (
           <div className="space-y-6">
             {enrichedReports.map((report, index) => (
-              <ReportCard key={index} report={report} onImageClick={setFullScreenPhoto} />
+              <ReportCard
+                key={report.id}
+                report={report}
+                onImageClick={handleImageClick}
+                onReportDeleted={handleReportDeleted}
+              />
             ))}
           </div>
         )}
       </section>
       <FullScreenImageModal
         imageUrl={fullScreenPhoto}
-        onClose={() => setFullScreenPhoto(null)}
+        onClose={handleCloseFullScreen}
       />
     </main >
   );

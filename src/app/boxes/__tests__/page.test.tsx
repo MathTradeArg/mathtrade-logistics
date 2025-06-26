@@ -12,7 +12,7 @@ jest.mock('react', () => ({
   Suspense: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-jest.mock('@/components/AppHeader', () => ({
+jest.mock('@/components/common/AppHeader', () => ({
   __esModule: true,
   default: () => <div data-testid="app-header">AppHeader</div>,
 }));
@@ -49,7 +49,7 @@ jest.mock('lucide-react', () => {
   );
 });
 
-jest.mock('@/components/ui', () => {
+jest.mock('@/components/common/ui', () => {
   const React = require('react');
   const createMockComponent = (
     displayName: string,

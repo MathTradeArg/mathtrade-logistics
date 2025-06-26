@@ -1,9 +1,10 @@
 "use client";
 
-import { LoadingSpinner } from '@/components/ui';
+import { LoadingSpinner } from '@/components/common/ui';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
-import type { Box } from '@/types/logistics';
-import React, { useCallback, useMemo } from 'react';
+import type { Box } from '@/types';
+import React, { useCallback, useMemo, useRef } from 'react';
+import { triggerHaptic } from '@/utils/haptics';
 import BoxCard from './BoxCard';
 
 interface IncomingBoxesSectionProps {
@@ -32,6 +33,8 @@ const IncomingBoxesSection: React.FC<IncomingBoxesSectionProps> = ({
   onClearAllSelections,
 }) => {
   const { isProcessingAction } = useActionStatus();
+  const locationSelectRef = useRef<HTMLSelectElement>(null);
+  const boxSelectRef = useRef<HTMLSelectElement>(null);
 
   const actualUniqueLocations = useMemo(() => {
     const locationNames = new Set(
@@ -43,6 +46,7 @@ const IncomingBoxesSection: React.FC<IncomingBoxesSectionProps> = ({
   }, [allIncomingBoxes]);
 
   const handleLocationChange = useCallback((newLocation: string) => {
+    triggerHaptic();
     onClearAllSelections();
     setSelectedLocation(newLocation);
     const boxesForNewLocation = allIncomingBoxes.filter(box => box.origin_name === newLocation);
@@ -83,17 +87,25 @@ const IncomingBoxesSection: React.FC<IncomingBoxesSectionProps> = ({
   }, [selectedBoxId, allIncomingBoxes]);
 
   return (
-    <section className="w-full mb-8 pt-2">
+    <section className="w-full flex flex-col flex-grow min-h-0">
       {allIncomingBoxes.length > 0 && (
-        <div className="mb-6">
+        <div className="mb-3 flex-shrink-0">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtros:</label>
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-2">
             <div className="flex-1">
               <select
                 id="locationFilter"
+                ref={locationSelectRef}
                 value={selectedLocation}
-                onChange={(e) => handleLocationChange(e.target.value)}
-                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                onChange={(e) => {
+                  handleLocationChange(e.target.value);
+                  if (locationSelectRef.current) {
+                    locationSelectRef.current.style.boxShadow = '';
+                  }
+                }}
+                onClick={() => triggerHaptic()}
+                onBlur={e => { e.currentTarget.style.boxShadow = ''; }}
+                className="w-full nm-select"
                 disabled={actualUniqueLocations.length === 0}
               >
                 {actualUniqueLocations.length === 0 && <option value="">Sin Orígenes Disponibles</option>}
@@ -107,10 +119,19 @@ const IncomingBoxesSection: React.FC<IncomingBoxesSectionProps> = ({
             <div className="flex-1">
               <select
                 id="boxFilter"
+                ref={boxSelectRef}
                 value={selectedBoxId}
-                onChange={(e) => setSelectedBoxId(e.target.value)}
+                onChange={(e) => {
+                  triggerHaptic();
+                  setSelectedBoxId(e.target.value);
+                  if (boxSelectRef.current) {
+                    boxSelectRef.current.style.boxShadow = '';
+                  }
+                }}
+                onClick={() => triggerHaptic()}
+                onBlur={e => { e.currentTarget.style.boxShadow = ''; }}
                 disabled={availableBoxesForDropdown.length === 0}
-                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-700/50 dark:disabled:text-gray-400"
+                className="w-full nm-select"
               >
                 <option value="">{selectedLocation ? `Todas las cajas de ${selectedLocation}` : 'Todas las Cajas'}</option>
                 {availableBoxesForDropdown.map(box => (
@@ -124,28 +145,32 @@ const IncomingBoxesSection: React.FC<IncomingBoxesSectionProps> = ({
         </div>
       )}
 
-      {isLoadingIncoming && <LoadingSpinner message="Cargando cajas entrantes..." />}
+      <div className="flex-grow min-h-0 overflow-y-auto">
+        {isLoadingIncoming && <LoadingSpinner message="Cargando cajas entrantes..." />}
 
-      {!isLoadingIncoming && (
-        <>
-          {errorIncoming && <p className="text-red-500 dark:text-red-400">{errorIncoming}</p>}
-          {!errorIncoming && allIncomingBoxes.length === 0 && (
-            <p className="text-gray-500 dark:text-gray-400">No hay cajas entrantes pendientes de revisión.</p>
-          )}
-          {!errorIncoming && allIncomingBoxes.length > 0 && displayedBoxes.length === 0 && (
-            <p className="text-gray-500 dark:text-gray-400">
-              No hay cajas que coincidan con los filtros seleccionados (Origen: {selectedLocation || 'Todos'}, Caja: #{selectedBoxToDisplayNumber}).
-            </p>
-          )}
-          {!errorIncoming && displayedBoxes.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {displayedBoxes.map(box => (
-                <BoxCard key={`${box.origin}-${box.id}`} box={box} onToggleItemSelection={(boxId, itemId) => handleToggleItemSelectionInBox(boxId, itemId, box.origin)} onDeliverSelected={() => handleDeliverSelectedItemsInBox(box.id, box.origin)} />
-              ))}
-            </div>
-          )}
-        </>
-      )}
+        {!isLoadingIncoming && (
+          <>
+            {errorIncoming && <p className="text-red-500 dark:text-red-400">{errorIncoming}</p>}
+            {!errorIncoming && allIncomingBoxes.length === 0 && (
+              <p className="text-gray-500 dark:text-gray-400">No hay cajas entrantes pendientes de revisión.</p>
+            )}
+            {!errorIncoming && allIncomingBoxes.length > 0 && displayedBoxes.length === 0 && (
+              <p className="text-gray-500 dark:text-gray-400">
+                No hay cajas que coincidan con los filtros seleccionados (Origen: {selectedLocation || 'Todos'}, Caja: #{selectedBoxToDisplayNumber}).
+              </p>
+            )}
+            {!errorIncoming && displayedBoxes.length > 0 && (
+              <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 min-h-0 flex-1 w-full bg-transparent p-0">
+                {displayedBoxes.map(box => (
+                  <li key={`${box.origin}-${box.id}`} className="list-none w-full">
+                    <BoxCard box={box} onToggleItemSelection={(boxId, itemId) => handleToggleItemSelectionInBox(boxId, itemId, box.origin)} onDeliverSelected={() => handleDeliverSelectedItemsInBox(box.id, box.origin)} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </div>
     </section>
   );
 };

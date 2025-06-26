@@ -15,6 +15,7 @@ interface ControlPanelContextType {
   openPanel: (gameId?: string) => void;
   closePanel: () => void;
   updateGameStatus: (gameId: number, newStatus: GameStatusCode) => Promise<void>;
+  clearGameDetail: () => void;
 }
 
 const ControlPanelContext = createContext<ControlPanelContextType | undefined>(undefined);
@@ -52,7 +53,11 @@ export const ControlPanelProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [executeGameAction, userId, userName, setGameDetail]);
 
-  const value = { isPanelOpen, gameDetail, isLoading, error, openPanel, closePanel, updateGameStatus, gameActionLoading, gameActionError };
+  const clearGameDetail = useCallback(() => {
+    setGameDetail(null);
+  }, [setGameDetail]);
+
+  const value = { isPanelOpen, gameDetail, isLoading, error, openPanel, closePanel, updateGameStatus, gameActionLoading, gameActionError, clearGameDetail };
 
   return <ControlPanelContext.Provider value={value}>{children}</ControlPanelContext.Provider>;
 };

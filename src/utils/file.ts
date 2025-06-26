@@ -1,4 +1,4 @@
-import { getHash } from "./hash";
+import { getHash } from "@/utils/hash";
 
 export const generateHashedFilename = (filename: string): string => {
   const ext = filename.substring(filename.lastIndexOf('.'));

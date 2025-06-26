@@ -2,9 +2,9 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import RecentlyCreatedBox from '../RecentlyCreatedBox';
-import { Box } from '@/types/logistics';
+import { Box } from '@/types';
 
-jest.mock('@/components/GameRowItem', () => {
+jest.mock('@/components/common/GameRowItem', () => {
   return {
     __esModule: true,
     default: ({ title }: { title: string }) => <li data-testid="game-row-item">{title}</li>,
@@ -22,7 +22,7 @@ describe('RecentlyCreatedBox', () => {
     selectedItemIds: new Set(),
     created_by_username: null,
     created_by_first_name: null,
-    created_by_last_name: null,
+    created_by_last_name: null,  
     origin: 0,
     origin_name: ''
   };
@@ -35,4 +35,3 @@ describe('RecentlyCreatedBox', () => {
     expect(screen.getByTestId('game-row-item')).toHaveTextContent('Catan');
   });
 });
-

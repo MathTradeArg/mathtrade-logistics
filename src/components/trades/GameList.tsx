@@ -1,9 +1,10 @@
 "use client";
 
+import { GameRowItem } from "@/components/common";
+import { ConfirmationModal } from '@/components/trades';
 import type { Trade } from "@/types";
 import { useEffect, useMemo, useState } from 'react';
-import ConfirmationModal from './ConfirmationModal';
-import GameRowItem from "./GameRowItem";
+import { useHapticClick } from '@/hooks/useHapticClick';
 
 interface GameListProps {
   trades: Trade[];
@@ -79,13 +80,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
   const [itemsToConfirm, setItemsToConfirm] = useState<Trade[]>([]);
   const [confirmActionType, setConfirmActionType] = useState<'all' | 'selected' | null>(null);
 
-  useEffect(() => {
-    const initialSelected = new Set<number>();
-    pendingItems.forEach(trade => initialSelected.add(trade.result.assigned_trade_code));
-    setSelectedItems(initialSelected);
-  }, [pendingItems]);
-
-  const handleToggleSelectedItem = (itemId: number) => {
+  const handleToggleSelectedItem = useHapticClick((itemId: number) => {
     const trade = trades.find(t => t.result.assigned_trade_code === itemId);
     if (!trade || !config.isSelectable(trade)) {
       return;
@@ -100,24 +95,33 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
       }
       return newSelected;
     });
-  };
+  });
 
-  const handleConfirmAllPending = () => {
+  const handleConfirmAllPending = useHapticClick(() => {
     if (pendingItems.length > 0) {
       setItemsToConfirm(pendingItems);
       setConfirmActionType('all');
       setIsConfirmModalOpen(true);
     }
-  };
+  });
 
-  const handleConfirmSelected = () => {
+  const handleConfirmSelected = useHapticClick(() => {
     const itemsToConfirmDelivery = trades.filter(trade => selectedItems.has(trade.result.assigned_trade_code) && config.isSelectable(trade));
     if (itemsToConfirmDelivery.length > 0) {
       setItemsToConfirm(itemsToConfirmDelivery);
       setConfirmActionType('selected');
       setIsConfirmModalOpen(true);
     }
-  };
+  });
+
+  const handleFinish = useHapticClick(onFinish);
+  const handleCloseConfirmModal = useHapticClick(() => setIsConfirmModalOpen(false));
+
+  useEffect(() => {
+    const initialSelected = new Set<number>();
+    pendingItems.forEach(trade => initialSelected.add(trade.result.assigned_trade_code));
+    setSelectedItems(initialSelected);
+  }, [pendingItems]);
 
   const executeConfirmedAction = async () => {
     const itemIdsToUpdate = itemsToConfirm.map(trade => trade.result.assigned_trade_code);
@@ -165,13 +169,13 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
           Resumen: {pendingItems.length} {pendingItems.length === 1 ? config.texts.pendingSingular : config.texts.pendingPlural} de {trades.length} en total:
         </p>
         {pendingItems.length > 0 && (
-          <ul className="mt-3 space-y-2 text-sm">
+      <ul className="mt-3 nm-list text-sm">
             {pendingItems.map((trade) => (
               <li key={`summary-${trade.result.assigned_trade_code}`}
-                className="flex items-center p-2 bg-white dark:bg-gray-700/60 rounded-md shadow-sm"
+                className="flex items-center p-2 nm-surface dark:bg-gray-700/60 rounded-md shadow-sm"
               >
                 <span className="font-bold text-secondary-blue dark:text-sky-400 w-10 text-center shrink-0 text-lg mr-3">{trade.result.assigned_trade_code}</span>
-                <span className="truncate min-w-0">{trade.math_item_exchanged.title}</span>
+                <span className="truncate min-w-0 text-gray-800 dark:text-sky-100">{trade.math_item_exchanged.title}</span>
               </li>
             ))}
           </ul>
@@ -186,7 +190,9 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
       {pendingItems.length > 0 && (
         <button
           onClick={handleConfirmAllPending}
-          className={`w-full mb-6 px-6 py-3 font-semibold rounded-lg shadow-md hover:opacity-85 transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${config.mainButtonClass}`}
+          className={
+            `w-full mb-6 nm-btn-primary disabled:opacity-50 disabled:cursor-not-allowed`
+          }
           disabled={disabled}
           title={disabled ? config.texts.disabledMessage : ""}
         >
@@ -197,7 +203,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
       {trades.length === 0 && (
         <p className="text-center text-gray-600 dark:text-gray-400 my-8 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">{config.texts.noItems}</p>
       )}
-      <ul className="space-y-3">
+      <ul className="nm-list">
         {sortedTrades.map((trade: Trade) => (
           mode === 'receive' ? (
             config.isPending(trade) ? (
@@ -208,8 +214,8 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
                 statusDisplay={trade.result.status_display}
                 isSelected={selectedItems.has(trade.result.assigned_trade_code)}
                 onRowClick={() => handleToggleSelectedItem(trade.result.assigned_trade_code)}
-                onCheckboxChange={() => handleToggleSelectedItem(trade.result.assigned_trade_code)}
-                showCheckbox={true}
+                showCheckbox={false}
+                variant="actionable"
               />
             ) : (
               <GameRowItem
@@ -248,8 +254,8 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
                 statusDisplay={trade.result.status_display}
                 isSelected={selectedItems.has(trade.result.assigned_trade_code)}
                 onRowClick={config.isSelectable(trade) ? () => handleToggleSelectedItem(trade.result.assigned_trade_code) : undefined}
-                onCheckboxChange={() => handleToggleSelectedItem(trade.result.assigned_trade_code)}
-                showCheckbox={true}
+                showCheckbox={false}
+                variant="actionable"
               />
             )
           )
@@ -258,7 +264,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
       {pendingItems.length > 0 && selectedItems.size > 0 && (
         <button
           onClick={handleConfirmSelected}
-          className="w-full mt-4 px-6 py-3 bg-secondary-blue hover:opacity-85 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full mt-4 nm-btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={disabled}
           title={disabled ? config.texts.disabledMessage : ""}
         >
@@ -267,20 +273,21 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
       )}
 
       <button
-        onClick={onFinish}
+        onClick={handleFinish}
         id="finish-button"
-        className="w-full mt-4 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-150 ease-in-out active:scale-95"
+        className="w-full mt-4 nm-btn-finish"
       >
         {pendingItems.length === 0 && trades.length > 0 ? config.texts.finishButtonCompleted : config.texts.finishButtonIdle}
       </button>
 
       <ConfirmationModal
         isOpen={isConfirmModalOpen}
-        onClose={() => setIsConfirmModalOpen(false)}
+        onClose={handleCloseConfirmModal}
         onConfirm={executeConfirmedAction}
         itemsToDeliver={itemsToConfirm}
         actionType={confirmActionType || 'selected'}
         modalTitle={config.texts.confirmTitle}
+        mode={mode}
       />
     </div>
   );

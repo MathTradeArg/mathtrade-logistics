@@ -1,0 +1,19 @@
+
+.qrReaderContainer > div > canvas {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 1.25rem !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.dark .qrReaderContainer > div > canvas {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.dark .qrReaderContainer > div > canvas {
+  box-shadow: 0 8px 32px 0 #181a20;
+  filter: none;
+}

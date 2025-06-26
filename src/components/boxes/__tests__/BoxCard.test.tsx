@@ -2,18 +2,18 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import BoxCard from '../BoxCard';
-import { Box } from '@/types/logistics';
+import { Box } from '@/types';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 
 jest.mock('@/contexts/ActionStatusContext');
 
-jest.mock('@/components/GameRowItem', () => {
+jest.mock('@/components/common/GameRowItem', () => {
   return {
     __esModule: true,
     default: ({ title, onRowClick, variant }: { title: string, onRowClick?: () => void, variant: string }) => (
-      <li data-testid="game-row-item" data-variant={variant} onClick={onRowClick}>
+      <div data-testid="game-row-item" data-variant={variant} onClick={onRowClick}>
         {title}
-      </li>
+      </div>
     ),
   };
 });
@@ -36,7 +36,8 @@ describe('BoxCard', () => {
     origin: 0,
     origin_name: '',
     destination_name: ''
-  };
+  };  
+
 
   beforeEach(() => {
     (useActionStatus as jest.Mock).mockReturnValue({ isProcessingAction: false });
@@ -45,7 +46,7 @@ describe('BoxCard', () => {
 
   it('renders items and distinguishes between variants', () => {
     render(<BoxCard box={mockBox} onToggleItemSelection={mockOnToggleItemSelection} onDeliverSelected={mockOnDeliverSelected} />);
-    
+
     const gameItems = screen.getAllByTestId('game-row-item');
     expect(gameItems).toHaveLength(2);
     expect(screen.getByText('Actionable Game')).toBeInTheDocument();
@@ -66,6 +67,4 @@ describe('BoxCard', () => {
     const button = screen.getByRole('button', { name: /Recibir Seleccionados/ });
     expect(button).toBeDisabled();
   });
-
 });
-

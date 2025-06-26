@@ -1,16 +1,18 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import AppHeader from '@/components/AppHeader';
-import FullScreenImageModal from '@/components/FullScreenImageModal';
-import { LoadingSpinner } from '@/components/ui';
+import { AppHeader, FullScreenImageModal } from '@/components/common';
+import { LoadingSpinner } from '@/components/common/ui';
 import { useApi } from "@/hooks/useApi";
 import { useAuth } from '@/hooks/useAuth';
 import { generateHashedFilename } from "@/utils/file";
 import { compressImage } from '@/utils/imageCompressor';
-import { AlertTriangle, ArrowLeft, Camera, CheckCircle2, Crown, FileSearch, UserSearch, X } from "lucide-react";
+import { Warning, ArrowLeft, Camera, CheckCircle, Crown, FileSearch, UserFocus, X } from "phosphor-react";
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ChangeEvent, FormEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useHapticClick } from '@/hooks/useHapticClick';
+import { triggerHaptic } from '@/utils/haptics';
 
 const normalizeSearchString = (str: string): string => {
   if (!str) return '';
@@ -57,6 +59,7 @@ export default function ReportsPage() {
 
 function ReportsPageContent() {
   const { isAuthenticated, isLoading: authIsLoading, isAdmin } = useAuth();
+  const router = useRouter();
 
   type ReportStep = 'initial' | 'find_item' | 'find_user' | 'take_photo' | 'describe_problem' | 'submitted';
 
@@ -81,27 +84,6 @@ function ReportsPageContent() {
   const { execute: uploadImageApi, error: uploadImageApiError, clearError: clearUploadImageError } = useApi<any>('users/images/', { method: 'POST' });
   const { execute: submitReportApi, error: submitReportApiError, clearError: clearSubmitReportError } = useApi<any>('reports/', { method: 'POST' });
 
-  const handleSelectReportType = (type: "item" | "user") => {
-    setReportType(type);
-    setCurrentStep(type === 'item' ? 'find_item' : 'find_user');
-  };
-
-  const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      const newPhotosWithHashedNames = files.map(file => new File([file], generateHashedFilename(file.name), {
-        type: file.type,
-        lastModified: file.lastModified,
-      }));
-
-      const newPhotos = [...itemPhotos, ...newPhotosWithHashedNames];
-      const newPreviews = [...photoPreviews, ...newPhotosWithHashedNames.map(file => URL.createObjectURL(file))];
-
-      setItemPhotos(newPhotos);
-      setPhotoPreviews(newPreviews);
-    }
-  };
-
   const resetForm = () => {
     setCurrentStep('initial');
     setReportType(null);
@@ -120,7 +102,12 @@ function ReportsPageContent() {
     clearSubmitReportError();
   };
 
-  const handleBack = () => {
+  const handleSelectReportType = useHapticClick((type: "item" | "user") => {
+    setReportType(type);
+    setCurrentStep(type === 'item' ? 'find_item' : 'find_user');
+  });
+  
+  const handleBack = useHapticClick(() => {
     setReportError('');
     switch (currentStep) {
       case 'find_item':
@@ -138,9 +125,9 @@ function ReportsPageContent() {
         }
         break;
     }
-  };
+  });
 
-  const handleClearPhoto = (indexToRemove: number) => {
+  const handleClearPhoto = useHapticClick((indexToRemove: number) => {
     URL.revokeObjectURL(photoPreviews[indexToRemove]);
 
     setItemPhotos(prev => prev.filter((_, index) => index !== indexToRemove));
@@ -148,6 +135,40 @@ function ReportsPageContent() {
 
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  });
+
+  const handleClearUserSelection = useHapticClick(() => {
+    setSelectedUser(null);
+    setSearchTermUsers('');
+  });
+
+  const handleClearItemSelection = useHapticClick(() => {
+    setSelectedItem(null);
+    setSearchTermItems('');
+  });
+
+  const handleSelectItem = useHapticClick((item: Item) => setSelectedItem(item));
+  const handleSelectUser = useHapticClick((user: User) => setSelectedUser(user));
+  const handleGoToDescribeProblem = useHapticClick(() => setCurrentStep('describe_problem'));
+  const handleSetFullScreenPhoto = useHapticClick((url: string) => setFullScreenPhoto(url));
+  const handleCloseFullScreenPhoto = useHapticClick(() => setFullScreenPhoto(null));
+  const handleResetForm = useHapticClick(resetForm);
+  const handleBackToReports = useHapticClick(() => resetForm());
+
+  const handlePhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      const newPhotosWithHashedNames = files.map(file => new File([file], generateHashedFilename(file.name), {
+        type: file.type,
+        lastModified: file.lastModified,
+      }));
+
+      const newPhotos = [...itemPhotos, ...newPhotosWithHashedNames];
+      const newPreviews = [...photoPreviews, ...newPhotosWithHashedNames.map(file => URL.createObjectURL(file))];
+
+      setItemPhotos(newPhotos);
+      setPhotoPreviews(newPreviews);
     }
   };
 
@@ -190,18 +211,9 @@ function ReportsPageContent() {
     );
   }, [availableItems, searchTermItems]);
 
-  const handleClearUserSelection = () => {
-    setSelectedUser(null);
-    setSearchTermUsers('');
-  };
-
-  const handleClearItemSelection = () => {
-    setSelectedItem(null);
-    setSearchTermItems('');
-  };
-
   const handleFindSubmit = (e: FormEvent) => {
     e.preventDefault();
+    triggerHaptic(20); 
     setReportError('');
     if (reportType === 'item') {
       if (!selectedItem) {
@@ -220,6 +232,7 @@ function ReportsPageContent() {
 
   const handleReportSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
+    triggerHaptic(25);
     setReportError('');
     clearUploadImageError();
     clearSubmitReportError();
@@ -302,11 +315,11 @@ function ReportsPageContent() {
   }
 
   return (
-    <main className="flex flex-col items-center min-h-dvh bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <main className="flex flex-col items-center min-h-dvh nm-surface text-gray-900 dark:text-gray-100">
       {isAuthenticated && (
         <AppHeader
           pageTitle="Reportar"
-          pageIcon={AlertTriangle as any}
+          pageIcon={Warning as any}
           showBackButton={true}
         />
       )}
@@ -318,24 +331,30 @@ function ReportsPageContent() {
           </button>
         )}
 
+        {currentStep === 'submitted' && (
+          <button onClick={handleBackToReports} className="self-start mb-4 flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-secondary-blue dark:hover:text-sky-400 transition-colors">
+            <ArrowLeft size={16} className="mr-1" /> Volver a Reportes
+          </button>
+        )}
+
         {currentStep === 'initial' && (
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">¿Qué querés reportar?</h2>
             <div className="space-y-4">
-              <button onClick={() => handleSelectReportType('item')} className="w-full flex items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow active:scale-95">
+              <button onClick={() => handleSelectReportType('item')} className="w-full flex items-center justify-center p-6 nm-surface dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow active:scale-95">
                 <FileSearch size={32} className="mr-4 text-orange-500" />
                 <span className="text-lg font-semibold">Un Ítem</span>
               </button>
-              <button onClick={() => handleSelectReportType('user')} className="w-full flex items-center justify-center p-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow active:scale-95">
-                <UserSearch size={32} className="mr-4 text-orange-500" />
+              <button onClick={() => handleSelectReportType('user')} className="w-full flex items-center justify-center p-6 nm-surface dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow active:scale-95">
+                <UserFocus size={32} className="mr-4 text-orange-500" />
                 <span className="text-lg font-semibold">Un Usuario</span>
               </button>
             </div>
             {isAdmin && (
               <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
-                <Link href="/reports/all" className="w-full flex items-center justify-center p-6 bg-yellow-500/20 dark:bg-yellow-400/20 rounded-xl shadow-lg hover:shadow-xl transition-shadow active:scale-95 text-yellow-600 dark:text-yellow-300 border border-yellow-500/30">
-                  <Crown size={32} className="mr-4" />
-                  <span className="text-lg font-semibold">Ver todos los reportes</span>
+                <Link href="/reports/all" className="w-full flex items-center justify-center p-6 nm-surface dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow active:scale-95">
+                  <Crown size={32} className="mr-4 text-yellow-500" />
+                  <span className="text-lg font-semibold text-gray-800 dark:text-gray-200">Ver todos los reportes</span>
                 </Link>
               </div>
             )}
@@ -343,7 +362,7 @@ function ReportsPageContent() {
         )}
 
         {currentStep === 'find_item' && (
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+          <div className="p-6 nm-surface dark:bg-gray-800 rounded-xl shadow-xl">
             <h2 className="text-xl font-semibold text-orange-600 dark:text-orange-400 mb-4">Buscá el ítem a reportar</h2>
             {isLoadingItems ? (
               <LoadingSpinner message="Cargando ítems..." />
@@ -351,9 +370,8 @@ function ReportsPageContent() {
               <p className="text-red-500 dark:text-red-400 text-sm">{errorItems}</p>
             ) : (
               <form onSubmit={handleFindSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="searchTermItems" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Buscar Ítem</label>
-                  <input type="text" id="searchTermItems" value={searchTermItems} onChange={(e) => setSearchTermItems(e.target.value)} placeholder="Título o número de etiqueta" className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+                <div className='nm-input'>
+                  <input type="text" id="searchTermItems" value={searchTermItems} onChange={(e) => setSearchTermItems(e.target.value)} placeholder="Título o número de etiqueta" className="mt-1 block w-full px-3 py-2 nm-input rounded-md focus:outline-none focus:ring-0 focus:border-transparent active:outline-none active:ring-0 active:border-transparent sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" style={{ boxShadow: 'none' }} />
                 </div>
                 {selectedItem && (
                   <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-200">
@@ -361,10 +379,10 @@ function ReportsPageContent() {
                     <button type="button" onClick={handleClearItemSelection} className="ml-2 p-1 rounded-full text-gray-500 hover:text-red-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" aria-label="Limpiar selección de ítem"><X size={16} /></button>
                   </div>
                 )}
-                <div className="max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-1 space-y-1 bg-gray-50 dark:bg-gray-750">
+                <div className="max-h-60 overflow-y-auto rounded-md p-1 space-y-1 nm-surface">
                   {filteredItemsForDisplay.length > 0 ? (
                     filteredItemsForDisplay.map(item => (
-                      <button key={item.id} type="button" onClick={() => setSelectedItem(item)} className={`w-full text-left p-2 rounded-md transition-colors ${selectedItem?.id === item.id ? 'bg-secondary-blue text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200'}`}>
+                      <button key={item.id} type="button" onClick={() => handleSelectItem(item)} className={`w-full text-left p-2 rounded-md transition-colors ${selectedItem?.id === item.id ? 'bg-secondary-blue text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200'}`}>
                         {item.title} (#{item.assigned_trade_code})
                       </button>
                     ))
@@ -381,7 +399,7 @@ function ReportsPageContent() {
         )}
 
         {currentStep === 'find_user' && (
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+          <div className="p-6 nm-surface dark:bg-gray-800 rounded-xl shadow-xl">
             <h2 className="text-xl font-semibold text-orange-600 dark:text-orange-400 mb-4">Buscá al usuario a reportar</h2>
             {isLoadingUsers ? (
               <LoadingSpinner message="Cargando usuarios..." />
@@ -391,7 +409,7 @@ function ReportsPageContent() {
               <form onSubmit={handleFindSubmit} className="space-y-4">
                 <div>
                   <label htmlFor="searchTermUsers" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Buscar Usuario</label>
-                  <input type="text" id="searchTermUsers" value={searchTermUsers} onChange={(e) => setSearchTermUsers(e.target.value)} placeholder="Nombre, BGG user o email" className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+                  <input type="text" id="searchTermUsers" value={searchTermUsers} onChange={(e) => setSearchTermUsers(e.target.value)} placeholder="Nombre, BGG user o email" className="mt-1 block w-full px-3 py-2 nm-input rounded-md focus:outline-none focus:ring-0 focus:border-transparent active:outline-none active:ring-0 active:border-transparent sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" style={{ boxShadow: 'none' }} />
                 </div>
                 {selectedUser && (
                   <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-200">
@@ -404,13 +422,13 @@ function ReportsPageContent() {
                     ><X size={16} /></button>
                   </div>
                 )}
-                <div className="max-h-60 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-1 space-y-1 bg-gray-50 dark:bg-gray-750">
+                <div className="max-h-60 overflow-y-auto rounded-md p-1 space-y-1 nm-surface">
                   {filteredUsersForDisplay.length > 0 ? (
                     filteredUsersForDisplay.map(user => (
                       <button
                         key={user.id}
                         type="button"
-                        onClick={() => setSelectedUser(user)}
+                        onClick={() => handleSelectUser(user)}
                         className={`w-full text-left p-2 rounded-md transition-colors ${selectedUser?.id === user.id ? 'bg-secondary-blue text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200'}`}
                       >
                         {user.first_name} {user.last_name} {user.bgg_user && `(${user.bgg_user})`}
@@ -429,7 +447,7 @@ function ReportsPageContent() {
         )}
 
         {currentStep === 'take_photo' && (
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl text-center">
+          <div className="p-6 nm-surface dark:bg-gray-800 rounded-xl shadow-xl text-center">
             <h2 className="text-xl font-semibold text-orange-600 dark:text-orange-400 mb-4">Tomale una foto al ítem</h2>
             <div className="space-y-4">
               <input type="file" id="itemPhoto" accept="image/*" capture="environment" onChange={handlePhotoChange} className="hidden" ref={fileInputRef} multiple />
@@ -440,12 +458,12 @@ function ReportsPageContent() {
               {photoPreviews.length > 0 && (
                 <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {photoPreviews.map((previewUrl, index) => (
-                    <div key={index} className="relative group cursor-pointer" onClick={() => setFullScreenPhoto(previewUrl)}>
+                    <div key={index} className="relative group cursor-pointer" onClick={() => handleSetFullScreenPhoto(previewUrl)}>
                       <img src={previewUrl} alt={`Vista previa ${index + 1}`} className="w-full h-24 object-cover rounded-lg shadow-md" />
                       <button
                         type="button"
                         onClickCapture={(e) => { e.stopPropagation(); handleClearPhoto(index); }}
-                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 transition-colors focus:ring-2 focus:ring-white"
+                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 transition-colors focus:ring-0 focus:border-transparent active:outline-none active:ring-0 active:border-transparent"
                         aria-label={`Quitar foto ${index + 1}`}
                       >
                         <X size={16} />
@@ -454,7 +472,7 @@ function ReportsPageContent() {
                   ))}
                 </div>
               )}
-              <button onClick={() => setCurrentStep('describe_problem')} disabled={itemPhotos.length === 0} className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg shadow-md transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50">
+              <button onClick={handleGoToDescribeProblem} disabled={itemPhotos.length === 0} className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg shadow-md transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50">
                 Siguiente
               </button>
             </div>
@@ -462,12 +480,12 @@ function ReportsPageContent() {
         )}
 
         {currentStep === 'describe_problem' && (
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+          <div className="p-6 nm-surface dark:bg-gray-800 rounded-xl shadow-xl">
             <h2 className="text-xl font-semibold text-orange-600 dark:text-orange-400 mb-4">Describí el problema</h2>
             <form onSubmit={handleReportSubmit} className="space-y-4">
               <div className="mb-4">
                 <label htmlFor="reportReason" className="sr-only">Motivo del Reporte</label>
-                <textarea id="reportReason" value={reportReason} onChange={(e) => setReportReason(e.target.value)} rows={4} required placeholder="Ej: El usuario no se presentó, llegó tarde, etc." className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100"></textarea>
+                <textarea id="reportReason" value={reportReason} onChange={(e) => setReportReason(e.target.value)} rows={4} required placeholder="Ej: El usuario no se presentó, llegó tarde, etc." className="mt-1 block w-full px-3 py-2 nm-input rounded-md focus:outline-none focus:ring-0 focus:border-transparent active:outline-none active:ring-0 active:border-transparent sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" style={{ boxShadow: 'none' }}></textarea>
               </div>
               <button type="submit" disabled={isProcessing} className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg shadow-md transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 flex justify-center items-center">
                 {isProcessing ? (
@@ -485,11 +503,11 @@ function ReportsPageContent() {
         )}
 
         {currentStep === 'submitted' && (
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl text-center">
-            <CheckCircle2 size={48} className="mx-auto text-green-500 mb-4" />
+          <div className="p-6 nm-surface dark:bg-gray-800 rounded-xl shadow-xl text-center">
+            <CheckCircle size={48} className="mx-auto text-green-500 mb-4" />
             <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">¡Reporte Enviado!</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">Gracias por tu colaboración para mantener la comunidad segura y confiable.</p>
-            <button onClick={resetForm} className="w-full px-4 py-2 bg-secondary-blue hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition-all duration-150 ease-in-out active:scale-95">
+            <button onClick={handleResetForm} className="w-full px-4 py-2 bg-secondary-blue hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition-all duration-150 ease-in-out active:scale-95">
               Crear otro reporte
             </button>
           </div>
@@ -502,7 +520,7 @@ function ReportsPageContent() {
 
       <FullScreenImageModal
         imageUrl={fullScreenPhoto}
-        onClose={() => setFullScreenPhoto(null)}
+        onClose={handleCloseFullScreenPhoto}
       />
     </main>
   );

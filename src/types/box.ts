@@ -1,15 +1,4 @@
-export interface Item {
-  id: number;
-  assigned_trade_code: number;
-  first_name: string;
-  last_name: string;
-  title: string;
-  location: number;
-  location_name: string;
-  status: number;
-  box_number?: number | null;
-
-}
+import { Item } from "@/types/item";
 
 export interface Box {
   created_by_username: string | null;
@@ -17,6 +6,7 @@ export interface Box {
   created_by_last_name: string | null;
   id: number;
   number: number | null;
+  destiny: number; 
   origin: number;
   math_items: Item[];
   selectedItemIds: Set<number>;
