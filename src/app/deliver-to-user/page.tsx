@@ -2,14 +2,15 @@
 
 import { useEventPhase } from "@/contexts/EventPhaseContext";
 import type { Trade } from "@/types";
-import { ArrowRightCircle } from 'lucide-react';
+import { ArrowCircleRight } from 'phosphor-react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
-import AppHeader from '@/components/AppHeader';
-import GameList from '@/components/GameList';
-import { LoadingSpinner } from '@/components/ui'; 
-import QrScanner from '@/components/QrScanner'; 
+import AppHeader from '@/components/common/AppHeader';
+import GameList from '@/components/trades/GameList';
+import { LoadingSpinner } from '@/components/common/ui'; 
+import QrScanner from '@/components/qr/QrScanner'; 
 import { useAuth } from '@/hooks/useAuth';
+import { useApi } from '@/hooks/useApi';
 
 export default function DeliverToUserPage() {
   return (
@@ -29,6 +30,7 @@ function DeliverToUserPageContent() {
   const searchParams = useSearchParams();
   const [initialQrProcessed, setInitialQrProcessed] = useState(false);
   const { eventPhase, isLoadingEventPhase, eventPhaseDisplay } = useEventPhase();
+  const { execute: updateUserStatus } = useApi<any>('logistics/users/update-status/', { method: 'PATCH' });
 
   const handleScan = useCallback(async (data: string) => {
     const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
@@ -52,6 +54,15 @@ function DeliverToUserPageContent() {
         }
         const tradesData: Trade[] = await response.json();
         setTrades(tradesData);
+        
+        try {
+          await updateUserStatus({
+            user_id: data,
+            status: 'receiving'
+          });
+        } catch (statusErr) {
+          console.error('Error al actualizar status del usuario:', statusErr);
+        }
       } catch (err) {
         if (err instanceof Error) {
           setError(err.message);
@@ -67,7 +78,7 @@ function DeliverToUserPageContent() {
         setIsLoading(false);
       }
     }
-  }, [isLoading]);
+  }, [isLoading, updateUserStatus]);
 
   useEffect(() => {
     if (initialQrProcessed || isLoading || trades) return;
@@ -125,27 +136,27 @@ function DeliverToUserPageContent() {
   }, [qrData, trades, handleDeliverySuccess]);
 
   if (authIsLoading || isAuthenticated === null || isLoadingEventPhase) {
-    return <div className="flex justify-center items-center min-h-screen"><LoadingSpinner message="Validando sesión..." /></div>;
+    return <div className="flex justify-center items-center min-h-screen nm-surface"><LoadingSpinner message="Validando sesión..." /></div>;
   }
 
 
   const isDeliveringEnabled = eventPhase === 2;
 
   return (
-    <main className="flex flex-col items-center min-h-dvh bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <main className="flex flex-col items-center min-h-dvh nm-surface text-gray-900">
       {isAuthenticated && (
         <AppHeader
           pageTitle="Entrega"
-          pageIcon={ArrowRightCircle as any}
+          pageIcon={ArrowCircleRight as any}
           showBackButton={true}
         />
       )}
       <div className="w-full max-w-3xl mx-auto text-center px-4">
       </div>
 
-      <section className="w-full max-w-xl p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+      <section className="w-full max-w-xl p-4 sm:p-6 nm-surface rounded-xl shadow-xl">
         {isLoading && <LoadingSpinner message="Buscando información..." />}
-        {error && <p className="text-base sm:text-lg text-red-600 dark:text-red-400 my-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-600 rounded-lg text-center">{error}</p>}
+        {error && <p className="text-base sm:text-lg text-red-600 my-4 p-4 bg-red-50 border border-red-300 rounded-lg text-center">{error}</p>}
 
         {!isLoading && !error && isAuthenticated && (
           <>

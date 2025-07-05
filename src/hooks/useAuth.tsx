@@ -1,14 +1,14 @@
 "use client";
 
+import { usePathname, useRouter } from 'next/navigation';
 import {
   createContext,
-  useContext,
-  useState,
-  useEffect,
   ReactNode,
   useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from "react";
-import { useRouter, usePathname } from 'next/navigation';
 
 interface UserDetails {
   id: number | string;
@@ -17,7 +17,7 @@ interface UserDetails {
   math_admin: boolean;
 }
 
-interface AuthContextType { 
+interface AuthContextType {
   isAuthenticated: boolean | null;
   userName: string | null;
   userId: string | null;
@@ -25,7 +25,7 @@ interface AuthContextType {
   isLoading: boolean;
   isHighContrast: boolean;
   isDarkMode: boolean;
-  login: (token: string, userDetails: UserDetails) => void; 
+  login: (token: string, userDetails: UserDetails) => void;
   logout: () => void;
   toggleHighContrast: () => void;
   toggleDarkMode: () => void;
@@ -34,6 +34,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
@@ -41,20 +42,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-
-  const [isHighContrast, setIsHighContrast] = useState<boolean>(() => {
+  const [isHighContrast, setIsHighContrast] = useState<boolean>(() => false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => false);
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('highContrastEnabled') === 'true';
+      const html = document.documentElement;
+      if (isDarkMode) {
+        html.classList.add('dark');
+      } else {
+        html.classList.remove('dark');
+      }
     }
-    return false;
-  });
+  }, [isDarkMode]);
 
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('darkModeEnabled') === 'true';
+      setIsHighContrast(localStorage.getItem('highContrastEnabled') === 'true');
+      setIsDarkMode(localStorage.getItem('darkModeEnabled') === 'true');
     }
-    return false; 
-  });
+    // eslint-disable-next-line
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const html = document.documentElement;
+      if (isDarkMode) {
+        html.classList.add('dark');
+      } else {
+        html.classList.remove('dark');
+      }
+    }
+  }, [isDarkMode]);
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');

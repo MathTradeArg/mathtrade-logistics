@@ -2,9 +2,9 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import SimpleBoxDisplayCard from '../SimpleBoxDisplayCard';
-import { Box } from '@/types/logistics';
+import { Box } from '@/types';
 
-jest.mock('@/components/GameRowItem', () => {
+jest.mock('@/components/common/GameRowItem', () => {
   return {
     __esModule: true,
     default: ({ title }: { title: string }) => <li data-testid="game-row-item">{title}</li>,
@@ -26,7 +26,7 @@ describe('SimpleBoxDisplayCard', () => {
       { id: 2, title: 'Ticket to Ride', assigned_trade_code: 1002, status: 5, box_number: 101, location: 3, location_name: 'Córdoba', first_name: 'Jane', last_name: 'Doe' },
     ],
     selectedItemIds: new Set(),
-  };
+  };  
 
   it('renders box information and items correctly', () => {
     render(<SimpleBoxDisplayCard box={mockBox} />);

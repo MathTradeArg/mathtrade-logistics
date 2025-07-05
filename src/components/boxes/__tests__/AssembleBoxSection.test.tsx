@@ -6,7 +6,7 @@ import { useAssembleBox } from '@/hooks/boxes/useAssembleBox';
 
 jest.mock('@/hooks/boxes/useAssembleBox');
 
-jest.mock('@/components/GameRowItem', () => {
+jest.mock('@/components/common/GameRowItem', () => {
   return {
     __esModule: true,
     default: ({ title, onRowClick, isSelected }: { title: string, onRowClick?: () => void, isSelected: boolean }) => (
@@ -24,7 +24,7 @@ jest.mock('@/components/boxes/RecentlyCreatedBox', () => {
     };
 });
 
-jest.mock('@/components/NonPackableDestinationsModal', () => {
+jest.mock('@/components/modals/NonPackableDestinationsModal', () => {
     return {
       __esModule: true,
       default: ({ isOpen }: { isOpen: boolean }) => isOpen ? <div data-testid="modal">Modal Abierto</div> : null,

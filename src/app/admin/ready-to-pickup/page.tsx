@@ -1,83 +1,182 @@
 "use client";
 
-import { Users } from 'lucide-react';
+import { AppHeader } from '@/components/common';
+import { useApi } from '@/hooks/useApi';
+import { useAuth } from '@/hooks/useAuth';
+import { useHapticClick } from '@/hooks/useHapticClick';
+import type { ProcessedUserWithWindow, UserWithWindow } from '@/types/window';
+import { triggerHaptic } from '@/utils/haptics';
+import { CheckCircle, ChevronDown, ChevronUp, Clock, RefreshCw, Search, Users, UserX, Package } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { useAuth } from '../../../hooks/useAuth';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-interface ReadyUser {
-  id: string | number;
-  first_name: string;
-  last_name: string;
-  username: string;
+type UserStatus = 'present' | 'receiving' | 'completed' | 'no_show';
+
+interface UserSummary {
+  present: number;
+  receiving: number;
+  completed: number;
+  no_show: number;
+  total: number;
 }
 
-const POLLING_INTERVAL = 1000 * 15; // 15 segundos
+interface ExpandedSection {
+  present: boolean;
+  receiving: boolean;
+  completed: boolean;
+  no_show: boolean;
+}
+
+const statusConfig = {
+  present: {
+    label: 'Listos',
+    color: 'bg-blue-500',
+    icon: Users,
+    description: 'Usuarios listos para retirar'
+  },
+  receiving: {
+    label: 'Recibiendo',
+    color: 'bg-yellow-500',
+    icon: Clock,
+    description: 'Usuarios recibiendo sus items'
+  },
+  completed: {
+    label: 'Completados',
+    color: 'bg-green-500',
+    icon: CheckCircle,
+    description: 'Usuarios que completaron el retiro'
+  },
+  no_show: {
+    label: 'No aparecieron',
+    color: 'bg-red-500',
+    icon: UserX,
+    description: 'Usuarios que no se presentaron'
+  }
+};
+
+const getValidTransitions = (currentStatus: UserStatus): UserStatus[] => {
+  switch (currentStatus) {
+    case 'present':
+      return ['receiving', 'no_show', 'completed'];
+    case 'receiving':
+      return ['completed'];
+    case 'no_show':
+      return ['receiving', 'completed'];
+    case 'completed':
+      return [];
+    default:
+      return ['receiving', 'no_show', 'completed'];
+  }
+};
+
+const getStatusColor = (status: UserStatus): string => {
+  return statusConfig[status]?.color || 'bg-gray-500';
+};
+
+const getStatusLabel = (status: UserStatus): string => {
+  return statusConfig[status]?.label || 'Desconocido';
+};
 
 export default function ReadyToPickupPage() {
-  const { isAuthenticated, userName, isAdmin, logout, isLoading: authIsLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isLoading: authIsLoading } = useAuth();
   const router = useRouter();
-  const [readyUsers, setReadyUsers] = useState<ReadyUser[]>([]);
+  const [users, setUsers] = useState<ProcessedUserWithWindow[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedSections, setExpandedSections] = useState<ExpandedSection>({
+    present: false,
+    receiving: false,
+    completed: false,
+    no_show: false
+  });
+  const [selectedUser, setSelectedUser] = useState<ProcessedUserWithWindow | null>(null);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const hasLoadedInitialData = useRef(false);
+
+  const { execute: fetchReadyUsers } = useApi<UserWithWindow[]>('logistics/users/ready-to-pickup/', { method: 'GET' });
+  const { execute: updateUserStatus } = useApi<any>('logistics/users/update-status/', { method: 'PATCH' });
 
   useEffect(() => {
-    if (!authIsLoading && (isAuthenticated === false || isAdmin == false)) {
+    if (!authIsLoading && (isAuthenticated === false || isAdmin === false)) {
       router.push('/');
     }
   }, [isAuthenticated, isAdmin, authIsLoading, router]);
 
-  const fetchData = async () => {
-    if (isAdmin == false) return;
+  const fetchData = useCallback(async () => {
+    if (isAdmin === false) return;
 
     try {
-      const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
-      const response = await fetch(`${MT_API_HOST}logistics/users/ready-to-pickup/`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `token ${localStorage.getItem('authToken')}`
-        },
-        cache: 'no-store'
-      });
-      if (!response.ok) {
-        throw new Error(`Error ${response.status} al obtener datos.`);
-      }
-      const data: ReadyUser[] = await response.json();
+      setIsRefreshing(true);
 
-      setReadyUsers(prevReadyUsers => {
-        const newUsersMap = new Map(data.map(user => [user.id, user]));
-        const prevUserIds = new Set(prevReadyUsers.map(user => user.id));
+      const usersData = await fetchReadyUsers();
+      const processedUsers = (usersData || []).map(user => ({
+        ...user,
+        status: user.status || null
+      }));
 
-        const trulyNewUsers = data.filter(user => !prevUserIds.has(user.id));
-
-        const persistentUsers = prevReadyUsers
-          .filter(user => newUsersMap.has(user.id))
-          .map(user => newUsersMap.get(user.id)!);
-
-        return [...trulyNewUsers, ...persistentUsers];
-      });
-
+      setUsers(processedUsers);
       setLastUpdated(new Date());
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido.');
+      console.error('Error al obtener datos:', err);
+      setError(err instanceof Error ? err.message : 'Error al obtener datos.');
     } finally {
+      setIsRefreshing(false);
       if (isLoadingData) {
         setIsLoadingData(false);
       }
     }
+  }, [isAdmin, fetchReadyUsers, isLoadingData]);
+
+  const handleUserStatusChange = async (userId: string | number, newStatus: 'present' | 'receiving' | 'no_show' | 'completed') => {
+    try {
+      await updateUserStatus({
+        user_id: userId,
+        status: newStatus
+      });
+
+      setUsers(prevUsers =>
+        prevUsers.map(user =>
+          user.id === userId ? { ...user, status: newStatus } : user
+        )
+      );
+    } catch (err) {
+      console.error('Error al actualizar estado del usuario:', err);
+      setError(err instanceof Error ? err.message : 'Error al actualizar el estado del usuario.');
+    }
   };
+
+  const navigateToWindowConfigClick = useHapticClick(() => router.push('/admin/window-config'));
+  const fetchDataClick = useHapticClick(fetchData);
+  const userStatusChangeClick = useHapticClick((userId: string | number, newStatus: 'present' | 'receiving' | 'no_show' | 'completed') => {
+    handleUserStatusChange(userId, newStatus);
+  });
+  const toggleStateExpansion = useHapticClick((state: keyof ExpandedSection) => {
+    setExpandedSections(prev => ({ ...prev, [state]: !prev[state] }));
+  });
+
+  const openUserModal = useHapticClick((user: ProcessedUserWithWindow) => {
+    setSelectedUser(user);
+    setShowUserModal(true);
+  });
+
+  const closeUserModal = useHapticClick(() => {
+    setShowUserModal(false);
+    setSelectedUser(null);
+  });
+
   useEffect(() => {
-    if (isAuthenticated && isAdmin == true) {
+    if (isAuthenticated && isAdmin === true && !hasLoadedInitialData.current) {
+      hasLoadedInitialData.current = true;
       fetchData();
-      const intervalId = setInterval(fetchData, POLLING_INTERVAL);
-      return () => clearInterval(intervalId);
     }
     if (!authIsLoading && (isAuthenticated === false || isAdmin === false)) {
       setIsLoadingData(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, authIsLoading, fetchData]);
 
   if (authIsLoading || isAuthenticated === null) {
     return <div className="flex justify-center items-center min-h-screen"><p>Cargando...</p></div>;
@@ -87,35 +186,439 @@ export default function ReadyToPickupPage() {
     return <div className="flex justify-center items-center min-h-screen"><p>Acceso denegado.</p></div>;
   }
 
-  return (
-    <main className="w-full p-4 md:p-6 lg:p-8 flex flex-col items-center h-screen bg-gray-800 text-gray-100 overflow-hidden">
-      <div className="w-full text-center">
-        <div className="my-4 md:my-6 text-center">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-100 flex items-center justify-center">
-            <Users size={40} className="mr-3 text-sky-400" />
-            Listos para Retirar
-          </h1>
-          {lastUpdated && <p className="text-sm md:text-base text-gray-400 mt-2">Última actualización: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>}
+  const filteredUsers = users.filter(user => {
+    if (!searchTerm.trim()) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      user.first_name.toLowerCase().includes(searchLower) ||
+      user.last_name.toLowerCase().includes(searchLower) ||
+      user.username.toLowerCase().includes(searchLower) ||
+      (user.table_number && user.table_number.toString().includes(searchLower))
+    );
+  });
+
+  const usersByState = {
+    present: filteredUsers.filter(u => u.status === null || u.status === 'present'),
+    receiving: filteredUsers.filter(u => u.status === 'receiving'),
+    completed: filteredUsers.filter(u => u.status === 'completed'),
+    no_show: filteredUsers.filter(u => u.status === 'no_show')
+  };
+
+  const getUserStatusColor = (status: string | null) => {
+    switch (status) {
+      case null:
+      case 'present':
+        return 'nm-btn-primary';
+      case 'receiving':
+        return 'nm-btn-secondary';
+      case 'completed':
+        return 'nm-btn-finish';
+      case 'no_show':
+        return 'nm-btn-warning';
+      default:
+        return 'nm-btn-finish';
+    }
+  };
+
+  const getUserStatusIcon = (status: string | null) => {
+    switch (status) {
+      case null:
+      case 'present':
+        return <Clock size={16} className="text-green-600 dark:text-green-400" />;
+      case 'receiving':
+        return <RefreshCw size={16} className="text-blue-600 dark:text-blue-400" />;
+      case 'completed':
+        return <CheckCircle size={16} className="text-green-600 dark:text-green-400" />;
+      case 'no_show':
+        return <UserX size={16} className="text-red-600 dark:text-red-400" />;
+      default:
+        return null;
+    }
+  };
+
+  const UserItem = ({ user }: { user: ProcessedUserWithWindow }) => (
+    <div
+      className={`nm-list-item p-3 mb-3 ${getUserStatusColor(user.status)} cursor-pointer transition-all duration-200 hover:scale-[1.02]`}
+      onClick={() => openUserModal(user)}
+    >
+      <div className="flex justify-between items-start">
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-lg leading-tight nm-text-shadow truncate">
+            {user.first_name} {user.last_name}
+          </p>
+          <p className="text-sm opacity-75 mt-1 nm-text-shadow truncate">
+            {user.username}
+            {user.table_number && ` • Mesa ${user.table_number}`}
+            {user.window_id && ` • Ventanilla ${user.window_id}`}
+            {user.ready_games_count && ` • ${user.ready_games_count} juegos`}
+          </p>
+        </div>
+        <div className="flex items-center ml-2 flex-shrink-0">
+          {getUserStatusIcon(user.status)}
         </div>
       </div>
+    </div>
+  );
 
-      <section className="w-full p-4 md:p-6 bg-gray-700 rounded-2xl shadow-2xl flex-grow overflow-y-auto">
-        {isLoadingData && readyUsers.length === 0 && <p className="text-xl md:text-2xl text-sky-400 my-6 text-center">Cargando usuarios...</p>}
-        {error && <p className="text-lg md:text-xl text-red-300 my-6 p-4 bg-red-900/60 border border-red-500 rounded-lg text-center">{error}</p>}
+  const UserModal = () => {
+    if (!selectedUser) return null;
 
-        {!isLoadingData && readyUsers.length === 0 && !error && <p className="text-gray-300 text-xl md:text-2xl text-center py-8">No hay usuarios listos para retirar.</p>}
+    const validTransitions = getValidTransitions(selectedUser.status as UserStatus);
+    const statusLabels = {
+      present: 'Listo',
+      receiving: 'Recibiendo',
+      completed: 'Completado',
+      no_show: 'No apareció'
+    };
 
-        {readyUsers.length > 0 && (
-          <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-            {readyUsers.map(user => (
-              <li key={user.id} className="p-2 sm:p-3 bg-gray-600 rounded-lg shadow-md flex flex-col items-center justify-center min-h-[80px] md:min-h-[90px] lg:min-h-[100px]">
-                <p className="font-bold text-sky-300 text-xl sm:text-2xl md:text-3xl lg:text-3xl text-center leading-tight">{user.first_name} {user.last_name}</p>
-                <p className="text-xs sm:text-sm text-gray-400 mt-1 text-center">{user.username}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </main>
+    const transitionLabels = {
+      present: 'Marcar como Listo',
+      receiving: 'Marcar como Recibiendo',
+      completed: 'Marcar como Completado',
+      no_show: 'Marcar como No Apareció'
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="nm-surface max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          <div className="sticky top-0 nm-surface p-4 border-b border-gray-200 dark:border-gray-700 z-10">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold nm-text-shadow">
+                Información del Usuario
+              </h2>
+              <button
+                onClick={closeUserModal}
+                className="nm-btn-secondary p-2 min-h-0"
+              >
+                <UserX size={20} />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-4">
+            <div className="space-y-4">
+              <div className="nm-surface p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <Users size={24} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg nm-text-shadow">
+                      {selectedUser.first_name} {selectedUser.last_name}
+                    </h3>
+                    <p className="text-sm opacity-75">
+                      @{selectedUser.username}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="font-medium text-gray-600 dark:text-gray-400">Mesa</p>
+                    <p className="font-semibold">
+                      {selectedUser.table_number || 'No asignada'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-600 dark:text-gray-400">Ventanilla</p>
+                    <p className="font-semibold">
+                      {selectedUser.window_id || 'No asignada'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-600 dark:text-gray-400">Estado actual</p>
+                    <div className="flex items-center gap-2">
+                      {getUserStatusIcon(selectedUser.status)}
+                      <span className="font-semibold">
+                        {statusLabels[selectedUser.status as UserStatus] || 'Listo'}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-600 dark:text-gray-400">Juegos a retirar</p>
+                    <div className="flex items-center gap-2">
+                      <Package size={16} className="text-blue-600 dark:text-blue-400" />
+                      <span className="font-semibold text-lg text-blue-600 dark:text-blue-400">
+                        {selectedUser.ready_games_count || 0}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="font-medium mb-1">ID de Usuario</p>
+                    <p className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                      {selectedUser.id}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {validTransitions.length > 0 && (
+                <div className="nm-surface p-4">
+                  <h4 className="font-bold mb-3 nm-text-shadow">
+                    Cambiar Estado
+                  </h4>
+                  <div className="space-y-2">
+                    {validTransitions.map(transition => (
+                      <button
+                        key={transition}
+                        onClick={() => {
+                          userStatusChangeClick(selectedUser.id, transition);
+                          closeUserModal();
+                        }}
+                        className={`w-full p-3 rounded-lg flex items-center gap-3 transition-all duration-200 ${transition === 'receiving' ? 'nm-btn-secondary' :
+                            transition === 'completed' ? 'nm-btn-primary' :
+                              transition === 'no_show' ? 'nm-btn-warning' :
+                                'nm-btn-finish'
+                          }`}
+                      >
+                        <div className="w-6 h-6 flex items-center justify-center">
+                          {transition === 'receiving' && <RefreshCw size={16} />}
+                          {transition === 'completed' && <CheckCircle size={16} />}
+                          {transition === 'no_show' && <UserX size={16} />}
+                          {transition === 'present' && <Clock size={16} />}
+                        </div>
+                        <span className="font-medium">
+                          {transitionLabels[transition]}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {validTransitions.length === 0 && (
+                <div className="nm-surface p-4 text-center">
+                  <CheckCircle size={48} className="mx-auto mb-3 text-green-500" />
+                  <p className="font-medium text-gray-600 dark:text-gray-400">
+                    Este usuario ha completado el proceso
+                  </p>
+                  <p className="text-sm opacity-75 mt-1">
+                    No hay transiciones disponibles
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="w-full min-h-screen nm-surface text-gray-900 dark:text-gray-100 nm-font">
+      <AppHeader
+        pageTitle="Administrar Usuarios"
+        pageIcon={Users as any}
+        showBackButton={true}
+        onBackClick={() => router.push('/')}
+      />
+
+      <main className="w-full p-3 md:p-4 lg:p-6 flex flex-col">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 md:mb-6 gap-4">
+          <div className="text-center sm:text-left flex-1">
+            {lastUpdated && (
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 nm-text-shadow">
+                Última actualización: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                <span className="ml-2 text-yellow-600 dark:text-yellow-400">• Manual</span>
+              </p>
+            )}
+          </div>
+
+          <div className="flex gap-2 justify-center sm:justify-end">
+            <button
+              onClick={fetchDataClick}
+              disabled={isRefreshing}
+              className="nm-btn-primary flex items-center gap-1 text-sm px-3 py-2 disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+              <span className="hidden sm:inline">Actualizar</span>
+              <span className="sm:hidden">Sync</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-4 md:mb-6">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <div className="pl-12 pr-12">
+              <input
+                type="text"
+                placeholder="Nombre, usuario o mesa..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => triggerHaptic()}
+                className="w-full pl-10 pr-4 py-3 nm-input"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {isLoadingData && users.length === 0 && (
+            <div className="nm-surface p-6 md:p-8 text-center">
+              <p className="text-lg md:text-xl lg:text-2xl text-sky-600 dark:text-sky-400 nm-text-shadow">Cargando usuarios...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="nm-surface p-4 md:p-6 bg-red-50 dark:bg-red-900/30 border-2 border-red-500 text-center mb-4 md:mb-6">
+              <p className="text-sm md:text-lg lg:text-xl text-red-700 dark:text-red-300 nm-text-shadow">
+                {error}
+              </p>
+            </div>
+          )}
+
+          {!isLoadingData && users.length === 0 && !error && (
+            <div className="nm-surface p-6 md:p-8 text-center">
+              <p className="text-gray-600 dark:text-gray-300 text-lg md:text-xl lg:text-2xl nm-text-shadow">
+                No hay usuarios listos para retirar.
+              </p>
+            </div>
+          )}
+
+          {users.length > 0 && (
+            <div className="space-y-4 md:space-y-6">
+              {searchTerm ? (
+                <div className="nm-surface p-4">
+                  <h3 className="text-lg font-semibold mb-4 nm-text-shadow">
+                    Resultados de búsqueda ({filteredUsers.length})
+                  </h3>
+                  {filteredUsers.length === 0 ? (
+                    <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                      No se encontraron usuarios que coincidan con la búsqueda.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {filteredUsers.map(user => (
+                        <UserItem key={user.id} user={user} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="sticky top-16 bg-inherit z-40 pb-4">
+                  <div className="space-y-3">
+                    <div className="nm-surface">
+                      <button
+                        onClick={() => toggleStateExpansion('present')}
+                        className="w-full flex items-center justify-between p-4 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Clock size={20} className="text-green-600 dark:text-green-400" />
+                          <span className="font-medium">Listos para retirar</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl font-bold text-green-600 dark:text-green-400">
+                            {usersByState.present.length}
+                          </span>
+                          {expandedSections.present ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </div>
+                      </button>
+                    </div>
+                    {expandedSections.present && usersByState.present.length > 0 && (
+                      <div className="nm-surface p-4">
+                        <div className="space-y-2">
+                          {usersByState.present.map((user: ProcessedUserWithWindow) => (
+                            <UserItem key={user.id} user={user} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="nm-surface">
+                      <button
+                        onClick={() => toggleStateExpansion('receiving')}
+                        className="w-full flex items-center justify-between p-4 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      >
+                        <div className="flex items-center gap-3">
+                          <RefreshCw size={20} className="text-blue-600 dark:text-blue-400" />
+                          <span className="font-medium">Recibiendo sus items</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                            {usersByState.receiving.length}
+                          </span>
+                          {expandedSections.receiving ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </div>
+                      </button>
+                    </div>
+                    {expandedSections.receiving && usersByState.receiving.length > 0 && (
+                      <div className="nm-surface p-4">
+                        <div className="space-y-2">
+                          {usersByState.receiving.map((user: ProcessedUserWithWindow) => (
+                            <UserItem key={user.id} user={user} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="nm-surface">
+                      <button
+                        onClick={() => toggleStateExpansion('completed')}
+                        className="w-full flex items-center justify-between p-4 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      >
+                        <div className="flex items-center gap-3">
+                          <CheckCircle size={20} className="text-green-600 dark:text-green-400" />
+                          <span className="font-medium">Completaron el retiro</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl font-bold text-green-600 dark:text-green-400">
+                            {usersByState.completed.length}
+                          </span>
+                          {expandedSections.completed ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </div>
+                      </button>
+                    </div>
+                    {expandedSections.completed && usersByState.completed.length > 0 && (
+                      <div className="nm-surface p-4">
+                        <div className="space-y-2">
+                          {usersByState.completed.map((user: ProcessedUserWithWindow) => (
+                            <UserItem key={user.id} user={user} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="nm-surface">
+                      <button
+                        onClick={() => toggleStateExpansion('no_show')}
+                        className="w-full flex items-center justify-between p-4 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      >
+                        <div className="flex items-center gap-3">
+                          <UserX size={20} className="text-red-600 dark:text-red-400" />
+                          <span className="font-medium">No se presentaron</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl font-bold text-red-600 dark:text-red-400">
+                            {usersByState.no_show.length}
+                          </span>
+                          {expandedSections.no_show ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </div>
+                      </button>
+                    </div>
+                    {expandedSections.no_show && usersByState.no_show.length > 0 && (
+                      <div className="nm-surface p-4">
+                        <div className="space-y-2">
+                          {usersByState.no_show.map((user: ProcessedUserWithWindow) => (
+                            <UserItem key={user.id} user={user} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {showUserModal && <UserModal />}
+      </main>
+    </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
-import type { Box } from '@/types/logistics';
+import type { Box } from '@/types';
 import { useCallback, useEffect, useState } from 'react';
 
 export const useIncomingBoxes = () => {

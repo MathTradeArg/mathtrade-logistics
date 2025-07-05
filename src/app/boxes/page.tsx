@@ -1,25 +1,24 @@
 "use client";
 
-import AppHeader from '@/components/AppHeader';
+import AppHeader from '@/components/common/AppHeader';
 import AssembleBoxSection from '@/components/boxes/AssembleBoxSection';
 import CreatedBoxesSection from '@/components/boxes/CreatedBoxesSection';
 import IncomingBoxesSection from '@/components/boxes/IncomingBoxesSection';
-import { LoadingSpinner } from '@/components/ui';
-import { ActionStatusProvider, useActionStatus } from '@/contexts/ActionStatusContext';
+import { LoadingSpinner } from '@/components/common/ui';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useCreatedBoxes } from '@/hooks/boxes/useCreatedBoxes';
 import { useIncomingBoxes } from '@/hooks/boxes/useIncomingBoxes';
 import { useAuth } from '@/hooks/useAuth';
-import { AlertCircle, Archive, CheckCircle2 } from 'lucide-react';
+import { ArchiveBox } from 'phosphor-react';
 import { useRouter } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+import '@/styles/neumorphism.css';
+import { useHapticClick } from '@/hooks/useHapticClick'; 
 
 export default function BoxesPage() {
   return (
     <Suspense fallback={<div className="flex justify-center items-center min-h-screen"><LoadingSpinner message="Cargando gestión de cajas..." /></div>}>
-      <ActionStatusProvider>
-        <BoxesPageContent />
-      </ActionStatusProvider>
+      <BoxesPageContent />
     </Suspense>
   );
 }
@@ -27,7 +26,6 @@ export default function BoxesPage() {
 function BoxesPageContent() {
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
   const router = useRouter();
-  const { actionSuccess, actionError } = useActionStatus();
   const { eventPhase, eventPhaseDisplay, isLoadingEventPhase, errorEventPhase } = useEventPhase();
 
   const [activeTab, setActiveTab] = useState<'review' | 'assemble' | 'created'>(() => {
@@ -36,6 +34,10 @@ function BoxesPageContent() {
       if (savedTab === 'assemble' || savedTab === 'created') return savedTab;
     }
     return 'review';
+  });
+
+  const handleTabChange = useHapticClick((tab: 'review' | 'assemble' | 'created') => {
+    setActiveTab(tab);
   });
 
   const {
@@ -88,98 +90,90 @@ function BoxesPageContent() {
 
   if (authIsLoading || isAuthenticated === null) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex justify-center items-center min-h-screen nm-surface">
         <LoadingSpinner message="Verificando acceso..." />
       </div>
     );
   }
 
   return (
-    <main className="flex flex-col items-center min-h-dvh bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <main className="flex flex-col items-center min-h-dvh nm-surface text-gray-900 nm-font nm-text-shadow">
       <AppHeader
-        pageIcon={Archive as any}
+        pageIcon={ArchiveBox as any}
         pageTitle="Cajas"
         showBackButton={true}
       />
 
-      <div className="container mx-auto py-8 w-full flex flex-col flex-grow">
-
-        {isLoadingEventPhase && <div className="mb-4"><LoadingSpinner message="Cargando fase del evento..." /></div>}
-        {actionSuccess && <div className="mb-4 p-3 bg-green-100 dark:bg-green-700/30 text-green-700 dark:text-green-300 rounded-md text-sm flex items-center"><CheckCircle2 size={18} className="mr-2" />{actionSuccess}</div>}
-        {actionError && <div className="mb-4 p-3 bg-red-100 dark:bg-red-700/30 text-red-700 dark:text-red-300 rounded-md text-sm flex items-center"><AlertCircle size={18} className="mr-2" />{actionError}</div>}
-
-        <div className="mb-0">
-          <nav className="flex justify-center border-b border-gray-200 dark:border-gray-700" aria-label="Tabs">
+      <div className="container mx-auto py-2 w-full flex flex-col flex-grow nm-font nm-text-shadow">
+        <div className="mb-0 sticky top-[64px] z-30 bg-transparent">
+          <nav className="flex justify-center nm-surface rounded-b-lg pt-1 pb-1" aria-label="Tabs">
             <button
-              onClick={() => setActiveTab('review')}
+              onClick={() => handleTabChange('review')}
               disabled={eventPhase === 0 || isLoadingEventPhase || eventPhase === null}
-              className={`py-3 px-6 sm:px-8 font-semibold text-sm focus:outline-none rounded-t-lg transition-colors duration-150 ease-in-out text-center
-                ${activeTab === 'review' && (eventPhase === 1 || eventPhase === 2)
-                  ? 'bg-white dark:bg-gray-800 text-secondary-blue dark:text-sky-400 border-l border-t border-r border-white dark:border-gray-800 relative -mb-px z-20'
-                  : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-750 border-b border-gray-200 dark:border-gray-700'
-                } ${eventPhase === 0 || eventPhase === null ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`nm-btn mx-1 ${activeTab === 'review' ? 'nm-pressed' : ''} ${eventPhase === 0 || eventPhase === null ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Cajas Entrantes
             </button>
             <button
-              onClick={() => setActiveTab('assemble')}
+              onClick={() => handleTabChange('assemble')}
               disabled={eventPhase === 0 || isLoadingEventPhase || eventPhase === null}
-              className={`py-3 px-6 sm:px-8 font-semibold text-sm focus:outline-none rounded-t-lg transition-colors duration-150 ease-in-out text-center
-                ${activeTab === 'assemble' && (eventPhase === 1 || eventPhase === 2)
-                  ? 'bg-white dark:bg-gray-800 text-secondary-blue dark:text-sky-400 border-l border-t border-r border-white dark:border-gray-800 relative -mb-px z-20'
-                  : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-750 border-b border-gray-200 dark:border-gray-700'
-                } ${eventPhase === 0 || eventPhase === null ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`nm-btn mx-1 ${activeTab === 'assemble' ? 'nm-pressed' : ''} ${eventPhase === 0 || eventPhase === null ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Crear Cajas
             </button>
             <button
-              onClick={() => setActiveTab('created')}
+              onClick={() => handleTabChange('created')}
               disabled={eventPhase === 0 || isLoadingEventPhase || eventPhase === null}
-              className={`py-3 px-6 sm:px-8 font-semibold text-sm focus:outline-none rounded-t-lg transition-colors duration-150 ease-in-out text-center
-                ${activeTab === 'created' && (eventPhase === 1 || eventPhase === 2)
-                  ? 'bg-white dark:bg-gray-800 text-secondary-blue dark:text-sky-400 border-l border-t border-r border-white dark:border-gray-800 relative -mb-px z-20'
-                  : 'bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-750 border-b border-gray-200 dark:border-gray-700'
-                } ${eventPhase === 0 || eventPhase === null ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`nm-btn mx-1 ${activeTab === 'created' ? 'nm-pressed' : ''} ${eventPhase === 0 || eventPhase === null ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               Cajas Creadas
             </button>
           </nav>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-b-lg shadow-lg flex flex-col flex-grow min-h-0">
-          {activeTab === 'review' && (eventPhase === 1 || eventPhase === 2) && (
-            <IncomingBoxesSection
-              allIncomingBoxes={incomingBoxes}
-              isLoadingIncoming={isLoadingIncoming}
-              errorIncoming={errorIncoming}
-              selectedLocation={selectedLocation}
-              setSelectedLocation={setSelectedLocation}
-              selectedBoxId={selectedBoxId}
-              setSelectedBoxId={setSelectedBoxId}
-              handleToggleItemSelectionInBox={handleToggleItemSelectionInBox}
-              handleDeliverSelectedItemsInBox={handleDeliverSelectedItemsInBox}
-              onClearAllSelections={handleClearAllSelections}
-            />
+        <div className="p-1 sm:p-2 rounded-b-lg flex flex-col flex-grow min-h-0 mt-1">
+          {isLoadingEventPhase && (
+            <div className="flex justify-center items-center min-h-[120px]">
+              <LoadingSpinner message="Cargando fase del evento..." />
+            </div>
           )}
-          {activeTab === 'assemble' && (eventPhase === 1 || eventPhase === 2) && (
-            <AssembleBoxSection />
-          )}
-          {activeTab === 'created' && (eventPhase === 1 || eventPhase === 2) && (
-            <CreatedBoxesSection
-              createdBoxes={createdBoxes}
-              isLoadingCreated={isLoadingCreated}
-              errorCreated={errorCreated}
-            />
-          )}
-          {eventPhase === 0 && (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-              La sección de {activeTab === 'review' ? 'Cajas Entrantes' : activeTab === 'assemble' ? 'Armar Caja Saliente' : 'Cajas Creadas'} está deshabilitada en la fase actual del evento ({eventPhaseDisplay}).
-            </p>
-          )}
-          {eventPhase === null && !isLoadingEventPhase && !errorEventPhase && (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-              Cargando la fase del evento... (Asegúrate de que el EventPhaseProvider esté correctamente configurado en el layout raíz)
-            </p>
+          {!isLoadingEventPhase && (
+            <>
+              {activeTab === 'review' && (eventPhase === 1 || eventPhase === 2) && (
+                <IncomingBoxesSection
+                  allIncomingBoxes={incomingBoxes}
+                  isLoadingIncoming={isLoadingIncoming}
+                  errorIncoming={errorIncoming}
+                  selectedLocation={selectedLocation}
+                  setSelectedLocation={setSelectedLocation}
+                  selectedBoxId={selectedBoxId}
+                  setSelectedBoxId={setSelectedBoxId}
+                  handleToggleItemSelectionInBox={handleToggleItemSelectionInBox}
+                  handleDeliverSelectedItemsInBox={handleDeliverSelectedItemsInBox}
+                  onClearAllSelections={handleClearAllSelections}
+                />
+              )}
+              {activeTab === 'assemble' && (eventPhase === 1 || eventPhase === 2) && (
+                <AssembleBoxSection />
+              )}
+              {activeTab === 'created' && (eventPhase === 1 || eventPhase === 2) && (
+                <CreatedBoxesSection
+                  createdBoxes={createdBoxes}
+                  isLoadingCreated={isLoadingCreated}
+                  errorCreated={errorCreated}
+                />
+              )}
+              {eventPhase === 0 && (
+                <p className="text-center text-gray-500 py-8 nm-font nm-text-shadow">
+                  La sección de {activeTab === 'review' ? 'Cajas Entrantes' : activeTab === 'assemble' ? 'Armar Caja Saliente' : 'Cajas Creadas'} está deshabilitada en la fase actual del evento ({eventPhaseDisplay}).
+                </p>
+              )}
+              {eventPhase === null && !errorEventPhase && (
+                <p className="text-center text-gray-500 py-8 nm-font nm-text-shadow">
+                  Cargando la fase del evento... (Asegúrate de que el EventPhaseProvider esté correctamente configurado en el layout raíz)
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

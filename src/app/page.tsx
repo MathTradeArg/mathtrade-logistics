@@ -1,12 +1,11 @@
 "use client";
 
-import { AlertTriangle, Archive, ArrowRightCircle, QrCode } from 'lucide-react';
-import { Suspense } from 'react';
-import AppHeader from '@/components/AppHeader';
-import LandingPageLink from '@/components/LandingPageLink'; 
-import { LoadingSpinner } from '@/components/ui'; 
+import { AppHeader, LandingPageLink } from '@/components/common';
+import { LoadingSpinner } from '@/components/common/ui';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useAuth } from '@/hooks/useAuth';
+import { Warning, ArchiveBox, ArrowCircleRight, QrCode } from 'phosphor-react';
+import { Suspense } from 'react';
 
 function LandingPageContent() {
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
@@ -15,7 +14,7 @@ function LandingPageContent() {
 
   if (authIsLoading || isAuthenticated === null || isLoadingEventPhase) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex justify-center items-center min-h-screen nm-surface">
         <LoadingSpinner message="Cargando aplicación..." />
       </div>
     );
@@ -26,7 +25,7 @@ function LandingPageContent() {
   const isBoxesEnabled = eventPhase === 1 || eventPhase === 2;
 
   return (
-    <main className="flex flex-col items-center min-h-dvh bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <main className="flex flex-col items-center min-h-dvh nm-surface text-gray-900 dark:text-gray-100">
       {isAuthenticated && (
         <AppHeader
           showBackButton={false}
@@ -46,7 +45,7 @@ function LandingPageContent() {
         />
         <LandingPageLink
           href="/deliver-to-user"
-          icon={<ArrowRightCircle size={48} className="text-accent-green dark:text-green-400 md:mb-4" />}
+          icon={<ArrowCircleRight size={48} className="text-accent-green dark:text-green-400 md:mb-4" />}
           title="Entregar Juegos"
           description="Entregale sus juegos a un usuario escaneando su QR."
           titleClassName="text-accent-green dark:text-green-400"
@@ -55,7 +54,7 @@ function LandingPageContent() {
         />
         <LandingPageLink
           href="/boxes"
-          icon={<Archive size={48} className="text-teal-600 dark:text-teal-400 md:mb-4" />}
+          icon={<ArchiveBox size={48} className="text-teal-600 dark:text-teal-400 md:mb-4" />}
           title="Gestión de Cajas"
           description="Gestioná el armado y desarmado de cajas."
           titleClassName="text-teal-600 dark:text-teal-400"
@@ -64,7 +63,7 @@ function LandingPageContent() {
         />
         <LandingPageLink
           href="/reports"
-          icon={<AlertTriangle size={48} className="text-orange-500 dark:text-orange-400 md:mb-4" />}
+          icon={<Warning size={48} className="text-orange-500 dark:text-orange-400 md:mb-4" />}
           title="Reportar"
           description="Reportá un ítem o un usuario."
           titleClassName="text-orange-500 dark:text-orange-400"

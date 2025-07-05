@@ -1,6 +1,6 @@
-import GameRowItem from '@/components/GameRowItem';
-import type { Box } from '@/types/logistics';
-import { User } from 'lucide-react';
+import GameRowItem from '@/components/common/GameRowItem';
+import type { Box } from '@/types';
+import { User } from 'phosphor-react';
 import React from 'react';
 
 interface SimpleBoxDisplayCardProps {
@@ -9,7 +9,7 @@ interface SimpleBoxDisplayCardProps {
 
 const SimpleBoxDisplayCard: React.FC<SimpleBoxDisplayCardProps> = ({ box }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+    <div className="nm-surface dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-start">
         <div>
           <h4 className="text-lg font-bold text-secondary-blue dark:text-sky-400">

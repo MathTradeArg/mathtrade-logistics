@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './QrScanner.module.css';
 import { QrScanner as QrReader } from 'react-qrcode-scanner-mi';
-import { CameraOff } from 'lucide-react';
+import { CameraSlash } from 'phosphor-react';
 
 interface QrScannerProps {
   onScan: (data: string) => void;
@@ -34,10 +34,10 @@ const QrScanner: React.FC<QrScannerProps> = ({ onScan, disabled = false, disable
   return (
     <div className="w-full max-w-md mx-auto my-2 flex flex-col items-center space-y-5"> 
       {isClient && (
-        <div className={`${styles.qrReaderContainer} w-full aspect-square rounded-xl overflow-hidden shadow-xl border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center justify-center`}>
+        <div className={`${styles.qrReaderContainer} w-full aspect-square rounded-2xl bg-gray-100 dark:bg-[#23272f] flex items-center justify-center`} style={{ background: 'inherit' }}>
           {disabled ? (
             <div className="text-center p-4 text-gray-500 dark:text-gray-400">
-              <CameraOff size={48} className="mx-auto mb-4" />
+              <CameraSlash size={48} className="mx-auto mb-4" />
               <p>{disabledMessage}</p>
             </div>
           ) : (
@@ -51,9 +51,9 @@ const QrScanner: React.FC<QrScannerProps> = ({ onScan, disabled = false, disable
           )}
         </div>
       )}
-      {scanError && <p className="text-red-500 dark:text-red-400 text-center mt-4 text-sm">{scanError}</p>}
+      {scanError && <p className="text-red-500 dark:text-red-400 text-center mt-4 text-sm nm-font nm-text-no-shadow">{scanError}</p>}
       {!disabled && (
-        <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-2">Apuntá al QR</p>
+        <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-2 nm-font nm-text-no-shadow">Apuntá al QR</p>
       )}
     </div>
   );

@@ -1,12 +1,14 @@
 
-import HighContrastManager from "@/components/ThemeManager";
-import { AuthProvider } from "@/hooks/useAuth";
-import { EventPhaseProvider } from "@/contexts/EventPhaseContext";
-import { ControlPanelProvider } from "@/contexts/ControlPanelContext";
 import { GlobalControlPanel } from "@/components/control-panel/GlobalControlPanel";
+import { ControlPanelProvider } from "@/contexts/ControlPanelContext";
+import { EventPhaseProvider } from "@/contexts/EventPhaseContext";
+import { ActionStatusProvider } from "@/contexts/ActionStatusContext";
+import { AuthProvider } from "@/hooks/useAuth";
+import ToastContainer from "@/components/common/ToastContainer";
 import type { Metadata } from "next";
 import { Nunito } from 'next/font/google';
 import "./globals.css";
+
 
 const nunito = Nunito({
   subsets: ['latin'],
@@ -82,13 +84,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <AuthProvider>
       <EventPhaseProvider>
         <ControlPanelProvider>
-          <HighContrastManager />
-          <html lang="es" className={`${nunito.variable} antialiased h-full`}>
-            <body className="bg-neutral-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 h-full">
-              {children}
-              <GlobalControlPanel />
-            </body>
-          </html>
+          <ActionStatusProvider>
+            <html lang="es" className={`${nunito.variable} antialiased h-full`}>
+              <body className="nm-surface text-gray-800 dark:text-gray-100 h-full">
+                {children}
+                <GlobalControlPanel />
+                <ToastContainer />
+              </body>
+            </html>
+          </ActionStatusProvider>
         </ControlPanelProvider>
       </EventPhaseProvider>
     </AuthProvider>

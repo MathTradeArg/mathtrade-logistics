@@ -3,7 +3,7 @@
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
-import type { Box, Item } from '@/types/logistics';
+import type { Box, Item } from '@/types';
 import { useCallback, useEffect, useState } from 'react';
 
 export const useAssembleBox = () => {
@@ -19,8 +19,10 @@ export const useAssembleBox = () => {
   const fetchItemsForPacking = useCallback(async () => {
     try {
       const data = await fetchItemsForPackingApi();
+      return data;
     } catch (err) {
       console.error("Error fetching items for packing:", err);
+      throw err;
     }
   }, [fetchItemsForPackingApi]);
 
@@ -68,13 +70,15 @@ export const useAssembleBox = () => {
 
     try {
       const createdBox = await createBoxApi({ math_items: Array.from(itemIds), destiny: destinationId });
-      if (!createdBox) { 
+      if (!createdBox) {
         setError("Error: No se recibió la caja creada.");
         return;
       }
       const boxIdentifier = createdBox.number !== null ? `Caja #${createdBox.number}` : 'Una nueva caja';
       setSuccess(`${boxIdentifier} creada con destino a ${createdBox.destination_name}.`);
-      fetchItemsForPacking();
+      
+      await fetchItemsForPacking();
+      
       setRecentlyCreatedBoxes(prev => [{ ...createdBox, selectedItemIds: new Set() }, ...prev]);
     } catch (err) {
       const errorMessage = (err instanceof Error && (err as any).body?.detail) ? (err as any).body.detail : (err instanceof Error ? err.message : 'Error desconocido al crear la caja.');
