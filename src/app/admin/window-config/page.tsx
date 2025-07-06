@@ -2,7 +2,7 @@
 
 import { Settings, Save, Plus, Trash2, Monitor, ChevronDown, ChevronUp, Cog } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useApi } from '@/hooks/useApi';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
@@ -116,10 +116,19 @@ export default function WindowConfigPage() {
     ));
   };
 
-  const getAvailableTablesForWindow = (windowId: number) => {
+  const getAvailableTablesForWindow = useCallback((windowId: number) => {
     const currentUsedTables = windows.flatMap(w => w.tables);
     return availableTables.filter(table => !currentUsedTables.includes(table));
-  };
+  }, [windows, availableTables]);
+
+  // Memo para forzar re-render de los dropdowns cuando cambien las mesas disponibles
+  const availableTablesMap = useMemo(() => {
+    const map = new Map<number, string[]>();
+    windows.forEach(window => {
+      map.set(window.id, getAvailableTablesForWindow(window.id));
+    });
+    return map;
+  }, [windows, getAvailableTablesForWindow]);
 
   const saveConfiguration = async () => {
     try {
@@ -292,16 +301,17 @@ export default function WindowConfigPage() {
                       </div>
                       
                       <select
+                        key={`${window.id}-${availableTablesMap.get(window.id)?.length || 0}`}
+                        value=""
                         onChange={(e) => {
                           if (e.target.value) {
                             handleAssignTableToWindow(window.id, e.target.value);
-                            e.target.value = '';
                           }
                         }}
                         className="nm-select w-full"
                       >
                         <option value="">Seleccionar mesa para asignar...</option>
-                        {getAvailableTablesForWindow(window.id).map((table) => (
+                        {(availableTablesMap.get(window.id) || []).map((table) => (
                           <option key={table} value={table}>Mesa {table}</option>
                         ))}
                       </select>
