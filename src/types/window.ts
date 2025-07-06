@@ -12,6 +12,7 @@ export interface UserWithWindow extends ReadyUser {
   marked_at?: string;
   marked_by?: string;
   ready_games_count?: number;
+  roles?: string[];
 }
 
 export interface ProcessedUserWithWindow extends UserWithWindow {

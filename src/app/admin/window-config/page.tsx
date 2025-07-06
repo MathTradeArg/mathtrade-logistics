@@ -121,7 +121,6 @@ export default function WindowConfigPage() {
     return availableTables.filter(table => !currentUsedTables.includes(table));
   }, [windows, availableTables]);
 
-  // Memo para forzar re-render de los dropdowns cuando cambien las mesas disponibles
   const availableTablesMap = useMemo(() => {
     const map = new Map<number, string[]>();
     windows.forEach(window => {

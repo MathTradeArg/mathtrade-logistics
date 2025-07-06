@@ -33,7 +33,9 @@ export default function DisplayReadyToPickupPage() {
       });
     });
 
-    users.forEach(user => {
+    const filteredUsers = users.filter(user => !user.roles?.includes('volunteer') && !user.roles?.includes('admin'));
+
+    filteredUsers.forEach(user => {
       if (user.window_id) {
         const windowId = user.window_id.toString();
         const windowData = windowMap.get(windowId);
@@ -65,7 +67,6 @@ export default function DisplayReadyToPickupPage() {
     windowMap.forEach(window => {
       const noShowUsers = window.users.filter(user => user.status === 'no_show');
       const otherUsers = window.users.filter(user => user.status !== 'no_show');
-      
       window.users = [...otherUsers, ...noShowUsers];
     });
 
@@ -81,12 +82,19 @@ export default function DisplayReadyToPickupPage() {
       setWindowConfig(config);
 
       const usersData = await fetchReadyUsers();
-      const users = (usersData || []).map(user => ({
-        ...user,
-        status: user.status || null
-      }));
+      console.log('[DEBUG] Usuarios recibidos del endpoint:', usersData);
+
+      const users = (usersData || [])
+        .map(user => ({
+          ...user,
+          status: user.status || null
+        }))
+        .filter(user => !user.roles?.includes('volunteer') && !user.roles?.includes('admin'));
+
+      console.log('[DEBUG] Usuarios después del filtro de roles:', users);
 
       const organizedData = organizeUsersByWindows(users, config);
+      console.log('[DEBUG] Datos organizados por ventana:', organizedData);
       setWindowsData(organizedData);
 
       setLastUpdated(new Date());

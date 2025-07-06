@@ -8,7 +8,7 @@ import type { ProcessedUserWithWindow, UserWithWindow } from '@/types/window';
 import { triggerHaptic } from '@/utils/haptics';
 import { CheckCircle, ChevronDown, ChevronUp, Clock, RefreshCw, Search, Users, UserX, Package } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 
 type UserStatus = 'present' | 'receiving' | 'completed' | 'no_show';
 
@@ -95,6 +95,29 @@ export default function ReadyToPickupPage() {
   const [selectedUser, setSelectedUser] = useState<ProcessedUserWithWindow | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const hasLoadedInitialData = useRef(false);
+  
+  const [visibleItems, setVisibleItems] = useState<{ [key in keyof ExpandedSection]: number }>({
+    present: 20,
+    receiving: 20,
+    completed: 20,
+    no_show: 20
+  });
+  
+  const [loadingMore, setLoadingMore] = useState<{ [key in keyof ExpandedSection]: boolean }>({
+    present: false,
+    receiving: false,
+    completed: false,
+    no_show: false
+  });
+  
+  const ITEMS_PER_BATCH = 20;
+  
+  const sectionRefs = useRef<{ [key in keyof ExpandedSection]: HTMLButtonElement | null }>({
+    present: null,
+    receiving: null,
+    completed: null,
+    no_show: null
+  });
 
   const { execute: fetchReadyUsers } = useApi<UserWithWindow[]>('logistics/users/ready-to-pickup/', { method: 'GET' });
   const { execute: updateUserStatus } = useApi<any>('logistics/users/update-status/', { method: 'PATCH' });
@@ -112,10 +135,11 @@ export default function ReadyToPickupPage() {
       setIsRefreshing(true);
 
       const usersData = await fetchReadyUsers();
-      const processedUsers = (usersData || []).map(user => ({
-        ...user,
-        status: user.status || null
-      }));
+      const processedUsers = (usersData || [])
+        .map(user => ({
+          ...user,
+          status: user.status || null
+        }));
 
       setUsers(processedUsers);
       setLastUpdated(new Date());
@@ -156,6 +180,22 @@ export default function ReadyToPickupPage() {
   });
   const toggleStateExpansion = useHapticClick((state: keyof ExpandedSection) => {
     setExpandedSections(prev => ({ ...prev, [state]: !prev[state] }));
+    if (expandedSections[state]) {
+      setVisibleItems(prev => ({ ...prev, [state]: ITEMS_PER_BATCH }));
+      setLoadingMore(prev => ({ ...prev, [state]: false }));
+    }
+  });
+
+  const loadMoreItems = useHapticClick((state: keyof ExpandedSection) => {
+    setLoadingMore(prev => ({ ...prev, [state]: true }));
+    
+    requestAnimationFrame(() => {
+      setVisibleItems(prev => ({ ...prev, [state]: prev[state] + ITEMS_PER_BATCH }));
+      
+      setTimeout(() => {
+        setLoadingMore(prev => ({ ...prev, [state]: false }));
+      }, 200);
+    });
   });
 
   const openUserModal = useHapticClick((user: ProcessedUserWithWindow) => {
@@ -167,6 +207,96 @@ export default function ReadyToPickupPage() {
     setShowUserModal(false);
     setSelectedUser(null);
   });
+
+  const isCommonUser = useCallback((u: ProcessedUserWithWindow) => 
+    !u.roles || (!u.roles.includes('volunteer') && !u.roles.includes('admin')), []);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(user => {
+      if (!searchTerm.trim()) return true;
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        user.first_name.toLowerCase().includes(searchLower) ||
+        user.last_name.toLowerCase().includes(searchLower) ||
+        user.username.toLowerCase().includes(searchLower) ||
+        (user.table_number && user.table_number.toString().includes(searchLower))
+      );
+    });
+  }, [users, searchTerm]);
+
+  const usersByState = useMemo(() => ({
+    present: filteredUsers.filter(u => isCommonUser(u) && (u.status === null || u.status === 'present')),
+    receiving: filteredUsers.filter(u => isCommonUser(u) && u.status === 'receiving'),
+    completed: filteredUsers.filter(u => isCommonUser(u) && u.status === 'completed'),
+    no_show: filteredUsers.filter(u => isCommonUser(u) && u.status === 'no_show')
+  }), [filteredUsers, isCommonUser]);
+
+  const mainUsers = useMemo(() => users.filter(isCommonUser), [users, isCommonUser]);
+
+  const volunteerAndAdminUsers = useMemo(() => 
+    users.filter(user => user.roles && (user.roles.includes('volunteer') || user.roles.includes('admin'))), 
+    [users]
+  );
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const buttonElement = entry.target as HTMLButtonElement;
+          const sectionKey = Object.keys(sectionRefs.current).find(
+            key => sectionRefs.current[key as keyof ExpandedSection] === buttonElement
+          ) as keyof ExpandedSection;
+          
+          if (sectionKey && expandedSections[sectionKey]) {
+            if (loadingMore[sectionKey]) {
+              return;
+            }
+            
+            if (!entry.isIntersecting) {
+              setExpandedSections(prev => ({ ...prev, [sectionKey]: false }));
+              
+              setTimeout(() => {
+                const sectionButton = sectionRefs.current[sectionKey];
+                if (sectionButton) {
+                  const buttonRect = sectionButton.getBoundingClientRect();
+                  const currentScrollY = window.scrollY;
+                  const viewportHeight = window.innerHeight;
+                  const appHeaderHeight = 64; 
+                  const safeTopMargin = appHeaderHeight + 20; 
+                  
+                  if (buttonRect.top < safeTopMargin || buttonRect.top > viewportHeight - 100) {
+                    sectionButton.scrollIntoView({ 
+                      behavior: 'smooth', 
+                      block: 'center' 
+                    });
+                  }
+                  else {
+                    const targetScroll = currentScrollY - (buttonRect.top - safeTopMargin);
+                    window.scrollTo({ 
+                      top: Math.max(0, targetScroll), 
+                      behavior: 'smooth' 
+                    });
+                  }
+                }
+              }, 100);
+            }
+          }
+        });
+      },
+      {
+        threshold: 0.1, 
+        rootMargin: '-80px 0px 0px 0px' 
+      }
+    );
+
+    Object.entries(sectionRefs.current).forEach(([key, ref]) => {
+      if (ref) {
+        observer.observe(ref);
+      }
+    });
+
+    return () => observer.disconnect();
+  }, [expandedSections, loadingMore]);
 
   useEffect(() => {
     if (isAuthenticated && isAdmin === true && !hasLoadedInitialData.current) {
@@ -185,24 +315,6 @@ export default function ReadyToPickupPage() {
   if (isAdmin === false) {
     return <div className="flex justify-center items-center min-h-screen"><p>Acceso denegado.</p></div>;
   }
-
-  const filteredUsers = users.filter(user => {
-    if (!searchTerm.trim()) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      user.first_name.toLowerCase().includes(searchLower) ||
-      user.last_name.toLowerCase().includes(searchLower) ||
-      user.username.toLowerCase().includes(searchLower) ||
-      (user.table_number && user.table_number.toString().includes(searchLower))
-    );
-  });
-
-  const usersByState = {
-    present: filteredUsers.filter(u => u.status === null || u.status === 'present'),
-    receiving: filteredUsers.filter(u => u.status === 'receiving'),
-    completed: filteredUsers.filter(u => u.status === 'completed'),
-    no_show: filteredUsers.filter(u => u.status === 'no_show')
-  };
 
   const getUserStatusColor = (status: string | null) => {
     switch (status) {
@@ -236,29 +348,34 @@ export default function ReadyToPickupPage() {
     }
   };
 
-  const UserItem = ({ user }: { user: ProcessedUserWithWindow }) => (
-    <div
-      className={`nm-list-item p-3 mb-3 ${getUserStatusColor(user.status)} cursor-pointer transition-all duration-200 hover:scale-[1.02]`}
-      onClick={() => openUserModal(user)}
-    >
-      <div className="flex justify-between items-start">
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-lg leading-tight nm-text-shadow truncate">
-            {user.first_name} {user.last_name}
-          </p>
-          <p className="text-sm opacity-75 mt-1 nm-text-shadow truncate">
-            {user.username}
-            {user.table_number && ` • Mesa ${user.table_number}`}
-            {user.window_id && ` • Ventanilla ${user.window_id}`}
-            {user.ready_games_count && ` • ${user.ready_games_count} juegos`}
-          </p>
-        </div>
-        <div className="flex items-center ml-2 flex-shrink-0">
-          {getUserStatusIcon(user.status)}
+  const UserItem = ({ user }: { user: ProcessedUserWithWindow }) => {
+    const statusColor = getUserStatusColor(user.status);
+    const statusIcon = getUserStatusIcon(user.status);
+    
+    return (
+      <div
+        className={`nm-list-item p-3 mb-3 ${statusColor} cursor-pointer transition-all duration-200 hover:scale-[1.02]`}
+        onClick={() => openUserModal(user)}
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-lg leading-tight nm-text-shadow truncate">
+              {user.first_name} {user.last_name}
+            </p>
+            <p className="text-sm opacity-75 mt-1 nm-text-shadow truncate">
+              {user.username}
+              {user.table_number && ` • Mesa ${user.table_number}`}
+              {user.window_id && ` • Ventanilla ${user.window_id}`}
+              {user.ready_games_count && ` • ${user.ready_games_count} juegos`}
+            </p>
+          </div>
+          <div className="flex items-center ml-2 flex-shrink-0">
+            {statusIcon}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const UserModal = () => {
     if (!selectedUser) return null;
@@ -407,6 +524,85 @@ export default function ReadyToPickupPage() {
     );
   };
 
+  const UserSection = ({ 
+    sectionKey, 
+    title, 
+    icon: Icon, 
+    iconColor, 
+    users, 
+    expanded 
+  }: {
+    sectionKey: keyof ExpandedSection;
+    title: string;
+    icon: any;
+    iconColor: string;
+    users: ProcessedUserWithWindow[];
+    expanded: boolean;
+  }) => {
+    const visibleUserCount = visibleItems[sectionKey];
+    const visibleUsers = users.slice(0, visibleUserCount);
+    const hasMore = users.length > visibleUserCount;
+    const isLoadingMore = loadingMore[sectionKey];
+
+    return (
+      <div 
+        data-section={sectionKey}
+        className="nm-surface overflow-visible"
+      >
+        <button
+          ref={el => { sectionRefs.current[sectionKey] = el; }}
+          onClick={() => toggleStateExpansion(sectionKey)}
+          className={`w-full flex items-center justify-between p-4 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
+            expanded 
+              ? 'sticky top-16 z-40 nm-surface shadow-lg border-b-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900' 
+              : 'nm-surface'
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <Icon size={20} className={iconColor} />
+            <span className="font-medium">{title}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={`text-xl font-bold ${iconColor}`}>
+              {users.length}
+            </span>
+            {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          </div>
+        </button>
+        
+        {expanded && users.length > 0 && (
+          <div className="nm-surface p-4 pt-2">
+            <div className="space-y-2">
+              {visibleUsers.map((user: ProcessedUserWithWindow) => (
+                <UserItem key={user.id} user={user} />
+              ))}
+            </div>
+            {hasMore && (
+              <div className="mt-4 text-center">
+                <button
+                  onClick={() => loadMoreItems(sectionKey)}
+                  disabled={isLoadingMore}
+                  className="nm-btn-secondary px-4 py-2 text-sm disabled:opacity-50 flex items-center gap-2 mx-auto"
+                >
+                  {isLoadingMore ? (
+                    <>
+                      <RefreshCw size={16} className="animate-spin" />
+                      Cargando...
+                    </>
+                  ) : (
+                    <>
+                      Cargar más ({users.length - visibleUserCount} restantes)
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="w-full min-h-screen nm-surface text-gray-900 dark:text-gray-100 nm-font">
       <AppHeader
@@ -458,8 +654,8 @@ export default function ReadyToPickupPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {isLoadingData && users.length === 0 && (
+        <div className="flex-1">
+          {isLoadingData && mainUsers.length === 0 && (
             <div className="nm-surface p-6 md:p-8 text-center">
               <p className="text-lg md:text-xl lg:text-2xl text-sky-600 dark:text-sky-400 nm-text-shadow">Cargando usuarios...</p>
             </div>
@@ -473,15 +669,15 @@ export default function ReadyToPickupPage() {
             </div>
           )}
 
-          {!isLoadingData && users.length === 0 && !error && (
+          {!isLoadingData && mainUsers.length === 0 && !error && (
             <div className="nm-surface p-6 md:p-8 text-center">
               <p className="text-gray-600 dark:text-gray-300 text-lg md:text-xl lg:text-2xl nm-text-shadow">
-                No hay usuarios listos para retirar.
+                No hay usuarios para mostrar.
               </p>
             </div>
           )}
 
-          {users.length > 0 && (
+          {mainUsers.length > 0 && (
             <div className="space-y-4 md:space-y-6">
               {searchTerm ? (
                 <div className="nm-surface p-4">
@@ -501,121 +697,93 @@ export default function ReadyToPickupPage() {
                   )}
                 </div>
               ) : (
-                <div className="sticky top-16 bg-inherit z-40 pb-4">
-                  <div className="space-y-3">
-                    <div className="nm-surface">
-                      <button
-                        onClick={() => toggleStateExpansion('present')}
-                        className="w-full flex items-center justify-between p-4 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Clock size={20} className="text-green-600 dark:text-green-400" />
-                          <span className="font-medium">Listos para retirar</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl font-bold text-green-600 dark:text-green-400">
-                            {usersByState.present.length}
-                          </span>
-                          {expandedSections.present ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </div>
-                      </button>
-                    </div>
-                    {expandedSections.present && usersByState.present.length > 0 && (
-                      <div className="nm-surface p-4">
-                        <div className="space-y-2">
-                          {usersByState.present.map((user: ProcessedUserWithWindow) => (
-                            <UserItem key={user.id} user={user} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                <div className="space-y-3">
+                  <UserSection
+                    sectionKey="present"
+                    title="Listos para retirar"
+                    icon={Clock}
+                    iconColor="text-green-600 dark:text-green-400"
+                    users={usersByState.present}
+                    expanded={expandedSections.present}
+                  />
 
-                    <div className="nm-surface">
-                      <button
-                        onClick={() => toggleStateExpansion('receiving')}
-                        className="w-full flex items-center justify-between p-4 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <RefreshCw size={20} className="text-blue-600 dark:text-blue-400" />
-                          <span className="font-medium">Recibiendo sus items</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                            {usersByState.receiving.length}
-                          </span>
-                          {expandedSections.receiving ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </div>
-                      </button>
-                    </div>
-                    {expandedSections.receiving && usersByState.receiving.length > 0 && (
-                      <div className="nm-surface p-4">
-                        <div className="space-y-2">
-                          {usersByState.receiving.map((user: ProcessedUserWithWindow) => (
-                            <UserItem key={user.id} user={user} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                  <UserSection
+                    sectionKey="receiving"
+                    title="Recibiendo sus items"
+                    icon={RefreshCw}
+                    iconColor="text-blue-600 dark:text-blue-400"
+                    users={usersByState.receiving}
+                    expanded={expandedSections.receiving}
+                  />
 
-                    <div className="nm-surface">
-                      <button
-                        onClick={() => toggleStateExpansion('completed')}
-                        className="w-full flex items-center justify-between p-4 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <CheckCircle size={20} className="text-green-600 dark:text-green-400" />
-                          <span className="font-medium">Completaron el retiro</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl font-bold text-green-600 dark:text-green-400">
-                            {usersByState.completed.length}
-                          </span>
-                          {expandedSections.completed ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </div>
-                      </button>
-                    </div>
-                    {expandedSections.completed && usersByState.completed.length > 0 && (
-                      <div className="nm-surface p-4">
-                        <div className="space-y-2">
-                          {usersByState.completed.map((user: ProcessedUserWithWindow) => (
-                            <UserItem key={user.id} user={user} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                  <UserSection
+                    sectionKey="completed"
+                    title="Completaron el retiro"
+                    icon={CheckCircle}
+                    iconColor="text-green-600 dark:text-green-400"
+                    users={usersByState.completed}
+                    expanded={expandedSections.completed}
+                  />
 
-                    <div className="nm-surface">
-                      <button
-                        onClick={() => toggleStateExpansion('no_show')}
-                        className="w-full flex items-center justify-between p-4 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <UserX size={20} className="text-red-600 dark:text-red-400" />
-                          <span className="font-medium">No se presentaron</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl font-bold text-red-600 dark:text-red-400">
-                            {usersByState.no_show.length}
-                          </span>
-                          {expandedSections.no_show ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </div>
-                      </button>
-                    </div>
-                    {expandedSections.no_show && usersByState.no_show.length > 0 && (
-                      <div className="nm-surface p-4">
-                        <div className="space-y-2">
-                          {usersByState.no_show.map((user: ProcessedUserWithWindow) => (
-                            <UserItem key={user.id} user={user} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <UserSection
+                    sectionKey="no_show"
+                    title="No se presentaron"
+                    icon={UserX}
+                    iconColor="text-red-600 dark:text-red-400"
+                    users={usersByState.no_show}
+                    expanded={expandedSections.no_show}
+                  />
                 </div>
               )}
             </div>
           )}
         </div>
+
+        {volunteerAndAdminUsers.length > 0 && (
+          <div className="nm-surface p-4 mt-8 rounded-xl bg-blue-50 dark:bg-blue-900/20">
+            <h3 className="text-lg font-bold text-blue-700 dark:text-blue-300 mb-3 nm-text-shadow flex items-center gap-2">
+              <Users size={20} /> Voluntarios y Admins
+            </h3>
+            <div className="space-y-2">
+              {volunteerAndAdminUsers.map(user => (
+                <div
+                  key={user.id}
+                  className={`nm-list-item p-3 mb-3 bg-blue-100 dark:bg-blue-800/40 text-blue-900 dark:text-blue-100 cursor-pointer transition-all duration-200 hover:scale-[1.02] rounded-lg`}
+                  onClick={() => openUserModal(user)}
+                  title={`Ver estado de ${user.first_name} ${user.last_name}`}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-lg leading-tight nm-text-shadow truncate">
+                        {user.first_name} {user.last_name}
+                      </p>
+                      <p className="text-sm opacity-75 mt-1 nm-text-shadow truncate">
+                        {(!user.roles || (!user.roles.includes('volunteer') && !user.roles.includes('admin'))) && (
+                          <>
+                            @{user.username}
+                            {user.window_id && ` • Ventanilla ${user.window_id}`}
+                          </>
+                        )}
+                        {user.table_number && ` • Mesa ${user.table_number}`}
+                        {user.ready_games_count && ` • ${user.ready_games_count} juegos`}
+                        {user.roles?.includes('admin') && (
+                          <span className="ml-2 px-2 py-0.5 rounded bg-yellow-300 text-yellow-900 text-xs font-bold">ADMIN</span>
+                        )}
+                        {user.roles?.includes('volunteer') && !user.roles?.includes('admin') && (
+                          <span className="ml-2 px-2 py-0.5 rounded bg-green-200 text-green-900 text-xs font-bold">VOL</span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex items-center ml-2 flex-shrink-0">
+                      {getUserStatusIcon(user.status)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {showUserModal && <UserModal />}
       </main>
