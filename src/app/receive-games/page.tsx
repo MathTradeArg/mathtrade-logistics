@@ -1,17 +1,17 @@
 "use client";
 
-import type { Trade } from '@/types';
-import { useEventPhase } from '@/contexts/EventPhaseContext';
-import { QrCode } from 'phosphor-react';
-import { usePathname, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useState } from 'react';
-import AppHeader from '@/components/common/AppHeader';
-import GameList from '@/components/trades/GameList'; 
-import { LoadingSpinner } from '@/components/common/ui'; 
+import { AppHeader } from '@/components/common';
+import { LoadingSpinner } from '@/components/common/ui';
 import QrScanner from '@/components/qr/QrScanner';
-import { useAuth } from '@/hooks/useAuth';
-import { useApi } from '@/hooks/useApi';
+import { GameList } from '@/components/trades';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
+import { useEventPhase } from '@/contexts/EventPhaseContext';
+import { useApi } from '@/hooks/useApi';
+import { useAuth } from '@/hooks/useAuth';
+import type { ReceiveTrade, Trade, TradeResponse, User } from '@/types';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { QrCode } from 'phosphor-react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 
 export default function ReceiveGamesPage() {
   return (
@@ -25,7 +25,8 @@ function ReceiveGamesPageContent() {
   const { isAuthenticated, userId, isLoading: authIsLoading } = useAuth();
   const { setSuccess, setError: setActionError } = useActionStatus();
   const [qrData, setQrData] = useState<string | null>(null);
-  const [trades, setTrades] = useState<Trade[] | null>(null);
+  const [games, setGames] = useState<Trade[] | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const pathname = usePathname();
@@ -53,16 +54,20 @@ function ReceiveGamesPageContent() {
           const errorData = await response.json().catch(() => ({ message: `Error ${response.status}` }));
           throw new Error(errorData.message || `Error ${response.status} al buscar user.`);
         }
-        const tradesData: Trade[] = await response.json();
-        setTrades(tradesData);
-        
-        try {
-          await updateUserStatus({
-            user_id: data,
-            status: 'present'
-          });
-        } catch (statusErr) {
-          console.error('Error al actualizar status del usuario:', statusErr);
+        const tradesData: TradeResponse<ReceiveTrade> = await response.json();
+        const games = tradesData.games;
+        setGames(games);
+        setUser(tradesData.user);
+
+        if (games && games.length > 0) {
+          try {
+            await updateUserStatus({
+              user_id: tradesData.user.id,
+              status: 'present'
+            });
+          } catch (statusErr) {
+            console.error('Error al actualizar status del usuario:', statusErr);
+          }
         }
       } catch (err) {
         if (err instanceof Error) {
@@ -72,7 +77,7 @@ function ReceiveGamesPageContent() {
         }
         setTimeout(() => {
           setQrData(null);
-          setTrades(null);
+          setGames(null);
           setError('');
         }, 3000);
       } finally {
@@ -82,7 +87,7 @@ function ReceiveGamesPageContent() {
   }, [isLoading, updateUserStatus]);
 
   useEffect(() => {
-    if (initialQrProcessed || isLoading || trades) return;
+    if (initialQrProcessed || isLoading || games) return;
 
     const qrFromUrl = searchParams.get('qr');
     if (qrFromUrl) {
@@ -90,16 +95,16 @@ function ReceiveGamesPageContent() {
       setInitialQrProcessed(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, isLoading, trades, initialQrProcessed, handleScan, pathname]);
+  }, [searchParams, isLoading, games, initialQrProcessed, handleScan, pathname]);
 
   const handleUpdateItems = useCallback(async (itemIds: number[], deliveredByUserId: number) => {
-    if (!qrData || !trades || !deliveredByUserId || trades.length === 0) {
+    if (!qrData || !games || !deliveredByUserId || games.length === 0) {
       setError('Faltan datos para la actualización.');
       return;
     }
 
-    const itemsToUpdate = trades.filter(trade => itemIds.includes(trade.result.assigned_trade_code) && trade.result.status_display != "Delivered");
-    const idsToUpdate = itemsToUpdate.map(trade => trade.result.assigned_trade_code);
+    const itemsToUpdate = games.filter(game => itemIds.includes(game.result.assigned_trade_code) && game.result.status_display != "Delivered");
+    const idsToUpdate = itemsToUpdate.map(game => game.result.assigned_trade_code);
     if (idsToUpdate.length === 0) return;
 
     try {
@@ -125,12 +130,12 @@ function ReceiveGamesPageContent() {
       const updatedItems = itemsToUpdate.length;
       setSuccess(`${updatedItems} item${updatedItems === 1 ? '' : 's'} marcado${updatedItems === 1 ? '' : 's'} como recibido${updatedItems === 1 ? '' : 's'}`);
 
-      setTrades(prevTrades => {
-        if (!prevTrades) return null;
-        return prevTrades.map(trade =>
-          itemIds.includes(trade.result.assigned_trade_code)
-            ? { ...trade, result: { ...trade.result, status_display: "In Event" } }
-            : trade
+      setGames(prevGames => {
+        if (!prevGames) return null;
+        return prevGames.map(game =>
+          itemIds.includes(game.result.assigned_trade_code)
+            ? { ...game, result: { ...game.result, status_display: "In Event" } }
+            : game
         );
       });
       setError('');
@@ -139,7 +144,7 @@ function ReceiveGamesPageContent() {
       setError(errorMessage);
       setActionError(errorMessage);
     }
-  }, [qrData, trades, setSuccess, setActionError]);
+  }, [qrData, games, setSuccess, setActionError]);
 
   const isReceivingEnabled = eventPhase !== 0;
 
@@ -152,7 +157,7 @@ function ReceiveGamesPageContent() {
   }
 
   return (
-    <main className="flex flex-col items-center min-h-dvh nm-surface text-gray-900">
+    <main className="flex flex-col items-center min-h-dvh text-gray-900">
       {isAuthenticated && (
         <AppHeader
           pageTitle="Recepción"
@@ -162,7 +167,7 @@ function ReceiveGamesPageContent() {
       )}
       <div className="w-full max-w-3xl mx-auto text-center px-4">
       </div>
-      <section className="w-full max-w-xl p-4 sm:p-6 nm-surface rounded-xl shadow-xl">
+      <section className="w-full max-w-xl p-4 sm:p-6 rounded-xl shadow-xl">
         {isLoading && <LoadingSpinner message="Buscando información..." />}
         {error && <p className="text-base sm:text-lg text-red-600 my-4 p-4 bg-red-50 border border-red-300 rounded-lg text-center">{error}</p>}
 
@@ -173,12 +178,13 @@ function ReceiveGamesPageContent() {
                 onScan={handleScan}
                 disabled={!isReceivingEnabled}
                 disabledMessage="La recepción de juegos no está habilitada en la fase actual del evento." />
-            ) : trades && (
+            ) : games && (
               <GameList
-                trades={trades}
+                trades={games}
+                user={user}
                 onUpdateItems={handleUpdateItems}
                 disabled={!isReceivingEnabled}
-                onFinish={() => { setQrData(null); setTrades(null); setError(''); }}
+                onFinish={() => { setQrData(null); setGames(null); setError(''); }}
                 mode="receive"
                 deliveredByUserId={userId ? parseInt(userId, 10) : null}
               />

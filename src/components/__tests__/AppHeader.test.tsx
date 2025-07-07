@@ -1,10 +1,10 @@
+import { AppHeader } from '@/components/common';
 import { useControlPanel } from '@/contexts/ControlPanelContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useAuth } from '@/hooks/useAuth';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
-import AppHeader from '../AppHeader';
 
 jest.mock('@/hooks/useAuth');
 jest.mock('@/contexts/EventPhaseContext');
@@ -12,7 +12,7 @@ jest.mock('@/contexts/ControlPanelContext');
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
 }));
-jest.mock('@/components/ui/LoadingSpinner', () => ({
+jest.mock('@/components/common/ui', () => ({
   LoadingSpinner: () => <div data-testid="loading-spinner">Loading...</div>,
 }));
 
@@ -85,10 +85,10 @@ describe('AppHeader', () => {
     expect(screen.getByText('Recepción')).toBeInTheDocument();
   });
 
-  it('displays event phase loading spinner', () => {
+  it('hides event phase when loading', () => {
     mockUseEventPhase.mockReturnValue({ ...defaultEventPhaseContext, isLoadingEventPhase: true });
     render(<AppHeader />);
-    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    expect(screen.queryByText('Recepción')).not.toBeInTheDocument();
   });
 
   it('toggles dark mode', () => {

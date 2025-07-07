@@ -59,7 +59,6 @@ Sistema completo de gestión logística para los eventos presenciales del Math T
 ### Rutas Públicas y Display
 - `/display/ready-to-pickup` - Vista informativa optimizada para pantalla gigante
 - `/` - Página principal con sistema de login
-- `/demo` - Página de demostración del sistema
 
 ## Funcionalidades Detalladas
 

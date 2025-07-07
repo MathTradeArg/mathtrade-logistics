@@ -35,6 +35,10 @@ export interface BoxManagementState {
   getDestinationsWithBoxes: () => string[];
   getFilteredBoxes: () => Box[];
   getItemsAvailableForBox: (boxId: number) => Item[];
+
+  getLocationsWithAllItemsBoxed: () => { id: number; name: string }[];
+  getLocationsWithNoDeliverableItems: () => { id: number; name: string }[];
+  getItemsGroupedByNoDeliverableLocations: () => { [key: string]: Item[] };
   
   setDestinationFilter: (filter: string) => void;
   setSearchFilter: (filter: string) => void;
@@ -326,14 +330,54 @@ export const useBoxManagement = (): BoxManagementState => {
 
   const getAvailableDestinations = useCallback(() => {
     const destinations = new Map<number, string>();
-    
     availableItems.forEach(item => {
-      if (item.location && item.location_name) {
+      if (
+        item.location &&
+        item.location_name &&
+        item.status === 5 &&
+        !item.box_number
+      ) {
         destinations.set(item.location, item.location_name);
       }
     });
-    
     return Array.from(destinations.entries()).map(([id, name]) => ({ id, name }));
+  }, [availableItems]);
+
+  const getLocationsWithAllItemsBoxed = useCallback(() => {
+    const locationMap = new Map<number, { name: string; totalDeliverable: number; boxed: number }>();
+    availableItems.forEach(item => {
+      if (item.location && item.location_name) {
+        const entry = locationMap.get(item.location) || { name: item.location_name, totalDeliverable: 0, boxed: 0 };
+        if (item.status === 5) {
+          entry.totalDeliverable += 1;
+          if (item.box_number) {
+            entry.boxed += 1;
+          }
+        }
+        locationMap.set(item.location, entry);
+      }
+    });
+    return Array.from(locationMap.entries())
+      .filter(([_, entry]) => {
+        return entry.totalDeliverable > 0 && entry.boxed === entry.totalDeliverable;
+      })
+      .map(([id, entry]) => ({ id, name: entry.name }));
+  }, [availableItems]);
+
+  const getLocationsWithNoDeliverableItems = useCallback(() => {
+    const locationMap = new Map<number, { name: string; hasItemsInState5: boolean }>();
+    availableItems.forEach(item => {
+      if (item.location && item.location_name) {
+        const entry = locationMap.get(item.location) || { name: item.location_name, hasItemsInState5: false };
+        if (item.status === 5) {
+          entry.hasItemsInState5 = true;
+        }
+        locationMap.set(item.location, entry);
+      }
+    });
+    return Array.from(locationMap.entries())
+      .filter(([_, entry]) => !entry.hasItemsInState5)
+      .map(([id, entry]) => ({ id, name: entry.name }));
   }, [availableItems]);
 
   const getDestinationsWithBoxes = useCallback(() => {
@@ -377,6 +421,25 @@ export const useBoxManagement = (): BoxManagementState => {
     );
   }, [availableItems, boxes]);
 
+  const getItemsGroupedByNoDeliverableLocations = useCallback(() => {
+    const locationsWithNoDeliverables = getLocationsWithNoDeliverableItems();
+    const locationIds = new Set(locationsWithNoDeliverables.map(loc => loc.id));
+    
+    const groupedItems: { [key: string]: Item[] } = {};
+    
+    availableItems.forEach(item => {
+      if (item.location && item.location_name && locationIds.has(item.location)) {
+        const locationName = item.location_name;
+        if (!groupedItems[locationName]) {
+          groupedItems[locationName] = [];
+        }
+        groupedItems[locationName].push(item);
+      }
+    });
+    
+    return groupedItems;
+  }, [availableItems, getLocationsWithNoDeliverableItems]);
+
   return {
     boxes,
     isLoadingBoxes: isInitialLoading && isLoadingBoxes,
@@ -397,6 +460,10 @@ export const useBoxManagement = (): BoxManagementState => {
     getDestinationsWithBoxes,
     getFilteredBoxes,
     getItemsAvailableForBox,
+
+    getLocationsWithAllItemsBoxed,
+    getLocationsWithNoDeliverableItems,
+    getItemsGroupedByNoDeliverableLocations,
     
     setDestinationFilter,
     setSearchFilter,

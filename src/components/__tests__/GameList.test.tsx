@@ -1,10 +1,9 @@
-import { fireEvent, render, screen, act } from '@testing-library/react';
+import { GameList } from '@/components/trades';
+import { Trade, User } from '@/types';
 import '@testing-library/jest-dom';
-import GameList from '../GameList';
-import { Trade } from '@/types';
-import { Key, ReactElement, JSXElementConstructor, ReactNode, ReactPortal, AwaitedReactNode } from 'react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 
-jest.mock('../ConfirmationModal', () => {
+jest.mock('@/components/trades/ConfirmationModal', () => {
   return jest.fn(({ isOpen, onConfirm, itemsToDeliver, actionType, modalTitle }) => {
     if (!isOpen) return null;
     return (
@@ -22,17 +21,23 @@ jest.mock('../ConfirmationModal', () => {
   });
 });
 
-jest.mock('../GameRowItem', () => {
-  return jest.fn(({ id, title, isSelected, onRowClick, showCheckbox, onCheckboxChange, variant }) => (
+jest.mock('@/components/common', () => ({
+  GameRowItem: jest.fn(({ id, title, isSelected, onRowClick, showCheckbox, onCheckboxChange, variant }) => (
     <li data-testid={`game-row-${id}`} onClick={onRowClick || onCheckboxChange}>
       <span>{title}</span>
       {showCheckbox && <input type="checkbox" readOnly checked={!!isSelected} />}
       <span className="variant-info hidden">{variant}</span>
     </li>
-  ));
-});
+  ))
+}));
 
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
+
+const mockUser: User = {
+  id: 123,
+  first_name: 'Test',
+  last_name: 'User'
+};
 
 const mockTrades: Trade[] = [
   {
@@ -60,9 +65,9 @@ describe('GameList', () => {
     jest.clearAllMocks();
   });
 
-   afterEach(() => {
+  afterEach(() => {
     jest.useRealTimers();
-  }); 
+  });
 
   describe('in "deliver" mode', () => {
     const deliverProps = {
@@ -71,12 +76,13 @@ describe('GameList', () => {
       onFinish: mockOnFinish,
       deliveredByUserId: 1,
       mode: 'deliver' as const,
+      user: mockUser
     };
 
     it('renders user info, table number, and summary correctly', () => {
       render(<GameList {...deliverProps} />);
-      
-      expect(screen.getByRole('heading', { name: /Juan Perez/i })).toBeInTheDocument();
+
+      expect(screen.getByRole('heading', { name: /Test User/i })).toBeInTheDocument();
 
       const mesaElement = screen.getByText(/Mesa:/i);
       expect(mesaElement).toBeInTheDocument();
@@ -110,20 +116,20 @@ describe('GameList', () => {
     it('opens confirmation modal for "Entregar TODO"', () => {
       render(<GameList {...deliverProps} />);
       fireEvent.click(screen.getByRole('button', { name: /Entregar TODO lo listo/i }));
-      
+
       expect(screen.getByTestId('confirmation-modal')).toBeInTheDocument();
-      expect(screen.getByTestId('modal-title')).toHaveTextContent('Confirmar Entrega a Juan');
+      expect(screen.getByTestId('modal-title')).toHaveTextContent('Confirmar Entrega a Test');
       expect(screen.getByTestId('modal-action-type')).toHaveTextContent('all');
       expect(screen.getByTestId('modal-items')).toHaveTextContent('Juego A');
       expect(screen.getByTestId('modal-items')).not.toHaveTextContent('Juego B');
     });
 
     it('calls onUpdateItems and scrolls on "all" confirmation', async () => {
-            jest.useFakeTimers();
+      jest.useFakeTimers();
 
       render(<GameList {...deliverProps} />);
       fireEvent.click(screen.getByRole('button', { name: /Entregar TODO lo listo/i }));
-      
+
       const confirmButton = screen.getByRole('button', { name: 'Confirm' });
       await act(async () => {
         fireEvent.click(confirmButton);
@@ -144,24 +150,24 @@ describe('GameList', () => {
       { result: { assigned_trade_code: 202, status_display: 'Delivered' }, math_item_exchanged: { title: 'Juego Recibir B' }, to_member: { first_name: 'Maria', last_name: 'Lopez' } } as unknown as Trade,
     ];
 
-    const receiveProps = { trades: receiveTrades, onUpdateItems: mockOnUpdateItems, onFinish: mockOnFinish, deliveredByUserId: 1, mode: 'receive' as const };
+    const receiveProps = { trades: receiveTrades, onUpdateItems: mockOnUpdateItems, onFinish: mockOnFinish, deliveredByUserId: 1, mode: 'receive' as const, user: mockUser };
 
     it('renders summary and buttons correctly', () => {
       render(<GameList {...receiveProps} />);
-      expect(screen.getByRole('heading', { name: /Maria Lopez/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Test User/i })).toBeInTheDocument();
       expect(screen.queryByText(/Mesa:/i)).not.toBeInTheDocument();
 
       const summaryElement = screen.getByText(/Resumen:/i);
       expect(summaryElement.textContent).toMatch(/1 juego pendiente de 2 en total/);
 
       const receivedElement = screen.getByText(/ya recibido/i);
-      expect(receivedElement.textContent).toMatch(/\(1 ya recibido\)/);      expect(screen.getByRole('button', { name: /Recibir TODO lo pendiente/i })).toBeInTheDocument();
+      expect(receivedElement.textContent).toMatch(/\(1 ya recibido\)/); expect(screen.getByRole('button', { name: /Recibir TODO lo pendiente/i })).toBeInTheDocument();
     });
 
     it('calls onUpdateItems when "Recibir lo marcado" is confirmed', async () => {
       render(<GameList {...receiveProps} />);
       fireEvent.click(screen.getByRole('button', { name: /Recibir lo marcado/i }));
-      
+
       const confirmButton = screen.getByRole('button', { name: 'Confirm' });
       await act(async () => { fireEvent.click(confirmButton); });
 
@@ -172,18 +178,18 @@ describe('GameList', () => {
 
   describe('General behavior', () => {
     it('renders a "no items" message when trades array is empty', () => {
-      render(<GameList trades={[]} onUpdateItems={mockOnUpdateItems} onFinish={mockOnFinish} deliveredByUserId={1} mode="deliver" />);
+      render(<GameList user={mockUser} trades={[]} onUpdateItems={mockOnUpdateItems} onFinish={mockOnFinish} deliveredByUserId={1} mode="deliver" />);
       expect(screen.getByText('Este usuario no tiene juegos pendientes de retirar.')).toBeInTheDocument();
     });
 
     it('changes finish button text when all items are completed', () => {
       const allCompletedTrades = mockTrades.map(t => ({ ...t, result: { ...t.result, status_display: 'Delivered' } }));
-      render(<GameList trades={allCompletedTrades} onUpdateItems={mockOnUpdateItems} onFinish={mockOnFinish} deliveredByUserId={1} mode="deliver" />);
+      render(<GameList user={mockUser} trades={allCompletedTrades} onUpdateItems={mockOnUpdateItems} onFinish={mockOnFinish} deliveredByUserId={1} mode="deliver" />);
       expect(screen.getByRole('button', { name: /Todo entregado. Siguiente QR/i })).toBeInTheDocument();
     });
 
     it('disables action buttons when disabled prop is true', () => {
-      render(<GameList trades={mockTrades} onUpdateItems={mockOnUpdateItems} onFinish={mockOnFinish} deliveredByUserId={1} mode="deliver" disabled={true} />);
+      render(<GameList user={mockUser} trades={mockTrades} onUpdateItems={mockOnUpdateItems} onFinish={mockOnFinish} deliveredByUserId={1} mode="deliver" disabled={true} />);
       expect(screen.getByRole('button', { name: /Entregar TODO lo listo/i })).toBeDisabled();
       expect(screen.getByRole('button', { name: /Entregar lo marcado/i })).toBeDisabled();
     });

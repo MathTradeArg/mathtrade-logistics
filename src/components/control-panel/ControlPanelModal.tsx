@@ -31,7 +31,6 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
     openPanel,
   } = useControlPanel();
   const { eventPhase, updateEventPhase } = useEventPhase();
-  const { isHighContrast, toggleHighContrast } = useAuth();
   const { setSuccess, setError } = useActionStatus();
 
   const [searchValue, setSearchValue] = useState('');
@@ -138,8 +137,6 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
             </>
           )}
         </div>
-
-        {/*<PreferenceToggle isHighContrast={isHighContrast} onToggle={toggleHighContrast} />*/}
 
         {isAdmin && (
           <div className="border-t border-gray-200 dark:border-gray-700 my-4 py-4">

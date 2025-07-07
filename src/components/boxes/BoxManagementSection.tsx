@@ -61,6 +61,7 @@ export default function BoxManagementSection({
   const [expandedBoxId, setExpandedBoxId] = useState<number | null>(null);
   const [showAddItemsToBox, setShowAddItemsToBox] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ boxId: number; boxName: string } | null>(null);
+  const [confirmRemoveItem, setConfirmRemoveItem] = useState<{ boxId: number; itemId: number, itemTitle: string } | null>(null);
   const [recentlyModifiedBoxes, setRecentlyModifiedBoxes] = useState<Set<number>>(new Set());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollToBoxId, setScrollToBoxId] = useState<number | null>(null);
@@ -245,8 +246,13 @@ export default function BoxManagementSection({
     setShowCreateForm(false);
     setSelectedDestinationForNewBox('');
   }, { hapticType: 'light' });
-  const closeAddItemsPanelClick = useHapticClick(handleCloseAddItemsModal, { hapticType: 'light' });
   const closeDeleteModalClick = useHapticClick(() => setConfirmDelete(null), { hapticType: 'light' });
+  const closeRemoveItemModalClick = useHapticClick(() => setConfirmRemoveItem(null), { hapticType: 'light' });
+  const confirmRemoveItemClick = useHapticClick(() => {
+    if (confirmRemoveItem) {
+      handleRemoveItem(confirmRemoveItem.boxId, confirmRemoveItem.itemId);
+    }
+  }, { hapticType: 'heavy' });
   const confirmDeleteClick = useHapticClick(() => {
     if (confirmDelete) {
       handleDeleteBox(confirmDelete.boxId);
@@ -320,7 +326,7 @@ export default function BoxManagementSection({
   }
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div>
       <div className="flex-shrink-0 mb-4 space-y-3">
         {!hideCreateButton && (
           <div className="flex justify-between items-center">
@@ -405,7 +411,7 @@ export default function BoxManagementSection({
         </div>
       </div>
 
-      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto">
+      <div ref={scrollContainerRef}>
         {filteredBoxes.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             {boxes.length === 0 ? "No hay cajas creadas aún." : "No se encontraron cajas que coincidan con los filtros."}
@@ -482,7 +488,7 @@ export default function BoxManagementSection({
                               ownerName={`${item.first_name || ''} ${item.last_name || ''}`}
                               isSelected={false}
                               variant="box-item"
-                              onRemoveItem={() => handleRemoveItemWithHaptic(box.id, item.id)}
+                              onRemoveItem={() => setConfirmRemoveItem({ boxId: box.id, itemId: item.id, itemTitle: item.title })}
                             />
                           </div>
                         ))}
@@ -588,6 +594,19 @@ export default function BoxManagementSection({
           modalTitle={`Eliminar ${confirmDelete.boxName}`}
           mode="delete-box"
           customMessage={`¿Estás seguro de que querés eliminar ${confirmDelete.boxName}? Esta acción no se puede deshacer.`}
+        />
+      )}
+
+      {confirmRemoveItem && (
+        <ConfirmationModal
+          isOpen={true}
+          onClose={closeRemoveItemModalClick}
+          onConfirm={confirmRemoveItemClick}
+          itemsToDeliver={[]}
+          actionType="all"
+          modalTitle={`${confirmRemoveItem.itemTitle}`}
+          mode="delete-box"
+          customMessage={`¿Estás seguro de que querés sacar este item de la caja?`}
         />
       )}
     </div>

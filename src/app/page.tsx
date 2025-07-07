@@ -25,7 +25,7 @@ function LandingPageContent() {
   const isBoxesEnabled = eventPhase === 1 || eventPhase === 2;
 
   return (
-    <main className="flex flex-col items-center min-h-dvh nm-surface text-gray-900 dark:text-gray-100">
+    <main className="flex flex-col items-center min-h-dvh text-gray-900 dark:text-gray-100">
       {isAuthenticated && (
         <AppHeader
           showBackButton={false}

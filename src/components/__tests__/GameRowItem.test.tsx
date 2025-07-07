@@ -1,7 +1,6 @@
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { GameRowItem } from '@/components/common';
 import '@testing-library/jest-dom';
-import GameRowItem from '../GameRowItem';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 describe('GameRowItem', () => {
   const defaultProps = {

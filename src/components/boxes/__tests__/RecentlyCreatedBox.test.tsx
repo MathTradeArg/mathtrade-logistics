@@ -22,9 +22,10 @@ describe('RecentlyCreatedBox', () => {
     selectedItemIds: new Set(),
     created_by_username: null,
     created_by_first_name: null,
-    created_by_last_name: null,  
+    created_by_last_name: null,
     origin: 0,
-    origin_name: ''
+    origin_name: '',
+    destiny: 0
   };
 
   it('renders box information and items', () => {

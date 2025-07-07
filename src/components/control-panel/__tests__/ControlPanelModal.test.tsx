@@ -1,9 +1,11 @@
 import { useControlPanel } from '@/contexts/ControlPanelContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useAuth } from '@/hooks/useAuth';
+import { ActionStatusProvider, useActionStatus } from '@/contexts/ActionStatusContext';
 import { GameStatusCode } from '@/types';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import React from 'react';
 import ControlPanelModal from '../ControlPanelModal';
 
 jest.mock('next/navigation', () => ({
@@ -15,6 +17,7 @@ jest.mock('next/navigation', () => ({
 jest.mock('@/contexts/ControlPanelContext');
 jest.mock('@/contexts/EventPhaseContext');
 jest.mock('@/hooks/useAuth');
+jest.mock('@/contexts/ActionStatusContext');
 jest.mock('@/components/control-panel/GameDetailsDisplay', () => ({
   GameDetailsDisplay: (props: any) => (
     <div data-testid="game-details-display">
@@ -28,9 +31,12 @@ jest.mock('@/components/control-panel/GameDetailsDisplay', () => ({
 const mockUseControlPanel = useControlPanel as jest.Mock;
 const mockUseEventPhase = useEventPhase as jest.Mock;
 const mockUseAuth = useAuth as jest.Mock;
+const mockUseActionStatus = useActionStatus as jest.Mock;
 
 describe('ControlPanelModal', () => {
   const mockOnClose = jest.fn();
+  const mockSetError = jest.fn();
+  const mockSetSuccess = jest.fn();
 
   const defaultControlPanelContext = {
     gameDetail: null,
@@ -47,8 +53,18 @@ describe('ControlPanelModal', () => {
   };
 
   const defaultAuthContext = {
-    isHighContrast: false,
-    toggleHighContrast: jest.fn(),
+    isDarkMode: false,
+    toggleDarkMode: jest.fn(),
+  };
+
+  const defaultActionStatusContext = {
+    setError: mockSetError,
+    setSuccess: mockSetSuccess,
+    clearMessages: jest.fn(),
+  };
+
+  const renderWithProviders = (component: React.ReactElement) => {
+    return render(component);
   };
 
   beforeEach(() => {
@@ -56,34 +72,35 @@ describe('ControlPanelModal', () => {
     mockUseControlPanel.mockReturnValue(defaultControlPanelContext);
     mockUseEventPhase.mockReturnValue(defaultEventPhaseContext);
     mockUseAuth.mockReturnValue(defaultAuthContext);
+    mockUseActionStatus.mockReturnValue(defaultActionStatusContext);
   });
 
   it('renders null when isOpen is false', () => {
-    const { container } = render(<ControlPanelModal isOpen={false} onClose={mockOnClose} isAdmin={false} />);
+    const { container } = renderWithProviders(<ControlPanelModal isOpen={false} onClose={mockOnClose} isAdmin={false} />);
     expect(container.firstChild).toBeNull();
   });
 
   it('renders the modal when isOpen is true', () => {
-    render(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={false} />);
+    renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={false} />);
     expect(screen.getByText('Panel de Control')).toBeInTheDocument();
   });
 
   it('calls onClose with false when close button is clicked and no action was successful', () => {
-    render(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={false} />);
+    renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={false} />);
     fireEvent.click(screen.getAllByRole('button')[0]);
     expect(mockOnClose).toHaveBeenCalledWith(false);
   });
 
   it('displays loading spinner when searching for a game', () => {
     mockUseControlPanel.mockReturnValue({ ...defaultControlPanelContext, isLoading: true });
-    render(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={false} />);
+    renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={false} />);
     expect(screen.getByText('Buscando juego...')).toBeInTheDocument();
   });
 
   it('displays search error message', () => {
     const errorMessage = 'Game not found';
     mockUseControlPanel.mockReturnValue({ ...defaultControlPanelContext, error: errorMessage });
-    render(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={false} />);
+    renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={false} />);
     expect(screen.getByText(errorMessage)).toBeInTheDocument();
   });
 
@@ -98,17 +115,17 @@ describe('ControlPanelModal', () => {
       change_by: { id: 2, first_name: 'Admin', last_name: 'User' },
     };
     mockUseControlPanel.mockReturnValue({ ...defaultControlPanelContext, gameDetail });
-    render(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={false} />);
+    renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={false} />);
     expect(screen.getByTestId('game-details-display')).toBeInTheDocument();
   });
 
   it('does not render AdminSection if user is not admin', () => {
-    render(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={false} />);
+    renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={false} />);
     expect(screen.queryByText('Acciones de Administrador')).not.toBeInTheDocument();
   });
 
   it('renders AdminSection if user is admin', () => {
-    render(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
+    renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
     expect(screen.getByText('Acciones de Administrador')).toBeInTheDocument();
   });
 
@@ -127,7 +144,7 @@ describe('ControlPanelModal', () => {
     updateGameStatus: updateGameStatusMock,
   });
 
-  render(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
+  renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
 
   fireEvent.click(screen.getByText('Perform Game Action'));
 
@@ -154,7 +171,7 @@ describe('ControlPanelModal', () => {
 
     window.confirm = jest.fn(() => true);
 
-    render(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
+    renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
 
     const phaseButton = screen.getByRole('button', { name: 'Entrega' });
     fireEvent.click(phaseButton);
@@ -189,7 +206,7 @@ describe('ControlPanelModal', () => {
       updateGameStatus: updateGameStatusMock, 
     });
 
-    render(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
+    renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
 
     fireEvent.click(screen.getByText('Perform Game Action'));
 
@@ -212,12 +229,12 @@ describe('ControlPanelModal', () => {
 
     window.confirm = jest.fn(() => true);
 
-    render(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
+    renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Entrega' }));
 
     await waitFor(() => {
-      expect(screen.getByText(errorMessage)).toBeInTheDocument();
+      expect(mockSetError).toHaveBeenCalledWith(errorMessage);
     });
   });
 
@@ -230,7 +247,7 @@ describe('ControlPanelModal', () => {
       gameDetail,
       gameActionLoading: true, 
     });
-    render(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
+    renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
 
     expect(screen.getByText('Procesando...')).toBeInTheDocument();
   });
@@ -244,7 +261,7 @@ describe('ControlPanelModal', () => {
 
     window.confirm = jest.fn(() => true);
 
-    render(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
+    renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Entrega' }));
 

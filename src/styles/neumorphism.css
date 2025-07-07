@@ -1,9 +1,7 @@
 .dark .nm-idbox-selected {
   background: rgb(57 105 185) !important;
   color: #ffe082;
-  box-shadow:
-    inset 2px 2px 8px #181a20,
-    inset -2px -2px 8px #2d313a;
+  box-shadow: inset 2px 2px 8px #181a20, inset -2px -2px 8px #2d313a;
   border: 1.5px rgb(57 105 185);
 }
 .dark body:not(.main-landing) svg,
@@ -20,44 +18,41 @@
 }
 .dark .nm-idbox {
   background: #22304a;
-  box-shadow:
-    2px 2px 8px #181a20,
-    -2px -2px 8px #2d313a;
+  box-shadow: 2px 2px 8px #181a20, -2px -2px 8px #2d313a;
   color: #e0e0e6;
 }
 .dark .nm-surface {
   background: #23272f !important;
-  box-shadow:
-    4px 4px 12px #181a20,
-    -4px -4px 12px #2d313a;
+  box-shadow: 4px 4px 12px #181a20, -4px -4px 12px #2d313a;
 }
+.dark .nm-surface-inset {
+  background: #23272f !important;
+  box-shadow: inset 4px 4px 12px #181a20, inset -4px -4px 12px #2d313a;
+}
+
+.dark .nm-body {
+  background: #23272f !important;
+}
+
 .dark .nm-btn-primary {
   background: linear-gradient(90deg, #3b4252 0%, #23272f 100%);
   color: #ffe082;
-  box-shadow:
-    4px 4px 12px #181a20,
-    -4px -4px 12px #2d313a;
+  box-shadow: 4px 4px 12px #181a20, -4px -4px 12px #2d313a;
 }
 .dark .nm-btn-secondary {
   background: linear-gradient(90deg, #1e88e5 0%, #23272f 100%);
   color: #b3e5fc;
-  box-shadow:
-    4px 4px 12px #181a20,
-    -4px -4px 12px #2d313a;
+  box-shadow: 4px 4px 12px #181a20, -4px -4px 12px #2d313a;
 }
 .dark .nm-btn-warning {
   background: linear-gradient(90deg, #ffb74d 0%, #23272f 100%);
   color: #ffecb3;
-  box-shadow:
-    4px 4px 12px #181a20,
-    -4px -4px 12px #2d313a;
+  box-shadow: 4px 4px 12px #181a20, -4px -4px 12px #2d313a;
 }
 .dark .nm-btn-danger {
   background: linear-gradient(90deg, #f44336 0%, #23272f 100%);
   color: #ffcdd2;
-  box-shadow:
-    4px 4px 12px #181a20,
-    -4px -4px 12px #2d313a;
+  box-shadow: 4px 4px 12px #181a20, -4px -4px 12px #2d313a;
 }
 .dark .nm-btn-danger:hover {
   background: linear-gradient(90deg, #d32f2f 0%, #23272f 100%);
@@ -65,42 +60,33 @@
 .dark .nm-btn-finish {
   background: linear-gradient(90deg, #23272f 0%, #2d313a 100%);
   color: #fff;
-  box-shadow:
-    4px 4px 12px #181a20,
-    -4px -4px 12px #2d313a;
+  box-shadow: 4px 4px 12px #181a20, -4px -4px 12px #2d313a;
 }
-.dark .nm-list, .dark .nm-list-item {
+.dark .nm-list,
+.dark .nm-list-item {
   background: #23272f;
-  box-shadow:
-    2px 2px 6px #181a20,
-    -2px -2px 6px #2d313a;
+  box-shadow: 2px 2px 6px #181a20, -2px -2px 6px #2d313a;
 }
 .dark .nm-list-item-selected {
   background: #181a20;
-  box-shadow:
-    inset 2px 2px 6px #181a20,
-    inset -2px -2px 6px #2d313a;
+  box-shadow: inset 2px 2px 6px #181a20, inset -2px -2px 6px #2d313a;
 }
-.dark .nm-btn, .dark .nm-pressed {
+.dark .nm-btn,
+.dark .nm-pressed {
   background: #23272f !important;
   color: #fff;
-  box-shadow:
-    2px 2px 6px #181a20,
-    -2px -2px 6px #2d313a;
+  box-shadow: 2px 2px 6px #181a20, -2px -2px 6px #2d313a;
 }
 .dark .nm-btn-colored {
   background: linear-gradient(90deg, #353a45 0%, #23272f 100%);
   color: #ffe082;
-  box-shadow:
-    2px 2px 8px #181a20,
-    -2px -2px 8px #2d313a;
+  box-shadow: 2px 2px 8px #181a20, -2px -2px 8px #2d313a;
 }
 .dark .nm-btn-colored:active {
-  box-shadow:
-    inset 2px 2px 6px #181a20,
-    inset -2px -2px 6px #2d313a;
+  box-shadow: inset 2px 2px 6px #181a20, inset -2px -2px 6px #2d313a;
 }
-.dark .nm-input, .dark .nm-select {
+.dark .nm-input,
+.dark .nm-select {
   background: #23272f;
   color: #e0e0e6;
   border-radius: 10px;
@@ -109,13 +95,11 @@
     -2px -2px 4px #2d313a;
   border: 0px solid #23272f !important;
 }
-.dark .nm-input:focus, .dark .nm-select:focus {
+.dark .nm-input:focus,
+.dark .nm-select:focus {
   outline: none;
   border: 1.5px solid #7dd3fc;
-  box-shadow:
-    0 0 0 2px #7dd3fc,
-    2px 2px 4px #181a20,
-    -2px -2px 4px #2d313a;
+  box-shadow: 0 0 0 2px #7dd3fc, 2px 2px 4px #181a20, -2px -2px 4px #2d313a;
 }
 .nm-text-shadow {
   text-shadow: 0 1px 2px #e0e0e6, 0 0.5px 0 #fff;
@@ -145,11 +129,21 @@
 }
 
 .nm-font {
-  font-family: 'Quicksand', 'Nunito', 'Segoe UI', 'Arial', sans-serif;
+  font-family: "Baloo 2", sans-serif;
   letter-spacing: 0.01em;
 }
-body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-secondary, .nm-btn-warning, .nm-btn-finish, .nm-input, .nm-select {
-  font-family: 'Quicksand', 'Nunito', 'Segoe UI', 'Arial', sans-serif;
+body,
+.nm-surface,
+.nm-list,
+.nm-list-item,
+.nm-btn,
+.nm-btn-primary,
+.nm-btn-secondary,
+.nm-btn-warning,
+.nm-btn-finish,
+.nm-input,
+.nm-select {
+  font-family: "Baloo 2", sans-serif;
   letter-spacing: 0.01em;
 }
 
@@ -157,17 +151,13 @@ body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-se
   background: linear-gradient(90deg, #ffe082 0%, #ffd54f 100%);
   color: #7a5d00;
   border-radius: 14px;
-  box-shadow:
-    2px 2px 8px #d1d9e6,
-    -2px -2px 8px #ffffff;
+  box-shadow: 2px 2px 8px #d1d9e6, -2px -2px 8px #ffffff;
   border: none;
   font-weight: 700;
   transition: box-shadow 0.2s, background 0.2s, color 0.2s;
 }
 .nm-btn-colored:active {
-  box-shadow:
-    inset 2px 2px 6px #d1d9e6,
-    inset -2px -2px 6px #ffffff !important;
+  box-shadow: inset 2px 2px 6px #d1d9e6, inset -2px -2px 6px #ffffff !important;
 }
 .nm-input, .nm-select {
   background: #f0f0f3;
@@ -183,7 +173,7 @@ body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-se
   appearance: none;
 }
 .nm-select {
-  padding: 0.6rem 2.5rem 0.6rem 1rem; 
+  padding: 0.6rem 2.5rem 0.6rem 1rem;
   background-image: url('data:image/svg+xml;utf8,<svg fill="%2399aabb" height="20" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M5.516 7.548a.75.75 0 0 1 1.06 0L10 10.97l3.424-3.423a.75.75 0 1 1 1.06 1.06l-3.954 3.954a.75.75 0 0 1-1.06 0L5.516 8.608a.75.75 0 0 1 0-1.06z"></path></svg>');
   background-repeat: no-repeat;
   background-position: right 0.9rem center;
@@ -191,7 +181,7 @@ body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-se
 }
 .nm-input:focus, .nm-select:focus {
   outline: none;
-  border: 1.5px solid #b3e5fc;
+  border: none;
   box-shadow:
     0 0 0 2px #b3e5fc,
     2px 2px 4px #d1d9e6,
@@ -202,9 +192,7 @@ body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-se
   background: linear-gradient(90deg, #ffb74d 0%, #f0f0f3 100%);
   color: #7a4a00;
   border-radius: 12px;
-  box-shadow:
-    4px 4px 12px #d1d9e6,
-    -4px -4px 12px #ffffff;
+  box-shadow: 4px 4px 12px #d1d9e6, -4px -4px 12px #ffffff;
   border: none;
   font-weight: 700;
   padding: 0.85rem 1.5rem;
@@ -212,17 +200,13 @@ body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-se
   transition: box-shadow 0.2s, background 0.2s, color 0.2s;
 }
 .nm-btn-warning:active {
-  box-shadow:
-    inset 2px 2px 6px #d1d9e6,
-    inset -2px -2px 6px #ffffff !important;
+  box-shadow: inset 2px 2px 6px #d1d9e6, inset -2px -2px 6px #ffffff !important;
 }
 .nm-btn-primary {
   background: linear-gradient(90deg, #f7d774 0%, #f0f0f3 100%);
   color: #7a5d00;
   border-radius: 12px;
-  box-shadow:
-    4px 4px 12px #d1d9e6,
-    -4px -4px 12px #ffffff;
+  box-shadow: 4px 4px 12px #d1d9e6, -4px -4px 12px #ffffff;
   border: none;
   font-weight: 700;
   padding: 0.85rem 1.5rem;
@@ -230,18 +214,14 @@ body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-se
   transition: box-shadow 0.2s, background 0.2s, color 0.2s;
 }
 .nm-btn-primary:active {
-  box-shadow:
-    inset 2px 2px 6px #d1d9e6,
-    inset -2px -2px 6px #ffffff !important;
+  box-shadow: inset 2px 2px 6px #d1d9e6, inset -2px -2px 6px #ffffff !important;
 }
 
 .nm-btn-secondary {
   background: linear-gradient(90deg, #b3e5fc 0%, #f0f0f3 100%);
   color: #1565c0;
   border-radius: 12px;
-  box-shadow:
-    4px 4px 12px #d1d9e6,
-    -4px -4px 12px #ffffff;
+  box-shadow: 4px 4px 12px #d1d9e6, -4px -4px 12px #ffffff;
   border: none;
   font-weight: 700;
   padding: 0.85rem 1.5rem;
@@ -249,18 +229,14 @@ body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-se
   transition: box-shadow 0.2s, background 0.2s, color 0.2s;
 }
 .nm-btn-secondary:active {
-  box-shadow:
-    inset 2px 2px 6px #d1d9e6,
-    inset -2px -2px 6px #ffffff !important;
+  box-shadow: inset 2px 2px 6px #d1d9e6, inset -2px -2px 6px #ffffff !important;
 }
 
 .nm-btn-danger {
   background: linear-gradient(90deg, #ffcdd2 0%, #f0f0f3 100%);
   color: #c62828;
   border-radius: 12px;
-  box-shadow:
-    4px 4px 12px #d1d9e6,
-    -4px -4px 12px #ffffff;
+  box-shadow: 4px 4px 12px #d1d9e6, -4px -4px 12px #ffffff;
   border: none;
   font-weight: 700;
   padding: 0.85rem 1.5rem;
@@ -271,17 +247,13 @@ body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-se
   background: linear-gradient(90deg, #ffbcb7 0%, #f0f0f3 100%);
 }
 .nm-btn-danger:active {
-  box-shadow:
-    inset 2px 2px 6px #d1d9e6,
-    inset -2px -2px 6px #ffffff !important;
+  box-shadow: inset 2px 2px 6px #d1d9e6, inset -2px -2px 6px #ffffff !important;
 }
 .nm-btn-finish {
   background: linear-gradient(90deg, #e0e0e6 0%, #f0f0f3 100%);
   color: #333;
   border-radius: 12px;
-  box-shadow:
-    4px 4px 12px #d1d9e6,
-    -4px -4px 12px #ffffff;
+  box-shadow: 4px 4px 12px #d1d9e6, -4px -4px 12px #ffffff;
   border: none;
   font-weight: 700;
   padding: 0.85rem 1.5rem;
@@ -289,34 +261,26 @@ body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-se
   transition: box-shadow 0.2s, background 0.2s, color 0.2s;
 }
 .nm-btn-finish:active {
-  box-shadow:
-    inset 2px 2px 6px #d1d9e6,
-    inset -2px -2px 6px #ffffff !important;
+  box-shadow: inset 2px 2px 6px #d1d9e6, inset -2px -2px 6px #ffffff !important;
 }
 .nm-list {
   background: #f0f0f3;
   border-radius: 18px;
-  box-shadow:
-    4px 4px 8px #d1d9e6,
-    -4px -4px 8px #ffffff;
+  box-shadow: 4px 4px 8px #d1d9e6, -4px -4px 8px #ffffff;
   padding: 1rem;
 }
 
 .nm-list-item {
   background: #f0f0f3;
   border-radius: 18px;
-  box-shadow:
-    2px 2px 4px #d1d9e6,
-    -2px -2px 4px #ffffff;
+  box-shadow: 2px 2px 4px #d1d9e6, -2px -2px 4px #ffffff;
   margin-bottom: 1.1rem;
   transition: box-shadow 0.2s, background 0.2s;
 }
 
 .nm-idbox {
   border-radius: 12px !important;
-  box-shadow:
-    2px 2px 8px #d1d9e6,
-    -2px -2px 8px #ffffff;
+  box-shadow: 2px 2px 8px #d1d9e6, -2px -2px 8px #ffffff;
   margin-left: 0.5rem;
   margin-right: 1.2rem;
   margin-top: 0.3rem;
@@ -328,9 +292,7 @@ body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-se
 }
 
 .nm-list-item-selected {
-  box-shadow:
-    inset 2px 2px 4px #d1d9e6,
-    inset -2px -2px 4px #ffffff;
+  box-shadow: inset 2px 2px 4px #d1d9e6, inset -2px -2px 4px #ffffff;
   background: #e0e0e6;
 }
 
@@ -339,25 +301,29 @@ body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-se
   width: 1.2em;
   height: 1.2em;
   border-radius: 6px;
-  box-shadow:
-    1px 1px 2px #d1d9e6,
-    -1px -1px 2px #ffffff;
+  box-shadow: 1px 1px 2px #d1d9e6, -1px -1px 2px #ffffff;
   border: none;
 }
 
 .nm-btn-color {
   background: linear-gradient(90deg, #f7d774 0%, #f0f0f3 100%);
   color: #7a5d00;
-  box-shadow:
-    2px 2px 6px #d1d9e6,
-    -2px -2px 6px #ffffff;
+  box-shadow: 2px 2px 6px #d1d9e6, -2px -2px 6px #ffffff;
 }
+
+.nm-body {
+  background: #f0f0f3;
+}
+
 .nm-surface {
-  background: #f0f0f3 !important;
-  border-radius: 18px;
-  box-shadow:
-    8px 8px 16px #d1d9e6,
-    -8px -8px 16px #ffffff;
+  border-radius: 20px;
+  background: #f0f0f3;
+  box-shadow: 10px 10px 18px #979799, -10px -10px 18px #ffffff;
+}
+.nm-surface-inset {
+  border-radius: 20px;
+  background: #f0f0f3;
+  box-shadow: inset 10px 10px 18px #979799, inset -10px -10px 18px #ffffff;
 }
 
 .nm-surface-no-top-radius {
@@ -368,26 +334,20 @@ body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-se
 .nm-btn.nm-pressed {
   background: #e0e0e6 !important;
   border-radius: 18px;
-  box-shadow:
-    inset 4px 4px 8px #d1d9e6,
-    inset -4px -4px 8px #ffffff;
+  box-shadow: inset 4px 4px 8px #d1d9e6, inset -4px -4px 8px #ffffff;
 }
 
 .dark .nm-btn.nm-pressed {
   background: #181a20 !important;
   color: #ffe082;
   border-radius: 18px;
-  box-shadow:
-    inset 4px 4px 8px #181a20,
-    inset -4px -4px 8px #2d313a;
+  box-shadow: inset 4px 4px 8px #181a20, inset -4px -4px 8px #2d313a;
 }
 
 .nm-btn {
   background: #f0f0f3 !important;
   border-radius: 12px;
-  box-shadow:
-    4px 4px 8px #d1d9e6,
-    -4px -4px 8px #ffffff;
+  box-shadow: 4px 4px 8px #d1d9e6, -4px -4px 8px #ffffff;
   border: none;
   color: #333;
   padding: 0.75rem 1.5rem;
@@ -396,58 +356,38 @@ body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-se
 }
 
 .nm-btn:active {
-  box-shadow:
-    inset 2px 2px 4px #d1d9e6,
-    inset -2px -2px 4px #ffffff !important;
+  box-shadow: inset 2px 2px 4px #d1d9e6, inset -2px -2px 4px #ffffff !important;
 }
 
 .dark .nm-btn-primary:active {
-  box-shadow:
-    inset 2px 2px 6px #181a20,
-    inset -2px -2px 6px #2d313a !important;
+  box-shadow: inset 2px 2px 6px #181a20, inset -2px -2px 6px #2d313a !important;
 }
 .dark .nm-btn-secondary:active {
-  box-shadow:
-    inset 2px 2px 6px #181a20,
-    inset -2px -2px 6px #2d313a !important;
+  box-shadow: inset 2px 2px 6px #181a20, inset -2px -2px 6px #2d313a !important;
 }
 .dark .nm-btn-warning:active {
-  box-shadow:
-    inset 2px 2px 6px #181a20,
-    inset -2px -2px 6px #2d313a !important;
+  box-shadow: inset 2px 2px 6px #181a20, inset -2px -2px 6px #2d313a !important;
 }
 .dark .nm-btn-danger:active {
-  box-shadow:
-    inset 2px 2px 6px #181a20,
-    inset -2px -2px 6px #2d313a !important;
+  box-shadow: inset 2px 2px 6px #181a20, inset -2px -2px 6px #2d313a !important;
 }
 .dark .nm-btn-finish:active {
-  box-shadow:
-    inset 2px 2px 6px #181a20,
-    inset -2px -2px 6px #2d313a !important;
+  box-shadow: inset 2px 2px 6px #181a20, inset -2px -2px 6px #2d313a !important;
 }
 .dark .nm-btn:active {
-  box-shadow:
-    inset 2px 2px 4px #181a20,
-    inset -2px -2px 4px #2d313a !important;
+  box-shadow: inset 2px 2px 4px #181a20, inset -2px -2px 4px #2d313a !important;
 }
 .nm-surface-double {
   background: #f0f0f3 !important;
   border-radius: 2rem;
-  box-shadow:
-    12px 12px 32px #d1d9e6,
-    -12px -12px 32px #ffffff,
-    inset 0 0 24px 2px #e0e0e6,
-    inset 0 0 0 1.5px #fff;
+  box-shadow: 12px 12px 32px #d1d9e6, -12px -12px 32px #ffffff,
+    inset 0 0 24px 2px #e0e0e6, inset 0 0 0 1.5px #fff;
   position: relative;
 }
 .dark .nm-surface-double {
   background: #23272f !important;
-  box-shadow:
-    12px 12px 32px #181a20,
-    -12px -12px 32px #2d313a,
-    inset 0 0 24px 2px #181a20,
-    inset 0 0 0 1.5px #2d313a;
+  box-shadow: 12px 12px 32px #181a20, -12px -12px 32px #2d313a,
+    inset 0 0 24px 2px #181a20, inset 0 0 0 1.5px #2d313a;
 }
 
 .box-menu-enter {
@@ -490,13 +430,21 @@ body, .nm-surface, .nm-list, .nm-list-item, .nm-btn, .nm-btn-primary, .nm-btn-se
 .empty-box-container {
   border: 2px dashed #d1d5db;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(249, 250, 251, 0.5) 0%, rgba(243, 244, 246, 0.5) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(249, 250, 251, 0.5) 0%,
+    rgba(243, 244, 246, 0.5) 100%
+  );
   transition: all 0.3s ease;
 }
 
 .dark .empty-box-container {
   border-color: #4b5563;
-  background: linear-gradient(135deg, rgba(31, 41, 55, 0.5) 0%, rgba(17, 24, 39, 0.5) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(31, 41, 55, 0.5) 0%,
+    rgba(17, 24, 39, 0.5) 100%
+  );
 }
 
 .empty-box-container:hover {

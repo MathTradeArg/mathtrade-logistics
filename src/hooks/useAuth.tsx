@@ -23,11 +23,9 @@ interface AuthContextType {
   userId: string | null;
   isAdmin: boolean;
   isLoading: boolean;
-  isHighContrast: boolean;
   isDarkMode: boolean;
   login: (token: string, userDetails: UserDetails) => void;
   logout: () => void;
-  toggleHighContrast: () => void;
   toggleDarkMode: () => void;
 }
 
@@ -42,7 +40,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
-  const [isHighContrast, setIsHighContrast] = useState<boolean>(() => false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => false);
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -57,7 +54,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setIsHighContrast(localStorage.getItem('highContrastEnabled') === 'true');
       setIsDarkMode(localStorage.getItem('darkModeEnabled') === 'true');
     }
     // eslint-disable-next-line
@@ -96,16 +92,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     setIsLoading(false);
   }, [router, pathname]);
-
-  const toggleHighContrast = useCallback(() => {
-    setIsHighContrast(prev => {
-      const newState = !prev;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('highContrastEnabled', String(newState));
-      }
-      return newState;
-    });
-  }, []);
 
   const toggleDarkMode = useCallback(() => {
     setIsDarkMode(prev => {
@@ -158,11 +144,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         userId,
         isAdmin,
         isLoading,
-        isHighContrast,
         isDarkMode,
         login,
         logout,
-        toggleHighContrast,
         toggleDarkMode,
       }}
     >

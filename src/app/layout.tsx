@@ -86,7 +86,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ControlPanelProvider>
           <ActionStatusProvider>
             <html lang="es" className={`${nunito.variable} antialiased h-full`}>
-              <body className="nm-surface text-gray-800 dark:text-gray-100 h-full">
+              <body className="nm-body text-gray-800 dark:text-gray-100 h-full">
                 {children}
                 <GlobalControlPanel />
                 <ToastContainer />

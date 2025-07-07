@@ -2,12 +2,13 @@
 
 import { GameRowItem } from "@/components/common";
 import { ConfirmationModal } from '@/components/trades';
-import type { Trade } from "@/types";
+import type { Trade, User } from "@/types";
 import { useEffect, useMemo, useState } from 'react';
 import { useHapticClick } from '@/hooks/useHapticClick';
 
 interface GameListProps {
   trades: Trade[];
+  user: User | null;
   onUpdateItems: (itemIds: number[], deliveredByUserId: number) => Promise<void>;
   onFinish: () => void;
   deliveredByUserId: number | null;
@@ -15,7 +16,7 @@ interface GameListProps {
   mode: 'receive' | 'deliver';
 }
 
-const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, onFinish, deliveredByUserId, mode }) => {
+const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, onFinish, deliveredByUserId, mode, user }) => {
   const config = useMemo(() => {
     const receiveConfig = {
       isUnavailable: (trade: Trade) => false,
@@ -57,7 +58,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
         noItems: 'Este usuario no tiene juegos pendientes de retirar.',
         finishButtonIdle: 'Escanear otro QR',
         finishButtonCompleted: 'Todo entregado. Siguiente QR',
-        confirmTitle: `Confirmar Entrega a ${trades[0]?.to_member.first_name || ''}`,
+        confirmTitle: `Confirmar Entrega a ${user?.first_name || ''}`,
         disabledMessage: 'La entrega de juegos está deshabilitada en la fase actual del evento',
       },
       itemSortOrder: (status: string) => {
@@ -69,7 +70,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
     };
 
     return mode === 'receive' ? receiveConfig : deliverConfig;
-  }, [mode, trades]);
+  }, [mode, trades, user]);
 
   const pendingItems = useMemo(() => trades.filter(config.isPending), [trades, config]);
   const completedItemsCount = useMemo(() => trades.filter(config.isCompleted).length, [trades, config]);
@@ -157,7 +158,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
     <div className="w-full">
       <div className="mb-6 text-center">
         <h2 className="text-2xl sm:text-3xl font-bold text-secondary-blue dark:text-sky-400">
-          {trades[0]?.to_member.first_name} {trades[0]?.to_member.last_name}
+          {user?.first_name} {user?.last_name}
         </h2>
         {mode === 'deliver' && trades[0]?.result.table_number && (
           <p className="text-md text-gray-600 dark:text-gray-400 mt-1">Mesa: <span className="font-semibold">{trades[0].result.table_number}</span></p>

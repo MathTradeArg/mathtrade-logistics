@@ -40,8 +40,8 @@ describe('GameDetailsDisplay', () => {
     expect(screen.getByText('De:')).toBeInTheDocument();
     expect(screen.getByText('Juan Perez')).toBeInTheDocument();
     expect(screen.getByText('Estado:')).toBeInTheDocument();
-    expect(screen.getByText('En evento')).toBeInTheDocument();
-    expect(screen.getByText('Ubicación:')).toBeInTheDocument();
+    expect(screen.getByText('Pendiente')).toBeInTheDocument();
+    expect(screen.getByText('Destino:')).toBeInTheDocument();
     expect(screen.getByText('Mesa 5')).toBeInTheDocument();
     expect(screen.getByText('Último cambio por:')).toBeInTheDocument();
     expect(screen.getByText('Admin User')).toBeInTheDocument();
@@ -54,7 +54,7 @@ describe('GameDetailsDisplay', () => {
       change_by: null
     };
     render(<GameDetailsDisplay {...defaultProps} gameDetail={gameDetailWithoutExtras as unknown as GameDetail} />);
-    expect(screen.queryByText('Ubicación:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Destino:')).not.toBeInTheDocument();
     expect(screen.queryByText('Último cambio por:')).not.toBeInTheDocument();
   });
 

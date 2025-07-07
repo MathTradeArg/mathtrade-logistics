@@ -106,10 +106,10 @@ function AllReportsContent() {
   }
 
   return (
-    <main className="flex flex-col min-h-dvh nm-surface text-gray-900 dark:text-gray-100">
+    <main className="flex flex-col min-h-dvh text-gray-900 dark:text-gray-100">
       <AppHeader pageTitle="Todos los Reportes" pageIcon={Warning as any} showBackButton={true} />
 
-      <div className="sticky top-16 z-10 nm-surface border-b border-gray-200 dark:border-gray-800 shadow-sm">
+      <div className="sticky top-16 z-10 bg-white-800 dark:bg-gray-900 shadow-md">
         <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 pb-4">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

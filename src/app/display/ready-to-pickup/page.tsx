@@ -204,7 +204,7 @@ export default function DisplayReadyToPickupPage() {
   };
 
   return (
-    <main className="nm-surface w-full p-4 md:p-6 lg:p-8 flex flex-col min-h-screen text-gray-900 dark:text-gray-100 nm-font">
+    <main className="w-full p-4 md:p-6 lg:p-8 flex flex-col min-h-screen text-gray-900 dark:text-gray-100 nm-font">
       <div className="text-center mb-8">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center nm-text-shadow mb-4">
           <Users size={48} className="mr-4 text-sky-400 nm-appheader-icon" />

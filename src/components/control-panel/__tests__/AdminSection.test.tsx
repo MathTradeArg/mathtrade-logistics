@@ -60,7 +60,7 @@ describe('AdminSection', () => {
 
   it('navigates to ready-to-pickup page on admin panel button click', () => {
     render(<AdminSection {...defaultProps} />);
-    const adminButton = screen.getByRole('button', { name: /Panel Admin/i });
+    const adminButton = screen.getByRole('button', { name: /Administrar usuarios/i });
     fireEvent.click(adminButton);
     expect(mockClosePanel).toHaveBeenCalled();
     expect(router.push).toHaveBeenCalledWith('/admin/ready-to-pickup');

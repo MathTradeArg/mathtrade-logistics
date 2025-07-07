@@ -1,19 +1,20 @@
 "use client";
 
-import AppHeader from '@/components/common/AppHeader';
-import AssembleBoxSection from '@/components/boxes/AssembleBoxSection';
+import CreateBoxSection from '@/components/boxes/CreateBoxSection';
 import CreatedBoxesSection from '@/components/boxes/CreatedBoxesSection';
 import IncomingBoxesSection from '@/components/boxes/IncomingBoxesSection';
+import AppHeader from '@/components/common/AppHeader';
 import { LoadingSpinner } from '@/components/common/ui';
+import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useCreatedBoxes } from '@/hooks/boxes/useCreatedBoxes';
 import { useIncomingBoxes } from '@/hooks/boxes/useIncomingBoxes';
 import { useAuth } from '@/hooks/useAuth';
-import { ArchiveBox } from 'phosphor-react';
-import { useRouter } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { useHapticClick } from '@/hooks/useHapticClick';
 import '@/styles/neumorphism.css';
-import { useHapticClick } from '@/hooks/useHapticClick'; 
+import { useRouter } from 'next/navigation';
+import { ArchiveBox } from 'phosphor-react';
+import { Suspense, useEffect, useState } from 'react';
 
 export default function BoxesPage() {
   return (
@@ -97,7 +98,7 @@ function BoxesPageContent() {
   }
 
   return (
-    <main className="flex flex-col items-center min-h-dvh nm-surface text-gray-900 nm-font nm-text-shadow">
+    <main className="flex flex-col items-center min-h-dvh text-gray-900 nm-font nm-text-shadow">
       <AppHeader
         pageIcon={ArchiveBox as any}
         pageTitle="Cajas"
@@ -131,7 +132,7 @@ function BoxesPageContent() {
           </nav>
         </div>
 
-        <div className="p-1 sm:p-2 rounded-b-lg flex flex-col flex-grow min-h-0 mt-1">
+        <div className="p-1 sm:p-2 rounded-b-lg flex flex-col flex-grow min-h-0 mt-4">
           {isLoadingEventPhase && (
             <div className="flex justify-center items-center min-h-[120px]">
               <LoadingSpinner message="Cargando fase del evento..." />
@@ -154,7 +155,7 @@ function BoxesPageContent() {
                 />
               )}
               {activeTab === 'assemble' && (eventPhase === 1 || eventPhase === 2) && (
-                <AssembleBoxSection />
+                <CreateBoxSection />
               )}
               {activeTab === 'created' && (eventPhase === 1 || eventPhase === 2) && (
                 <CreatedBoxesSection

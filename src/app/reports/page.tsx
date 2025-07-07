@@ -138,16 +138,6 @@ function ReportsPageContent() {
     }
   });
 
-  const handleClearUserSelection = useHapticClick(() => {
-    setSelectedUser(null);
-    setSearchTermUsers('');
-  });
-
-  const handleClearItemSelection = useHapticClick(() => {
-    setSelectedItem(null);
-    setSearchTermItems('');
-  });
-
   const handleSelectItem = useHapticClick((item: Item) => setSelectedItem(item));
   const handleSelectUser = useHapticClick((user: User) => setSelectedUser(user));
   const handleGoToDescribeProblem = useHapticClick(() => setCurrentStep('describe_problem'));
@@ -315,7 +305,7 @@ function ReportsPageContent() {
   }
 
   return (
-    <main className="flex flex-col items-center min-h-dvh nm-surface text-gray-900 dark:text-gray-100">
+    <main className="flex flex-col items-center min-h-dvh text-gray-900 dark:text-gray-100">
       {isAuthenticated && (
         <AppHeader
           pageTitle="Reportar"
@@ -370,16 +360,10 @@ function ReportsPageContent() {
               <p className="text-red-500 dark:text-red-400 text-sm">{errorItems}</p>
             ) : (
               <form onSubmit={handleFindSubmit} className="space-y-4">
-                <div className='nm-input'>
+                <div className='nm-form-element-container'>
                   <input type="text" id="searchTermItems" value={searchTermItems} onChange={(e) => setSearchTermItems(e.target.value)} placeholder="Título o número de etiqueta" className="mt-1 block w-full px-3 py-2 nm-input rounded-md focus:outline-none focus:ring-0 focus:border-transparent active:outline-none active:ring-0 active:border-transparent sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" style={{ boxShadow: 'none' }} />
                 </div>
-                {selectedItem && (
-                  <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-200">
-                    <span>Ítem seleccionado: <span className="font-semibold">{selectedItem.title} (#{selectedItem.assigned_trade_code})</span></span>
-                    <button type="button" onClick={handleClearItemSelection} className="ml-2 p-1 rounded-full text-gray-500 hover:text-red-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" aria-label="Limpiar selección de ítem"><X size={16} /></button>
-                  </div>
-                )}
-                <div className="max-h-60 overflow-y-auto rounded-md p-1 space-y-1 nm-surface">
+                <div className="max-h-60 overflow-y-auto rounded-md p-1 space-y-1 nm-surface-inset">
                   {filteredItemsForDisplay.length > 0 ? (
                     filteredItemsForDisplay.map(item => (
                       <button key={item.id} type="button" onClick={() => handleSelectItem(item)} className={`w-full text-left p-2 rounded-md transition-colors ${selectedItem?.id === item.id ? 'bg-secondary-blue text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200'}`}>
@@ -411,18 +395,7 @@ function ReportsPageContent() {
                   <label htmlFor="searchTermUsers" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Buscar Usuario</label>
                   <input type="text" id="searchTermUsers" value={searchTermUsers} onChange={(e) => setSearchTermUsers(e.target.value)} placeholder="Nombre, BGG user o email" className="mt-1 block w-full px-3 py-2 nm-input rounded-md focus:outline-none focus:ring-0 focus:border-transparent active:outline-none active:ring-0 active:border-transparent sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100" style={{ boxShadow: 'none' }} />
                 </div>
-                {selectedUser && (
-                  <div className="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-md text-sm text-gray-700 dark:text-gray-200">
-                    <span>Usuario seleccionado: <span className="font-semibold">{selectedUser.first_name} {selectedUser.last_name} {selectedUser.bgg_user && `(${selectedUser.bgg_user})`}</span></span>
-                    <button
-                      type="button"
-                      onClick={handleClearUserSelection}
-                      className="ml-2 p-1 rounded-full text-gray-500 hover:text-red-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                      aria-label="Limpiar selección de usuario"
-                    ><X size={16} /></button>
-                  </div>
-                )}
-                <div className="max-h-60 overflow-y-auto rounded-md p-1 space-y-1 nm-surface">
+                <div className="max-h-60 overflow-y-auto rounded-md p-1 space-y-1 nm-surface-inset">
                   {filteredUsersForDisplay.length > 0 ? (
                     filteredUsersForDisplay.map(user => (
                       <button

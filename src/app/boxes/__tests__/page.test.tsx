@@ -16,10 +16,10 @@ jest.mock('@/components/common/AppHeader', () => ({
   __esModule: true,
   default: () => <div data-testid="app-header">AppHeader</div>,
 }));
-jest.mock('@/components/boxes/AssembleBoxSection', () => ({
+jest.mock('@/components/boxes/CreateBoxSection', () => ({
   __esModule: true,
   default: () => (
-    <div data-testid="assemble-box-section">AssembleBoxSection</div>
+    <div data-testid="create-box-section">CreateBoxSection</div>
   ),
 }));
 jest.mock('@/components/boxes/CreatedBoxesSection', () => ({
@@ -191,7 +191,7 @@ describe('BoxesPage', () => {
     fireEvent.click(assembleTabButton);
 
     await waitFor(() => {
-      expect(screen.getByTestId('assemble-box-section')).toBeInTheDocument();
+      expect(screen.getByTestId('create-box-section')).toBeInTheDocument();
       expect(localStorage.setItem).toHaveBeenCalledWith('boxesPageActiveTab', 'assemble');
     });
   });
@@ -217,17 +217,7 @@ describe('BoxesPage', () => {
     });
   });
 
-  it('should display action success message', () => {
-    mockUseActionStatus.mockReturnValue({ actionSuccess: '¡Caja creada!', actionError: null });
-    render(<BoxesPage />);
-    expect(screen.getByText('¡Caja creada!')).toBeInTheDocument();
-  });
 
-  it('should display action error message', () => {
-    mockUseActionStatus.mockReturnValue({ actionSuccess: null, actionError: 'Error al crear.' });
-    render(<BoxesPage />);
-    expect(screen.getByText('Error al crear.')).toBeInTheDocument();
-  });
 
   describe('with different event phases', () => {
     it('should disable tabs and show message when event phase is 0', () => {

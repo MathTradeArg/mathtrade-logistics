@@ -36,6 +36,9 @@ export default function CreateBoxSection() {
     getDestinationsWithBoxes,
     getFilteredBoxes,
     getItemsAvailableForBox,
+    getLocationsWithNoDeliverableItems,
+    getLocationsWithAllItemsBoxed,
+    getItemsGroupedByNoDeliverableLocations,
     setDestinationFilter,
     setSearchFilter,
     fetchBoxes,
@@ -48,6 +51,7 @@ export default function CreateBoxSection() {
   const [selectedDestinationForNewBox, setSelectedDestinationForNewBox] = useState<string>('');
   const [showAvailableItems, setShowAvailableItems] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ boxId: number; boxName: string } | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState<{ boxId: number; itemId: number; itemTitle: string } | null>(null);
   
   const [itemSearchFilter, setItemSearchFilter] = useState<string>('');
   const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(new Set());
@@ -56,6 +60,12 @@ export default function CreateBoxSection() {
   const availableDestinations = getAvailableDestinations();
   const destinationsWithBoxes = getDestinationsWithBoxes();
   const filteredBoxes = getFilteredBoxes();
+
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const locationsNoDeliverable = getLocationsWithNoDeliverableItems();
+  const locationsAllBoxed = getLocationsWithAllItemsBoxed();
+  const itemsGroupedByNoDeliverableLocations = getItemsGroupedByNoDeliverableLocations();
+  const shouldShowInfoButton = (locationsNoDeliverable.length > 0 || locationsAllBoxed.length > 0);
 
   useEffect(() => {
     fetchBoxes();
@@ -153,15 +163,6 @@ export default function CreateBoxSection() {
     });
   };
 
-  const handleSelectAll = (boxId: number) => {
-    const filteredItems = getFilteredAvailableItems(boxId);
-    setSelectedItemIds(new Set(filteredItems.map(item => item.id)));
-  };
-
-  const handleClearSelection = () => {
-    setSelectedItemIds(new Set());
-  };
-
   const handleCloseAvailableItemsModal = () => {
     setShowAvailableItems(false);
     setSelectedItemIds(new Set());
@@ -183,7 +184,10 @@ export default function CreateBoxSection() {
     setSelectedDestinationForNewBox('');
   });
   const createBoxClick = useHapticClick(handleCreateBox);
-  const closeCurrentBoxClick = useHapticClick(() => setCurrentBox(null));
+  const closeAndShowCreateFormClick = useHapticClick(() => {
+    setCurrentBox(null);
+    setShowCreateForm(true);
+  });
   const showAvailableItemsClick = useHapticClick(() => setShowAvailableItems(true));
   const hideAvailableItemsClick = useHapticClick(handleCloseAvailableItemsModal);
   const toggleBoxesMenuClick = useHapticClick(toggleBoxesMenu);
@@ -192,15 +196,19 @@ export default function CreateBoxSection() {
     setConfirmDelete({ boxId, boxName });
   });
   const closeDeleteModalClick = useHapticClick(() => setConfirmDelete(null));
+  const closeRemoveModalClick = useHapticClick(() => setConfirmRemove(null));
   const confirmDeleteClick = useHapticClick(() => {
     if (confirmDelete) {
       handleDeleteBox(confirmDelete.boxId);
     }
   });
+  const confirmRemoveClick = useHapticClick(() => {
+    if (confirmRemove) {
+      handleRemoveItem(confirmRemove.boxId, confirmRemove.itemId);
+    }
+  });
 
   const handleItemSelectionWithHaptic = useHapticClick(handleItemSelection);
-  const handleSelectAllWithHaptic = useHapticClick(handleSelectAll);
-  const handleClearSelectionWithHaptic = useHapticClick(handleClearSelection);
   const handleAddMultipleItemsWithHaptic = useHapticClick(handleAddMultipleItems);
 
   if (isLoadingBoxes || isLoadingItems) {
@@ -256,18 +264,109 @@ export default function CreateBoxSection() {
                       <button
                         onClick={createBoxClick}
                         disabled={!selectedDestinationForNewBox}
-                        className="flex-1 nm-btn-primary disabled:opacity-50"
+                        className="nm-btn-primary flex-1 disabled:opacity-50"
                       >
                         Crear Caja
                       </button>
                       <button
                         onClick={hideCreateFormClick}
-                        className="flex-1 nm-btn-secondary"
+                        className="nm-btn-secondary flex-1"
                       >
                         Cancelar
                       </button>
                     </div>
+                    {shouldShowInfoButton && (
+                      <div className="flex justify-center mt-3">
+                        <button
+                          type="button"
+                          className="text-xs px-3 py-1 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 underline transition-colors"
+                          onClick={() => setShowInfoModal(true)}
+                        >
+                          ¿Por qué no veo todas las ubicaciones?
+                        </button>
+                      </div>
+                    )}
                   </div>
+                  {showInfoModal && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                      <div className="nm-surface rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                            Ubicaciones no disponibles
+                          </h3>
+                          <button
+                            onClick={() => setShowInfoModal(false)}
+                            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            aria-label="Cerrar"
+                          >
+                            <X size={20} />
+                          </button>
+                        </div>
+                        <div className="overflow-y-auto flex-1 space-y-6">
+                          {locationsNoDeliverable.length > 0 && (
+                            <div>
+                              <div className="font-medium text-sm mb-3 text-gray-700 dark:text-gray-300">
+                                Ningún juego listo para empacar:
+                              </div>
+                              <div className="space-y-2">
+                                {locationsNoDeliverable.map((location) => (
+                                  <div key={location.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                                    <div className="flex items-start gap-3">
+                                      <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <Package size={16} className="text-orange-600 dark:text-orange-400" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-medium text-gray-800 dark:text-gray-200 text-left">
+                                          {location.name}
+                                        </div>
+                                        <div className="text-sm text-gray-500 dark:text-gray-400 text-left">
+                                          {(() => {
+                                            const items = itemsGroupedByNoDeliverableLocations[location.name] || [];
+                                            return `${items.length} juego${items.length !== 1 ? 's' : ''} no listo${items.length !== 1 ? 's' : ''}`;
+                                          })()}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {locationsAllBoxed.length > 0 && (
+                            <div>
+                              <div className="font-medium text-sm mb-3 text-gray-700 dark:text-gray-300">
+                                Todos los juegos ya están en cajas:
+                              </div>
+                              <div className="space-y-2">
+                                {locationsAllBoxed.map((location) => (
+                                  <div key={location.id} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                                    <div className="flex items-start gap-3">
+                                      <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <Package size={16} className="text-green-600 dark:text-green-400" />
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-medium text-gray-800 dark:text-gray-200 text-left">
+                                          {location.name}
+                                        </div>
+                                        <div className="text-sm text-gray-500 dark:text-gray-400 text-left">
+                                          Todos los juegos están en cajas
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {(locationsNoDeliverable.length === 0 && locationsAllBoxed.length === 0) && (
+                            <div className="text-sm text-gray-500 text-center py-4">
+                              No hay ubicaciones ocultas.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -301,7 +400,7 @@ export default function CreateBoxSection() {
                 </div>
                 <div className="flex-shrink-0">
                   <button
-                    onClick={closeCurrentBoxClick}
+                    onClick={closeAndShowCreateFormClick}
                     className="px-3 py-2 nm-btn-primary text-sm flex items-center gap-2 whitespace-nowrap"
                     title="Crear nueva caja"
                   >
@@ -353,7 +452,7 @@ export default function CreateBoxSection() {
                       ownerName={`${item.first_name || ''} ${item.last_name || ''}`}
                       isSelected={false}
                       variant="box-item"
-                      onRemoveItem={() => handleRemoveItem(currentBox.id, item.id)}
+                      onRemoveItem={() => setConfirmRemove({ boxId: currentBox.id, itemId: item.id, itemTitle: item.title })}
                     />
                   ))}
                 </div>
@@ -480,7 +579,7 @@ export default function CreateBoxSection() {
             </h2>
             <button
               onClick={toggleBoxesMenuClick}
-              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600"
+              className="p-2 rounded-top hover:bg-gray-200 dark:hover:bg-gray-600"
             >
               <X size={20} />
             </button>
@@ -576,6 +675,20 @@ export default function CreateBoxSection() {
           mode="delete-box"
           customMessage={`¿Estás seguro de que querés eliminar esta caja? Esta acción no se puede deshacer.`}
           confirmButtonText="Eliminar caja"
+        />
+      )}
+
+      {confirmRemove && (
+        <ConfirmationModal
+          isOpen={true}
+          onClose={closeRemoveModalClick}
+          onConfirm={confirmRemoveClick}
+          itemsToDeliver={[]}
+          actionType="all"
+          modalTitle={`${confirmRemove.itemTitle}`}
+          mode="delete-box"
+          customMessage={`¿Estás seguro de que querés sacar este item de la caja?`}
+          confirmButtonText="Eliminar item"
         />
       )}
     </div>

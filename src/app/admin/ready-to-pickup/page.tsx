@@ -396,7 +396,7 @@ export default function ReadyToPickupPage() {
     };
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 flex justify-center items-center p-4 z-50 glass-bg">
         <div className="nm-surface max-w-lg w-full max-h-[90vh] overflow-y-auto">
           <div className="sticky top-0 nm-surface p-4 border-b border-gray-200 dark:border-gray-700 z-10">
             <div className="flex justify-between items-center">
