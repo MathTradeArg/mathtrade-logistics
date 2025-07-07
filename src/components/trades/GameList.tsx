@@ -173,7 +173,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
       <ul className="mt-3 nm-list text-sm">
             {pendingItems.map((trade) => (
               <li key={`summary-${trade.result.assigned_trade_code}`}
-                className="flex items-center p-2 nm-surface dark:bg-gray-700/60 rounded-md shadow-sm"
+                className="flex items-center p-2 dark:bg-gray-700/60 rounded-md shadow-sm"
               >
                 <span className="font-bold text-secondary-blue dark:text-sky-400 w-10 text-center shrink-0 text-lg mr-3">{trade.result.assigned_trade_code}</span>
                 <span className="truncate min-w-0 text-gray-800 dark:text-sky-100">{trade.math_item_exchanged.title}</span>
