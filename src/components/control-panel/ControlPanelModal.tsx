@@ -96,17 +96,21 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
               <X size={24} className="text-gray-600 dark:text-gray-400" />
             </button>
           </div>
-          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 w-full">
-            <MagnifyingGlass size={20} className="text-gray-500" />
-            <input
-              ref={searchInputRef}
-              type="number"
-              value={searchValue}
-              onChange={e => setSearchValue(e.target.value)}
-              onFocus={() => triggerHaptic()}
-              placeholder="Buscar juego por ID..."
-              className="w-full bg-transparent focus:outline-none focus:ring-0 focus:border-transparent active:outline-none active:ring-0 active:border-transparent text-gray-800 dark:text-gray-200 border-b border-gray-300 dark:border-gray-600 py-1 px-2 rounded-none"
-            />
+          <form onSubmit={handleSearchSubmit} className="flex items-center w-full">
+            <div className="relative w-full nm-input-with-icon">
+              <div className="search-icon-container">
+                <MagnifyingGlass size={20} className="text-gray-500" />
+              </div>
+              <input
+                ref={searchInputRef}
+                type="number"
+                value={searchValue}
+                onChange={e => setSearchValue(e.target.value)}
+                onFocus={() => triggerHaptic()}
+                placeholder="Buscar juego por ID..."
+                className="w-full bg-transparent focus:outline-none focus:ring-0 focus:border-transparent active:outline-none active:ring-0 active:border-transparent text-gray-800 dark:text-gray-200 border-b border-gray-300 dark:border-gray-600 py-2 rounded-none pr-4"
+              />
+            </div>
             <button type="submit" className="hidden">Buscar</button>
           </form>
         </div>

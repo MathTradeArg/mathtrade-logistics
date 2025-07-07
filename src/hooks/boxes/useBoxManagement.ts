@@ -35,6 +35,7 @@ export interface BoxManagementState {
   getDestinationsWithBoxes: () => string[];
   getFilteredBoxes: () => Box[];
   getItemsAvailableForBox: (boxId: number) => Item[];
+  getAllItemsForBox: (boxId: number) => Item[];
 
   getLocationsWithAllItemsBoxed: () => { id: number; name: string }[];
   getLocationsWithNoDeliverableItems: () => { id: number; name: string }[];
@@ -340,7 +341,9 @@ export const useBoxManagement = (): BoxManagementState => {
         destinations.set(item.location, item.location_name);
       }
     });
-    return Array.from(destinations.entries()).map(([id, name]) => ({ id, name }));
+    return Array.from(destinations.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [availableItems]);
 
   const getLocationsWithAllItemsBoxed = useCallback(() => {
@@ -361,7 +364,8 @@ export const useBoxManagement = (): BoxManagementState => {
       .filter(([_, entry]) => {
         return entry.totalDeliverable > 0 && entry.boxed === entry.totalDeliverable;
       })
-      .map(([id, entry]) => ({ id, name: entry.name }));
+      .map(([id, entry]) => ({ id, name: entry.name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [availableItems]);
 
   const getLocationsWithNoDeliverableItems = useCallback(() => {
@@ -377,7 +381,8 @@ export const useBoxManagement = (): BoxManagementState => {
     });
     return Array.from(locationMap.entries())
       .filter(([_, entry]) => !entry.hasItemsInState5)
-      .map(([id, entry]) => ({ id, name: entry.name }));
+      .map(([id, entry]) => ({ id, name: entry.name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [availableItems]);
 
   const getDestinationsWithBoxes = useCallback(() => {
@@ -389,7 +394,7 @@ export const useBoxManagement = (): BoxManagementState => {
       }
     });
     
-    return Array.from(destinations);
+    return Array.from(destinations).sort((a, b) => a.localeCompare(b));
   }, [boxes]);
 
   const getFilteredBoxes = useCallback(() => {
@@ -417,6 +422,19 @@ export const useBoxManagement = (): BoxManagementState => {
     return availableItems.filter(item => 
       item.location === destinationId && 
       item.status === 5 && 
+      !item.box_number
+    );
+  }, [availableItems, boxes]);
+
+  const getAllItemsForBox = useCallback((boxId: number) => {
+    const box = boxes.find(b => b.id === boxId);
+    if (!box) return [];
+    
+    const destinationId = availableItems.find(item => item.location_name === box.destination_name)?.location;
+    if (!destinationId) return [];
+    
+    return availableItems.filter(item => 
+      item.location === destinationId && 
       !item.box_number
     );
   }, [availableItems, boxes]);
@@ -460,6 +478,7 @@ export const useBoxManagement = (): BoxManagementState => {
     getDestinationsWithBoxes,
     getFilteredBoxes,
     getItemsAvailableForBox,
+    getAllItemsForBox,
 
     getLocationsWithAllItemsBoxed,
     getLocationsWithNoDeliverableItems,

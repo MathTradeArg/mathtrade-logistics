@@ -77,16 +77,20 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           </>
         )}
         {isMagnifyingGlassVisible && (
-          <form onSubmit={handleMagnifyingGlassSubmit} className="flex items-center gap-2 w-full">
-            <MagnifyingGlass size={20} className="text-gray-500" />
-            <input
-              type="number"
-              autoFocus
-              value={MagnifyingGlassValue}
-              onChange={(e) => setMagnifyingGlassValue(e.target.value)}
-              placeholder="Buscar juego por ID..."
-              className="w-full bg-transparent focus:outline-none text-gray-800 dark:text-gray-200"
-            />
+          <form onSubmit={handleMagnifyingGlassSubmit} className="flex items-center w-full">
+            <div className="relative w-full nm-input-with-icon">
+              <div className="search-icon-container">
+                <MagnifyingGlass size={20} className="text-gray-500" />
+              </div>
+              <input
+                type="number"
+                autoFocus
+                value={MagnifyingGlassValue}
+                onChange={(e) => setMagnifyingGlassValue(e.target.value)}
+                placeholder="Buscar juego por ID..."
+                className="w-full bg-transparent focus:outline-none text-gray-800 dark:text-gray-200 pr-4 py-3"
+              />
+            </div>
           </form>
         )}
       </div>

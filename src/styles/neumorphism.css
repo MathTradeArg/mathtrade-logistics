@@ -460,3 +460,59 @@ body,
 [class*="nm-"]:active {
   outline: none !important;
 }
+
+.nm-input-with-icon {
+  position: relative;
+}
+
+.nm-input-with-icon input {
+  padding-left: 2.75rem !important;
+}
+
+.nm-input-with-icon svg {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  color: #9ca3af;
+}
+
+.dark .nm-input-with-icon svg {
+  color: #6b7280;
+}
+
+.nm-input-with-icon input::placeholder {
+  color: #9ca3af;
+  opacity: 0.7;
+}
+
+.dark .nm-input-with-icon input::placeholder {
+  color: #6b7280;
+  opacity: 0.8;
+}
+
+.nm-input-with-icon .search-icon-container {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.nm-input-with-icon .search-icon-container svg {
+  flex-shrink: 0;
+}
+
+.dark .nm-input-with-icon input {
+  padding-left: 2.75rem;
+}
+
+[class*="nm-"]:focus,
+[class*="nm-"]:active {
+  outline: none !important;
+}

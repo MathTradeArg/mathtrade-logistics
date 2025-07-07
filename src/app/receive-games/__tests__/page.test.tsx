@@ -158,8 +158,8 @@ describe('ReceiveGamesPage', () => {
   });
 
   it('handles item update and updates user status to receiving', async () => {
-    fetchMock.mockResponseOnce(JSON.stringify(mockTradesResponse)); // For scan
-    fetchMock.mockResponseOnce(JSON.stringify({ success: true })); // For bulk update
+    fetchMock.mockResponseOnce(JSON.stringify(mockTradesResponse)); 
+    fetchMock.mockResponseOnce(JSON.stringify({ success: true })); 
 
     renderWithProviders(<ReceiveGamesPage />);
 
