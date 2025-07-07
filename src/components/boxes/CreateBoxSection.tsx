@@ -33,6 +33,8 @@ export default function CreateBoxSection() {
     addMultipleItemsToBox,
     removeItemFromBox,
     getAvailableDestinations,
+    getCategorizedDestinations,
+    getDestinationAvailabilityInfo,
     getDestinationsWithBoxes,
     getFilteredBoxes,
     getItemsAvailableForBox,
@@ -57,8 +59,10 @@ export default function CreateBoxSection() {
   const [itemSearchFilter, setItemSearchFilter] = useState<string>('');
   const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(new Set());
   const [isAddingMultipleItems, setIsAddingMultipleItems] = useState(false);
+  const [showPartialAvailabilityWarning, setShowPartialAvailabilityWarning] = useState(false);
 
   const availableDestinations = getAvailableDestinations();
+  const categorizedDestinations = getCategorizedDestinations();
   const destinationsWithBoxes = getDestinationsWithBoxes();
   const filteredBoxes = getFilteredBoxes();
 
@@ -90,6 +94,7 @@ export default function CreateBoxSection() {
       setCurrentBox(createdBox);
       setShowCreateForm(false);
       setSelectedDestinationForNewBox('');
+      setShowPartialAvailabilityWarning(false);
     }
   };
 
@@ -183,6 +188,7 @@ export default function CreateBoxSection() {
   const hideCreateFormClick = useHapticClick(() => {
     setShowCreateForm(false);
     setSelectedDestinationForNewBox('');
+    setShowPartialAvailabilityWarning(false);
   });
   const createBoxClick = useHapticClick(handleCreateBox);
   const closeAndShowCreateFormClick = useHapticClick(() => {
@@ -237,6 +243,18 @@ export default function CreateBoxSection() {
     );
   };
 
+  const handleDestinationChange = (destinationId: string) => {
+    setSelectedDestinationForNewBox(destinationId);
+    setShowPartialAvailabilityWarning(false);
+    
+    if (destinationId) {
+      const availabilityInfo = getDestinationAvailabilityInfo(parseInt(destinationId));
+      if (!availabilityInfo.isFullyAvailable) {
+        setShowPartialAvailabilityWarning(true);
+      }
+    }
+  };
+
   if (isLoadingBoxes || isLoadingItems) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -276,16 +294,71 @@ export default function CreateBoxSection() {
                   <div className="space-y-4">
                     <select
                       value={selectedDestinationForNewBox}
-                      onChange={(e) => setSelectedDestinationForNewBox(e.target.value)}
+                      onChange={(e) => handleDestinationChange(e.target.value)}
                       className="w-full nm-select"
                     >
                       <option value="">Seleccionar destino...</option>
-                      {availableDestinations.map(dest => (
-                        <option key={dest.id} value={dest.id}>
-                          {dest.name}
-                        </option>
-                      ))}
+                      {categorizedDestinations.fullyAvailable.length > 0 && (
+                        <optgroup label="📦 Todos los juegos disponibles">
+                          {categorizedDestinations.fullyAvailable.map(dest => (
+                            <option key={dest.id} value={dest.id}>
+                              {dest.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      {categorizedDestinations.partiallyAvailable.length > 0 && (
+                        <optgroup label="⚠️ Juegos parcialmente disponibles">
+                          {categorizedDestinations.partiallyAvailable.map(dest => (
+                            <option key={dest.id} value={dest.id}>
+                              {dest.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
+                    {showPartialAvailabilityWarning && selectedDestinationForNewBox && (
+                      <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <span className="text-yellow-600 dark:text-yellow-400 text-lg">⚠️</span>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                              Esta ubicación no tiene todos sus juegos disponibles aún
+                            </p>
+                            <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                              {(() => {
+                                const destinationId = parseInt(selectedDestinationForNewBox);
+                                const info = getDestinationAvailabilityInfo(destinationId);
+                                const totalItems = info.totalItems;
+                                const deliverableItems = info.deliverableItems;
+                                const available = info.availableItems;
+                                const boxed = info.boxedItems;
+                                const notAvailable = totalItems - available - boxed;
+                                
+                                console.log('Debug warning:', {
+                                  destinationId,
+                                  selectedDestinationForNewBox,
+                                  info,
+                                  totalItems,
+                                  deliverableItems,
+                                  available,
+                                  boxed,
+                                  notAvailable
+                                });
+                                
+                                let message = ""
+                                if (notAvailable > 0) {
+                                  message += `${notAvailable} juegos no disponibles`;
+                                }
+                                message += ` de ${totalItems} juegos totales.`;
+                                
+                                return message;
+                              })()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <button
                         onClick={createBoxClick}

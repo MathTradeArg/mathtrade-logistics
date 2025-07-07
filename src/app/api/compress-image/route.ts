@@ -13,7 +13,6 @@ export async function POST(request: NextRequest) {
     const originalBuffer = Buffer.from(await file.arrayBuffer());
 
     const compressedBuffer = await sharp(originalBuffer)
-      .rotate() 
       .resize({ width: 1920, withoutEnlargement: true })
       .jpeg({ quality: 80, progressive: true })
       .toBuffer();

@@ -32,6 +32,17 @@ export interface BoxManagementState {
   removeItemFromBox: (boxId: number, itemId: number) => Promise<Box | null>;
   
   getAvailableDestinations: () => { id: number; name: string }[];
+  getCategorizedDestinations: () => {
+    fullyAvailable: { id: number; name: string }[];
+    partiallyAvailable: { id: number; name: string }[];
+  };
+  getDestinationAvailabilityInfo: (destinationId: number) => {
+    totalItems: number;
+    availableItems: number;
+    boxedItems: number;
+    deliverableItems: number;
+    isFullyAvailable: boolean;
+  };
   getDestinationsWithBoxes: () => string[];
   getFilteredBoxes: () => Box[];
   getItemsAvailableForBox: (boxId: number) => Item[];
@@ -346,6 +357,77 @@ export const useBoxManagement = (): BoxManagementState => {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [availableItems]);
 
+  const getCategorizedDestinations = useCallback(() => {
+    const fullyAvailable: { id: number; name: string }[] = [];
+    const partiallyAvailable: { id: number; name: string }[] = [];
+
+    const destinationMap = new Map<number, { 
+      totalItems: number; 
+      itemsInState5: number;
+      availableForPacking: number; 
+      alreadyBoxed: number; 
+      name: string 
+    }>();
+
+    availableItems.forEach(item => {
+      if (item.location && item.location_name) {
+        const entry = destinationMap.get(item.location) || { 
+          totalItems: 0,
+          itemsInState5: 0,
+          availableForPacking: 0, 
+          alreadyBoxed: 0,
+          name: item.location_name 
+        };
+        
+        entry.totalItems += 1;
+        
+        if (item.status === 5) {
+          entry.itemsInState5 += 1;
+          if (item.box_number) {
+            entry.alreadyBoxed += 1;
+          } else {
+            entry.availableForPacking += 1;
+          }
+        }
+        
+        destinationMap.set(item.location, entry);
+      }
+    });
+
+    destinationMap.forEach((value, key) => {
+      if (value.availableForPacking > 0) {
+        if (value.totalItems === value.itemsInState5 && value.availableForPacking > 0) {
+          fullyAvailable.push({ id: key, name: value.name });
+        } else {
+          partiallyAvailable.push({ id: key, name: value.name });
+        }
+      }
+    });
+
+    fullyAvailable.sort((a, b) => a.name.localeCompare(b.name));
+    partiallyAvailable.sort((a, b) => a.name.localeCompare(b.name));
+
+    return { fullyAvailable, partiallyAvailable };
+  }, [availableItems]);
+
+  const getDestinationAvailabilityInfo = useCallback((destinationId: number) => {
+    const allDestinationItems = availableItems.filter(item => item.location === destinationId);
+    const totalItems = allDestinationItems.length;
+    const itemsInState5 = allDestinationItems.filter(item => item.status === 5).length;
+    const availableItemsCount = allDestinationItems.filter(item => item.status === 5 && !item.box_number).length;
+    const alreadyBoxedItems = allDestinationItems.filter(item => item.status === 5 && item.box_number).length;
+    
+    const isFullyAvailable = totalItems > 0 && totalItems === itemsInState5 && availableItemsCount > 0;
+
+    return {
+      totalItems: totalItems, 
+      availableItems: availableItemsCount, 
+      boxedItems: alreadyBoxedItems, 
+      deliverableItems: itemsInState5,
+      isFullyAvailable
+    };
+  }, [availableItems]);
+
   const getLocationsWithAllItemsBoxed = useCallback(() => {
     const locationMap = new Map<number, { name: string; totalDeliverable: number; boxed: number }>();
     availableItems.forEach(item => {
@@ -475,6 +557,8 @@ export const useBoxManagement = (): BoxManagementState => {
     removeItemFromBox,
     
     getAvailableDestinations,
+    getCategorizedDestinations,
+    getDestinationAvailabilityInfo,
     getDestinationsWithBoxes,
     getFilteredBoxes,
     getItemsAvailableForBox,
