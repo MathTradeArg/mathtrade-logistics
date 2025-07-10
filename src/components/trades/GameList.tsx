@@ -2,9 +2,9 @@
 
 import { GameRowItem } from "@/components/common";
 import { ConfirmationModal } from '@/components/trades';
+import { useHapticClick } from '@/hooks/useHapticClick';
 import type { Trade, User } from "@/types";
 import { useEffect, useMemo, useState } from 'react';
-import { useHapticClick } from '@/hooks/useHapticClick';
 
 interface GameListProps {
   trades: Trade[];
@@ -70,7 +70,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
     };
 
     return mode === 'receive' ? receiveConfig : deliverConfig;
-  }, [mode, trades, user]);
+  }, [mode, user]);
 
   const pendingItems = useMemo(() => trades.filter(config.isPending), [trades, config]);
   const completedItemsCount = useMemo(() => trades.filter(config.isCompleted).length, [trades, config]);
@@ -80,6 +80,8 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [itemsToConfirm, setItemsToConfirm] = useState<Trade[]>([]);
   const [confirmActionType, setConfirmActionType] = useState<'all' | 'selected' | null>(null);
+
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   const handleToggleSelectedItem = useHapticClick((itemId: number) => {
     const trade = trades.find(t => t.result.assigned_trade_code === itemId);
@@ -170,15 +172,35 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
           Resumen: {pendingItems.length} {pendingItems.length === 1 ? config.texts.pendingSingular : config.texts.pendingPlural} de {trades.length} en total:
         </p>
         {pendingItems.length > 0 && (
-      <ul className="mt-3 nm-list text-sm">
-            {pendingItems.map((trade) => (
-              <li key={`summary-${trade.result.assigned_trade_code}`}
-                className="flex items-center p-2 dark:bg-gray-700/60 rounded-md shadow-sm"
-              >
-                <span className="font-bold text-secondary-blue dark:text-sky-400 w-10 text-center shrink-0 text-lg mr-3">{trade.result.assigned_trade_code}</span>
-                <span className="truncate min-w-0 text-gray-800 dark:text-sky-100">{trade.math_item_exchanged.title}</span>
-              </li>
-            ))}
+          <ul className="mt-3 nm-list text-sm">
+            {pendingItems.map((trade, idx) => {
+              const isExpanded = expandedIndex === idx;
+              return (
+                <li
+                  key={`summary-${trade.result.assigned_trade_code}`}
+                  className={`w-full flex items-start p-2 dark:bg-gray-700/60 rounded-md shadow-sm cursor-pointer
+        ${isExpanded ? "bg-blue-50 dark:bg-purple-900/20" : ""}
+      `}
+                  onClick={() => setExpandedIndex(isExpanded ? null : idx)}
+                  style={{
+                    overflow: "hidden",
+                    maxHeight: isExpanded ? "500px" : "48px",
+                    whiteSpace: isExpanded ? "normal" : "nowrap",
+                    transition: "max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s"
+                  }}
+                >
+                  <span className="font-bold text-secondary-blue dark:text-sky-400 w-10 min-w-[2.5rem] text-center shrink-0 text-lg mr-3">
+                    {trade.result.assigned_trade_code}
+                  </span>
+                  <span
+                    className={`flex-1 text-gray-800 dark:text-sky-100 ${isExpanded ? "whitespace-normal break-words" : "truncate"}`}
+                    style={isExpanded ? { whiteSpace: "normal", wordBreak: "break-word" } : {}}
+                  >
+                    {trade.math_item_exchanged.title}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         )}
         {completedItemsCount > 0 && (

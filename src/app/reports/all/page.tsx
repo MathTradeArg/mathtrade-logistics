@@ -109,20 +109,22 @@ function AllReportsContent() {
     <main className="flex flex-col min-h-dvh text-gray-900 dark:text-gray-100">
       <AppHeader pageTitle="Todos los Reportes" pageIcon={Warning as any} showBackButton={true} />
 
-      <div className="sticky top-16 z-10 bg-white-800 dark:bg-gray-900 shadow-md">
+      <div className="sticky top-16 z-10  glass-bg shadow-md">
         <div className="w-full max-w-4xl mx-auto p-4 sm:p-6 pb-4">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <MagnifyingGlass className="h-5 w-5 text-gray-400" />
             </div>
-            <div className=" pl-12 ">
+            <div className="relative nm-input-with-icon">
+              <div className="search-icon-container">
+                <MagnifyingGlass size={20} className="text-gray-400" />
+              </div>
               <input
                 type="text"
                 placeholder="Buscar por nombre, título de ítem o código..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={() => triggerHaptic()}
-                className="w-full pr-4 py-3 nm-input"
+                className="w-full pr-4 py-2 nm-input text-sm"
               />
             </div>
           </div>
