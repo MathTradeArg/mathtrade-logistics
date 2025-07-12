@@ -115,7 +115,6 @@ function BoxesPageContent() {
             >
               Cajas Entrantes
             </button>
-            {/*
             <button
               onClick={() => handleTabChange('assemble')}
               disabled={eventPhase === 0 || isLoadingEventPhase || eventPhase === null}
@@ -123,6 +122,7 @@ function BoxesPageContent() {
             >
               Crear Cajas
             </button>
+            {/*
             <button
               onClick={() => handleTabChange('created')}
               disabled={eventPhase === 0 || isLoadingEventPhase || eventPhase === null}
