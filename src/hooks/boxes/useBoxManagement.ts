@@ -516,8 +516,7 @@ export const useBoxManagement = (): BoxManagementState => {
     if (!destinationId) return [];
     
     return availableItems.filter(item => 
-      item.location === destinationId && 
-      !item.box_number
+      item.location === destinationId
     );
   }, [availableItems, boxes]);
 
