@@ -439,7 +439,7 @@ export default function ReadyToPickupPage() {
                   <div>
                     <p className="font-medium text-gray-600 dark:text-gray-400">Ventanilla</p>
                     <p className="font-semibold">
-                      {selectedUser.window_id || 'No asignada'}
+                      {selectedUser.window_name || 'No asignada'}
                     </p>
                   </div>
                   <div>
