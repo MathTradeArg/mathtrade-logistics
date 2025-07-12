@@ -454,7 +454,7 @@ export const useBoxManagement = (): BoxManagementState => {
     availableItems.forEach(item => {
       if (item.location && item.location_name) {
         const entry = locationMap.get(item.location) || { name: item.location_name, hasItemsInState5: false };
-        if (item.status === 5) {
+        if (item.status === 5 || item.status === 6) {
           entry.hasItemsInState5 = true;
         }
         locationMap.set(item.location, entry);
