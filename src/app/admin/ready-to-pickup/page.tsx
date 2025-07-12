@@ -365,7 +365,7 @@ export default function ReadyToPickupPage() {
             <p className="text-sm opacity-75 mt-1 nm-text-shadow truncate">
               {user.username}
               {user.table_number && ` • Mesa ${user.table_number}`}
-              {user.window_id && ` • Ventanilla ${user.window_name}`}
+              {user.window_id && ` • ${user.window_name}`}
               {user.ready_games_count && ` • ${user.ready_games_count} juegos`}
             </p>
           </div>
@@ -762,7 +762,7 @@ export default function ReadyToPickupPage() {
                         {(!user.roles || (!user.roles.includes('volunteer') && !user.roles.includes('admin'))) && (
                           <>
                             @{user.username}
-                            {user.window_id && ` • Ventanilla ${user.window_id}`}
+                            {user.window_id && ` • ${user.window_name}`}
                           </>
                         )}
                         {user.table_number && ` • Mesa ${user.table_number}`}
