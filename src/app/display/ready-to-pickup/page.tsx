@@ -272,7 +272,7 @@ export default function DisplayReadyToPickupPage() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-3xl md:text-4xl lg:text-5xl leading-tight nm-text-shadow truncate">
+                          <p className="font-bold text-3xl md:text-4xl lg:text-5xl leading-tight nm-text-shadow">
                             {capitalizeWords(`${user.first_name} ${user.last_name}`)}
                           </p>
                         </div>
