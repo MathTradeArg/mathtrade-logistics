@@ -44,6 +44,7 @@ interface User {
   email?: string;
 }
 interface Item {
+  item_id: number;
   id: number;
   title: string;
   assigned_trade_code: number;
@@ -273,7 +274,7 @@ function ReportsPageContent() {
       if (reportType === 'user' && selectedUser) {
         reportBody.reported_user = selectedUser.id;
       } else if (reportType === 'item' && selectedItem) {
-        reportBody.item = selectedItem.id;
+        reportBody.item = selectedItem.item_id;
       }
 
       if (uploadedImageIds.length > 0) {
