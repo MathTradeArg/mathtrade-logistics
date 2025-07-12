@@ -346,8 +346,7 @@ export const useBoxManagement = (): BoxManagementState => {
       if (
         item.location &&
         item.location_name &&
-        item.status === 5 &&
-        !item.box_number
+        item.status === 5
       ) {
         destinations.set(item.location, item.location_name);
       }
@@ -503,8 +502,7 @@ export const useBoxManagement = (): BoxManagementState => {
     
     return availableItems.filter(item => 
       item.location === destinationId && 
-      item.status === 5 && 
-      !item.box_number
+      item.status === 5
     );
   }, [availableItems, boxes]);
 
