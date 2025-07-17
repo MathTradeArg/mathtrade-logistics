@@ -352,26 +352,6 @@ El sistema está diseñado para integrarse con la API de Math Trade Argentina:
 5. **Envío**: Submisión del reporte al sistema
 6. **Seguimiento**: Administradores pueden revisar en `/reports/all`
 
-## Mantenimiento y Monitoreo
-
-### Logs y Depuración
-- **Console logs**: Información detallada en consola del navegador
-- **Error tracking**: Captura y display de errores de API
-- **Performance monitoring**: Seguimiento de carga y rendimiento
-- **User actions**: Logging de acciones críticas del usuario
-
-### Optimización
-- **Lazy loading**: Carga diferida de componentes no críticos
-- **Memoización**: Optimización de re-renders con React.memo
-- **Bundle splitting**: División del código para carga eficiente
-- **Image optimization**: Optimización automática de imágenes
-
-### Seguridad
-- **Input validation**: Validación de todos los inputs del usuario
-- **XSS protection**: Sanitización de contenido dinámico
-- **CSRF protection**: Protección contra ataques CSRF
-- **Token validation**: Verificación continua de tokens de autenticación
-
 ## Troubleshooting
 
 ### Problemas Comunes
@@ -385,47 +365,6 @@ El sistema está diseñado para integrarse con la API de Math Trade Argentina:
 - **Refresh tokens**: Logout y login nuevamente
 - **Check permissions**: Verificar permisos de cámara y localización
 - **Network issues**: Verificar conectividad de red
-
-## Roadmap y Futuras Mejoras
-
-### Funcionalidades Planificadas
-- **Notificaciones push**: Alertas en tiempo real
-- **Modo offline**: Funcionamiento sin conexión
-- **Analytics**: Métricas y estadísticas detalladas
-- **Exportación de datos**: Export de reportes y estadísticas
-- **API real-time**: WebSocket para actualizaciones instantáneas
-
-### Mejoras Técnicas
-- **PWA support**: Aplicación web progresiva
-- **Performance optimization**: Mejoras de velocidad
-- **Accessibility**: Mejoras de accesibilidad
-- **Internacionalización**: Soporte multi-idioma
-- **Testing coverage**: Aumento de cobertura de tests
-
-## Funcionalidades Destacadas
-
-### Sistema de Ventanillas
-- **Configuración flexible**: Cada ventanilla puede tener múltiples mesas asignadas
-- **Auto-asignación inteligente**: Los usuarios se asignan automáticamente según su número de mesa
-- **Actualización en tiempo real**: Sincronización automática cada 10-15 segundos
-- **Vista administrativa**: Control completo de estados con botones de acción rápida
-- **Vista pública optimizada**: Información clara para pantallas grandes sin controles
-
-### Gestión de Estados Avanzada
-- **Estados detallados**:
-  - **Listo** (`null`/`present`): Usuario presente y preparado para retirar
-  - **Recibiendo** (`receiving`): Usuario siendo atendido en este momento
-  - **Completado** (`completed`): Usuario que ya completó su proceso
-  - **No Aparece** (`no_show`): Usuario que no se presentó después de ser llamado
-- **Transiciones inteligentes**: Flujo lógico entre estados
-- **Actualización automática**: Cambio de estado al escanear QR
-
-### Diseño Responsivo y Accesible
-- **Optimización móvil**: Interfaz adaptada para dispositivos móviles
-- **Pantallas grandes**: Vistas optimizadas para TV/proyector
-- **Navegación intuitiva**: Panel de control flotante siempre accesible
-- **Retroalimentación háptica**: Vibración en dispositivos compatibles
-- **Accesibilidad**: Soporte para lectores de pantalla y navegación por teclado
 
 ## Contribución
 
