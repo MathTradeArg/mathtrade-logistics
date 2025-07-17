@@ -2,179 +2,6 @@
 
 Sistema completo de gestión logística para los eventos presenciales del Math Trade Argentina con diseño neumórfico moderno, soporte dark mode y funcionalidades avanzadas de administración.
 
-## Características Principales
-
-### 🎨 Diseño Neumórfico y UI/UX
-- Interfaz moderna con efectos de profundidad y sombras suaves
-- Soporte completo para dark mode automático
-- Animaciones fluidas y transiciones suaves
-- Diseño optimizado para móviles
-- Retroalimentación háptica en dispositivos compatibles
-
-### 🏢 Sistema de Ventanillas y Gestión de Usuarios
-- **Configuración flexible de ventanillas**: Asignación de mesas específicas por ventanilla
-- **Estados de usuarios avanzados**: `null`, `present`, `receiving`, `completed`, `no_show`
-- **Vista administrativa**: Panel completo para gestión de usuarios y estados
-- **Vista pública**: Pantalla optimizada para TV/proyector con información en tiempo real
-- **Actualización automática**: Sincronización cada 10-15 segundos
-- **Gestión de colas**: Priorización inteligente basada en estados
-
-### 📦 Sistema de Gestión de Cajas
-- **Creación de cajas**: Armado automático con items filtrados por destino
-- **Cajas entrantes**: Revisión y procesamiento de cajas recibidas
-- **Seguimiento completo**: Estado detallado de cada item dentro de las cajas
-
-### 📱 Escaneo QR y Procesamiento
-- **Recepción de juegos**: Escaneo QR para marcar items como recibidos
-- **Entrega de juegos**: Proceso completo de entrega con confirmación
-- **Actualización automática de estados**: Cambio de estado de usuario al escanear
-- **Soporte para cámara**: Utilización de cámara trasera para mejor escaneo
-- **Validación de fases**: Habilitación/deshabilitación según fase del evento
-
-### 🔐 Sistema de Autenticación y Permisos
-- **Autenticación por tokens**: Sistema seguro con validación de sesiones
-- **Roles diferenciados**: Usuarios normales vs administradores
-- **Protección de rutas**: Acceso controlado a funcionalidades administrativas
-- **Persistencia de sesión**: Mantenimiento de estado entre sesiones
-
-### 📊 Sistema de Reportes
-- **Reportes de items**: Documentación de problemas con items específicos
-- **Reportes de usuarios**: Sistema de reportes sobre comportamiento de usuarios
-- **Subida de imágenes**: Adjuntar fotos como evidencia
-- **Panel administrativo**: Vista completa de todos los reportes para admins
-
-## Estructura de Rutas
-
-### Rutas Administrativas
-- `/admin/ready-to-pickup` - Panel administrativo para gestión de usuarios y ventanillas
-- `/admin/window-config` - Configuración avanzada de ventanillas y asignación de mesas
-- `/boxes` - Sistema completo de gestión de cajas (entrantes, creación, listado)
-- `/reports/all` - Panel administrativo para gestión de reportes
-
-### Rutas de Operación
-- `/receive-games` - Recepción de juegos con escáner QR
-- `/deliver-to-user` - Entrega de juegos a usuarios con escáner QR
-- `/reports` - Sistema de reportes para usuarios
-
-### Rutas Públicas y Display
-- `/display/ready-to-pickup` - Vista informativa optimizada para pantalla gigante
-- `/` - Página principal con sistema de login
-
-## Funcionalidades Detalladas
-
-### Sistema de Ventanillas
-- **Configuración dinámica**: Cada ventanilla puede tener múltiples mesas asignadas
-- **Auto-asignación**: Los usuarios se asignan automáticamente según su número de mesa
-- **Estados detallados**:
-  - `null`/`present`: Usuario presente y listo para ser atendido
-  - `receiving`: Usuario siendo atendido en este momento
-  - `completed`: Usuario que ya completó su proceso
-  - `no_show`: Usuario que no se presentó después de ser llamado
-- **Vista administrativa**: Control completo de estados con botones de acción rápida
-- **Vista pública**: Información optimizada para pantallas grandes sin controles
-- **Actualización automática**: Sincronización cada 10-15 segundos
-- **Priorización inteligente**: Orden de visualización basado en estados
-
-### Gestión de Cajas
-- **Tres módulos principales**:
-  - **Cajas Entrantes**: Revisión y procesamiento de cajas recibidas de otros lugares
-  - **Crear Cajas**: Armado de nuevas cajas con items listos para envío
-  - **Cajas Creadas**: Listado y seguimiento de cajas ya creadas
-- **Filtros avanzados**: Por origen, destino, número de caja, estado de items
-- **Selección múltiple**: Marcado de items individuales para procesamiento
-- **Validación automática**: Detección de destinos no empaquetables
-- **Seguimiento completo**: Estado detallado de cada item dentro de las cajas
-
-### Escaneo QR y Procesamiento
-- **Recepción de juegos** (`/receive-games`):
-  - Escaneo de QR de usuario
-  - Actualización automática de estado a `present`
-  - Visualización de items a recibir
-  - Marcado masivo o individual de items como recibidos
-  - Actualización de estado a `In Event` (status 5)
-- **Entrega de juegos** (`/deliver-to-user`):
-  - Escaneo de QR de usuario
-  - Actualización automática de estado a `receiving`
-  - Visualización de items para entregar
-  - Confirmación de entrega masiva o individual
-  - Actualización de estado a `Delivered` (status 6)
-- **Funcionalidades QR**:
-  - Uso de cámara trasera para mejor escaneo
-  - Soporte para URLs con parámetro QR automático
-  - Validación según fase del evento
-  - Manejo de errores con timeout automático
-
-### Sistema de Autenticación
-- **Autenticación por tokens**: Sistema seguro con localStorage
-- **Roles diferenciados**: 
-  - Usuarios normales: Acceso a funcionalidades básicas
-  - Administradores: Acceso completo a paneles administrativos
-- **Protección de rutas**: Redirección automática si no autenticado
-- **Persistencia de sesión**: Mantenimiento entre recargas
-- **Validación continua**: Verificación de tokens en cada request
-
-### Sistema de Reportes
-- **Reportes de items**:
-  - Búsqueda de items por título o código
-  - Adjuntar múltiples fotos como evidencia
-  - Descripción detallada del problema
-- **Reportes de usuarios**:
-  - Búsqueda de usuarios por nombre
-  - Descripción del comportamiento a reportar
-- **Panel administrativo** (`/reports/all`):
-  - Vista completa de todos los reportes
-  - Filtros de búsqueda avanzados
-  - Visualización de imágenes adjuntas
-  - Información detallada de reportador y reportado
-
-### Gestión de Fases del Evento
-- **Fase 0 - No Iniciado**: Funcionalidades limitadas
-- **Fase 1 - Recepción**: Habilitada recepción de juegos y gestión de cajas
-- **Fase 2 - Entrega**: Habilitada entrega de juegos
-- **Control administrativo**: Cambio de fases desde panel de control
-- **Validación automática**: Habilitación/deshabilitación de funcionalidades según fase
-
-### Panel de Control Global
-- **Acceso desde cualquier página**: Botón flotante siempre disponible
-- **Funcionalidades para usuarios**:
-  - Cambio de tema (dark/light mode)
-  - Información de la fase actual del evento
-  - Acceso a funcionalidades principales
-- **Funcionalidades para administradores**:
-  - Cambio de fase del evento
-  - Acceso directo a paneles administrativos
-  - Apertura de vistas para pantalla gigante
-  - Configuración de ventanillas
-
-## Tecnologías y Arquitectura
-
-### Frontend
-- **Next.js 14**: Framework React con App Router
-- **React 18**: Biblioteca de UI con hooks modernos
-- **TypeScript**: Tipado estático para mayor robustez
-- **Tailwind CSS**: Framework de estilos utilitarios
-- **Estilos neumórficos**: Diseño personalizado con efectos de profundidad
-
-### Estado y Contexto
-- **React Context API**: Gestión de estado global
-- **Custom hooks**: Lógica reutilizable encapsulada
-- **Providers especializados**:
-  - `EventPhaseContext`: Gestión de fases del evento
-  - `ControlPanelContext`: Estado del panel de control
-  - `ActionStatusContext`: Gestión de mensajes de estado
-
-### Integración API
-- **Hook personalizado `useApi`**: Abstracción de calls HTTP
-- **Autenticación automática**: Headers de autorización en cada request
-- **Manejo de errores**: Procesamiento y display de errores de API
-- **Optimización**: Cancelación de requests y cache cuando es apropiado
-
-### Testing
-- **Jest**: Framework de testing
-- **React Testing Library**: Testing de componentes
-- **Cobertura completa**: Tests unitarios y de integración
-- **Mocks**: Simulación de APIs y dependencias externas
-
 ## Desarrollo y Configuración
 
 ### Instalación
@@ -308,6 +135,159 @@ El sistema está diseñado para integrarse con la API de Math Trade Argentina:
 - **Tests de integración**: Flujos principales del usuario
 - **Mocks**: APIs y dependencias externas mockeadas
 
+## Contribución
+
+### Cómo Contribuir
+1. **Fork el proyecto** desde GitHub
+2. **Crea una rama** para tu feature (`git checkout -b feature/nueva-funcionalidad`)
+3. **Realiza los cambios** siguiendo las convenciones del proyecto
+4. **Ejecuta los tests** para asegurar que todo funciona
+5. **Commit tus cambios** con mensajes descriptivos
+6. **Push a tu rama** (`git push origin feature/nueva-funcionalidad`)
+7. **Crea un Pull Request** con descripción detallada
+
+### Estándares de Código
+- **Seguir convenciones**: TypeScript, ESLint, Prettier
+- **Tests requeridos**: Agregar tests para nuevas funcionalidades
+- **Documentación**: Actualizar README si es necesario
+- **Code review**: Esperar aprobación antes de merge
+
+### Reportar Bugs
+- **Usar GitHub Issues** para reportar bugs
+- **Incluir información detallada**: Pasos para reproducir, screenshots, etc.
+- **Etiquetar apropiadamente**: bug, enhancement, question, etc.
+
+## Características Principales
+
+### 🏢 Sistema de Ventanillas y Gestión de Usuarios
+- **Configuración flexible de ventanillas**: Asignación de mesas específicas por ventanilla
+- **Estados de usuarios avanzados**: `null`, `present`, `receiving`, `completed`, `no_show`
+- **Vista administrativa**: Panel completo para gestión de usuarios y estados
+- **Vista pública**: Pantalla optimizada para TV/proyector con información en tiempo real
+- **Actualización automática**: Sincronización cada 10-15 segundos
+- **Gestión de colas**: Priorización inteligente basada en estados
+
+### 📦 Sistema de Gestión de Cajas
+- **Creación de cajas**: Armado automático con items filtrados por destino
+- **Cajas entrantes**: Revisión y procesamiento de cajas recibidas
+- **Seguimiento completo**: Estado detallado de cada item dentro de las cajas
+
+### 📱 Escaneo QR y Procesamiento
+- **Recepción de juegos**: Escaneo QR para marcar items como recibidos
+- **Entrega de juegos**: Proceso completo de entrega con confirmación
+- **Actualización automática de estados**: Cambio de estado de usuario al escanear
+- **Soporte para cámara**: Utilización de cámara trasera para mejor escaneo
+- **Validación de fases**: Habilitación/deshabilitación según fase del evento
+
+### 📊 Sistema de Reportes
+- **Reportes de items**: Documentación de problemas con items específicos
+- **Reportes de usuarios**: Sistema de reportes sobre comportamiento de usuarios
+- **Subida de imágenes**: Adjuntar fotos como evidencia
+- **Panel administrativo**: Vista completa de todos los reportes para admins
+
+## Estructura de Rutas
+
+### Rutas Administrativas
+- `/admin/ready-to-pickup` - Panel administrativo para gestión de usuarios y ventanillas
+- `/admin/window-config` - Configuración avanzada de ventanillas y asignación de mesas
+- `/boxes` - Sistema completo de gestión de cajas (entrantes, creación, listado)
+- `/reports/all` - Panel administrativo para gestión de reportes
+
+### Rutas de Operación
+- `/receive-games` - Recepción de juegos con escáner QR
+- `/deliver-to-user` - Entrega de juegos a usuarios con escáner QR
+- `/reports` - Sistema de reportes para usuarios
+
+### Rutas Públicas y Display
+- `/display/ready-to-pickup` - Vista informativa optimizada para pantalla gigante
+- `/` - Página principal con sistema de login
+
+## Funcionalidades Detalladas
+
+### Sistema de Ventanillas
+- **Configuración dinámica**: Cada ventanilla puede tener múltiples mesas asignadas
+- **Auto-asignación**: Los usuarios se asignan automáticamente según su número de mesa
+- **Estados detallados**:
+  - `null`/`present`: Usuario presente y listo para ser atendido
+  - `receiving`: Usuario siendo atendido en este momento
+  - `completed`: Usuario que ya completó su proceso
+  - `no_show`: Usuario que no se presentó después de ser llamado
+- **Vista pública**: Información optimizada para pantallas grandes sin controles
+
+### Gestión de Cajas
+- **Dos módulos principales**:
+  - **Cajas Entrantes**: Revisión y procesamiento de cajas recibidas de otros lugares
+  - **Crear Cajas**: Armado de nuevas cajas con items listos para envío
+- **Filtros avanzados**: Por origen, destino, número de caja, estado de items
+- **Selección múltiple**: Marcado de items individuales para procesamiento
+- **Validación automática**: Detección de destinos no empaquetables
+- **Seguimiento completo**: Estado detallado de cada item dentro de las cajas
+
+### Escaneo QR y Procesamiento
+- **Recepción de juegos** (`/receive-games`):
+  - Escaneo de QR de usuario
+  - Actualización automática de estado a `present`
+  - Visualización de items a recibir
+  - Marcado masivo o individual de items como recibidos
+  - Actualización de estado a `In Event` (status 5)
+- **Entrega de juegos** (`/deliver-to-user`):
+  - Escaneo de QR de usuario
+  - Actualización automática de estado a `receiving`
+  - Visualización de items para entregar
+  - Confirmación de entrega masiva o individual
+  - Actualización de estado a `Delivered` (status 6)
+
+### Sistema de Autenticación
+- **Autenticación por tokens**: Sistema seguro con localStorage
+- **Roles diferenciados**: 
+  - Usuarios normales: Acceso a funcionalidades básicas
+  - Administradores: Acceso completo a paneles administrativos
+- **Protección de rutas**: Redirección automática si no autenticado
+- **Persistencia de sesión**: Mantenimiento entre recargas
+- **Validación continua**: Verificación de tokens en cada request
+
+### Sistema de Reportes
+- **Reportes de items**:
+  - Búsqueda de items por título o código
+  - Adjuntar múltiples fotos como evidencia
+  - Descripción detallada del problema
+- **Reportes de usuarios**:
+  - Búsqueda de usuarios por nombre
+  - Descripción del comportamiento a reportar
+- **Panel administrativo** (`/reports/all`):
+  - Vista completa de todos los reportes
+  - Filtros de búsqueda avanzados
+  - Visualización de imágenes adjuntas
+  - Información detallada de reportador y reportado
+
+### Gestión de Fases del Evento
+- **Fase 0 - No Iniciado**: Funcionalidades limitadas
+- **Fase 1 - Recepción**: Habilitada recepción de juegos y gestión de cajas
+- **Fase 2 - Entrega**: Habilitada entrega de juegos
+- **Control administrativo**: Cambio de fases desde panel de control
+- **Validación automática**: Habilitación/deshabilitación de funcionalidades según fase
+
+### Panel de Control Global
+- **Acceso desde cualquier página**: Botón flotante siempre disponible
+- **Funcionalidades para usuarios**:
+  - Cambio de tema (dark/light mode)
+  - Información de la fase actual del evento
+  - Acceso a funcionalidades principales
+- **Funcionalidades para administradores**:
+  - Cambio de fase del evento
+  - Acceso directo a paneles administrativos
+  - Apertura de vistas para pantalla gigante
+  - Configuración de ventanillas
+
+## Tecnologías y Arquitectura
+
+### Frontend
+- **Next.js 14**: Framework React con App Router
+- **React 18**: Biblioteca de UI con hooks modernos
+- **TypeScript**: Tipado estático para mayor robustez
+- **Tailwind CSS**: Framework de estilos utilitarios
+- **Estilos neumórficos**: Diseño personalizado con efectos de profundidad
+
 ## Casos de Uso y Flujos
 
 ### Flujo de Recepción de Juegos
@@ -333,7 +313,7 @@ El sistema está diseñado para integrarse con la API de Math Trade Argentina:
 2. **Asignación automática**: Usuarios se asignan a ventanillas según número de mesa
 3. **Gestión de estados**: Admin puede cambiar estados desde `/admin/ready-to-pickup`
 4. **Visualización pública**: Información se muestra en `/display/ready-to-pickup`
-5. **Actualización automática**: Sincronización cada 10-15 segundos
+5. **Actualización automática**: Sincronización cada x segundos
 
 ### Flujo de Gestión de Cajas
 1. **Cajas Entrantes**: Revisión de cajas recibidas de otros lugares
@@ -352,45 +332,9 @@ El sistema está diseñado para integrarse con la API de Math Trade Argentina:
 5. **Envío**: Submisión del reporte al sistema
 6. **Seguimiento**: Administradores pueden revisar en `/reports/all`
 
-## Troubleshooting
-
-### Problemas Comunes
-1. **Error de autenticación**: Verificar token en localStorage
-2. **Escaneo QR no funciona**: Verificar permisos de cámara
-3. **Datos no actualizan**: Verificar conexión con API
-4. **Interfaz no responde**: Verificar JavaScript habilitado
-
-### Soluciones
-- **Clear cache**: Limpiar cache del navegador
-- **Refresh tokens**: Logout y login nuevamente
-- **Check permissions**: Verificar permisos de cámara y localización
-- **Network issues**: Verificar conectividad de red
-
-## Contribución
-
-### Cómo Contribuir
-1. **Fork el proyecto** desde GitHub
-2. **Crea una rama** para tu feature (`git checkout -b feature/nueva-funcionalidad`)
-3. **Realiza los cambios** siguiendo las convenciones del proyecto
-4. **Ejecuta los tests** para asegurar que todo funciona
-5. **Commit tus cambios** con mensajes descriptivos
-6. **Push a tu rama** (`git push origin feature/nueva-funcionalidad`)
-7. **Crea un Pull Request** con descripción detallada
-
-### Estándares de Código
-- **Seguir convenciones**: TypeScript, ESLint, Prettier
-- **Tests requeridos**: Agregar tests para nuevas funcionalidades
-- **Documentación**: Actualizar README si es necesario
-- **Code review**: Esperar aprobación antes de merge
-
-### Reportar Bugs
-- **Usar GitHub Issues** para reportar bugs
-- **Incluir información detallada**: Pasos para reproducir, screenshots, etc.
-- **Etiquetar apropiadamente**: bug, enhancement, question, etc.
-
 ## Licencia
 
-Este proyecto está bajo la **Licencia MIT**. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+Este proyecto está bajo la **Licencia MIT**. Consulta el archivo [LICENSE](LICENSE.md) para más detalles.
 
 ### Derechos y Responsabilidades
 - **Uso libre**: Puedes usar, modificar y distribuir el código
