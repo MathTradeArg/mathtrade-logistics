@@ -135,4 +135,45 @@ describe('useBoxLifecycle', () => {
     expect(secondKey).toBe('key-1');
     expect(String(fetchMock.mock.calls[0][0])).toContain('logistics/boxes/10/close/');
   });
+
+  it('returns added game titles instead of deleting when the box is no longer empty', async () => {
+    fetchMock.mockResponseOnce(JSON.stringify({
+      ...openBox,
+      math_items: [
+        { id: 1, title: 'Catan', assigned_trade_code: 101 },
+        { id: 2, title: 'Azul', assigned_trade_code: 202 },
+      ],
+    }));
+    const { result } = renderHook(() => useBoxLifecycle(), { wrapper });
+
+    let outcome: Awaited<ReturnType<typeof result.current.deleteBox>> | undefined;
+    await act(async () => {
+      outcome = await result.current.deleteBox(10);
+    });
+
+    expect(outcome).toEqual({ status: 'has_items', titles: ['Catan', 'Azul'] });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0][0])).toContain('logistics/boxes/10/');
+    expect(fetchMock.mock.calls[0][1]?.method).toBe('GET');
+  });
+
+  it('keeps the box if a concurrent add wins the delete race', async () => {
+    fetchMock.mockResponseOnce(JSON.stringify(openBox));
+    fetchMock.mockResponseOnce(
+      JSON.stringify({
+        detail: 'Cannot delete a box that has items.',
+        titles: ['Root'],
+      }),
+      { status: 409 },
+    );
+    const { result } = renderHook(() => useBoxLifecycle(), { wrapper });
+
+    let outcome: Awaited<ReturnType<typeof result.current.deleteBox>> | undefined;
+    await act(async () => {
+      outcome = await result.current.deleteBox(10);
+    });
+
+    expect(outcome).toEqual({ status: 'has_items', titles: ['Root'] });
+    expect(fetchMock.mock.calls[1][1]?.method).toBe('DELETE');
+  });
 });

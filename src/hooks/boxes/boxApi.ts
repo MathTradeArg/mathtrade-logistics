@@ -75,6 +75,24 @@ export async function boxFetch<T>(
   return response.json() as Promise<T>;
 }
 
+export function concurrentAddTitles(err: unknown): string[] | null {
+  if (!err || typeof err !== 'object') return null;
+  const status = 'status' in err ? err.status : undefined;
+  const body = 'body' in err ? err.body : undefined;
+  if (status !== 409) return null;
+  if (!body || typeof body !== 'object') {
+    return null;
+  }
+  const payload = body as { titles?: unknown; detail?: string };
+  if (Array.isArray(payload.titles)) {
+    return payload.titles.filter(
+      (title): title is string => typeof title === 'string' && title.trim() !== '',
+    );
+  }
+  if (payload.detail === 'Cannot delete a box that has items.') return [];
+  return null;
+}
+
 export type BoxListParams = {
   destination?: number;
   origin?: number;

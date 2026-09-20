@@ -5,7 +5,9 @@ import {
   addItem as addItemApi,
   BoxApiError,
   closeBox as closeBoxApi,
+  concurrentAddTitles,
   deleteBox as deleteBoxApi,
+  getBox as getBoxApi,
   moveItem as moveItemApi,
   openBox as openBoxApi,
   removeItem as removeItemApi,
@@ -33,6 +35,10 @@ function errorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
   return 'Ocurrió un error desconocido.';
 }
+
+export type DeleteBoxResult =
+  | { status: 'deleted' }
+  | { status: 'has_items'; titles: string[] };
 
 export function useBoxLifecycle() {
   const { setError, setSuccess, clearMessages } = useActionStatus();
@@ -129,13 +135,25 @@ export function useBoxLifecycle() {
     });
   }, [runExclusive, setSuccess]);
 
-  const deleteBox = useCallback(async (boxId: number): Promise<boolean> => {
-    const result = await runExclusive(async () => {
-      await deleteBoxApi(boxId);
-      setSuccess('Caja eliminada.');
-      return true;
+  const deleteBox = useCallback(async (boxId: number): Promise<DeleteBoxResult | null> => {
+    return runExclusive(async () => {
+      const latest = await getBoxApi(boxId);
+      const currentTitles = latest.math_items.map((item) => item.title).filter(Boolean);
+      if (currentTitles.length > 0 || latest.math_items.length > 0) {
+        return { status: 'has_items' as const, titles: currentTitles };
+      }
+      try {
+        await deleteBoxApi(boxId);
+        setSuccess('Caja eliminada.');
+        return { status: 'deleted' as const };
+      } catch (err) {
+        const titles = concurrentAddTitles(err);
+        if (titles) {
+          return { status: 'has_items' as const, titles };
+        }
+        throw err;
+      }
     });
-    return result === true;
   }, [runExclusive, setSuccess]);
 
   return {
