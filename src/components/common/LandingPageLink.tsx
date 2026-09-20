@@ -15,7 +15,7 @@ interface LandingPageLinkProps {
 
 const LandingPageLink: React.FC<LandingPageLinkProps> = ({ href, icon, title, description, titleClassName, disabled = false, disabledText = '' }) => {
   const linkClasses = `
-    flex items-center p-4 nm-surface dark:bg-gray-800 rounded-xl shadow-xl transition-all duration-200 ease-in-out h-full 
+    flex min-h-14 items-center rounded-xl border border-gray-200 bg-white p-4 h-full 
     md:flex-col md:justify-center md:items-center md:p-6
     ${disabled 
       ? 'opacity-50 cursor-not-allowed' 

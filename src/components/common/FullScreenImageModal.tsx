@@ -17,7 +17,7 @@ const FullScreenImageModal: React.FC<FullScreenImageModalProps> = ({ imageUrl, o
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 glass-bg"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/80 p-4"
       onClick={handleClose}
     >
       <div
@@ -35,7 +35,7 @@ const FullScreenImageModal: React.FC<FullScreenImageModalProps> = ({ imageUrl, o
         />
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 nm-surface bg-opacity-50 rounded-full p-2 hover:bg-opacity-70 transition-all duration-150 ease-in-out active:scale-90"
+          className="absolute top-4 right-4 rounded-full bg-white p-2"
           aria-label="Cerrar imagen"
         >
           <X size={24} className="text-gray-800" />

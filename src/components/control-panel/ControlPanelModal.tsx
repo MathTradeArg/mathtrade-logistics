@@ -1,16 +1,12 @@
 "use client";
-import AdminSection from '@/components/control-panel/AdminSection';
 import { GameDetailsDisplay } from '@/components/control-panel/GameDetailsDisplay';
 import { LoadingSpinner } from '@/components/common/ui';
 import { useControlPanel } from '@/contexts/ControlPanelContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
-import { useActionStatus } from '@/contexts/ActionStatusContext';
-import { useAuth } from '@/hooks/useAuth';
 import { GameStatusCode } from '@/types';
 import { X, MagnifyingGlass } from 'phosphor-react';
 import React, { useEffect, useState, FormEvent, useRef } from 'react';
 import { triggerHaptic } from '@/utils/haptics';
-import '@/styles/glassmorphism.css';
 import { useHapticClick } from '@/hooks/useHapticClick';
 
 interface ControlPanelModalProps {
@@ -30,21 +26,20 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
     clearGameDetail,
     openPanel,
   } = useControlPanel();
-  const { eventPhase, updateEventPhase } = useEventPhase();
-  const { setSuccess, setError } = useActionStatus();
+  const { eventPhase } = useEventPhase();
 
   const [searchValue, setSearchValue] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
-  
+
   const handleModalClose = useHapticClick(() => {
     onClose(hasAnyActionSucceededThisSession);
   });
-  
+
   const handleClearGameDetail = useHapticClick(clearGameDetail);
-  
+
   const handleSearchSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    triggerHaptic(20); 
+    triggerHaptic(20);
     if (searchValue.trim()) {
       await openPanel(searchValue.trim());
       setSearchValue('');
@@ -52,7 +47,6 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
     }
   };
 
-  const [isUpdatingPhase, setIsUpdatingPhase] = useState(false);
   const [hasAnyActionSucceededThisSession, setHasAnyActionSucceededThisSession] = useState(false);
 
   useEffect(() => {
@@ -72,34 +66,22 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
     }
   };
 
-  const handlePhaseChange = async (newPhase: number) => {
-    setIsUpdatingPhase(true);
-    const result = await updateEventPhase(newPhase);
-    if (result.success) {
-      setSuccess(result.message);
-      setHasAnyActionSucceededThisSession(true);
-    } else {
-      setError(result.message);
-    }
-    setIsUpdatingPhase(false);
-  };
-
   const actionsDisabledByPhase = (eventPhase ?? 0) === 0;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex justify-center items-center p-4 bg-white/10 dark:bg-black/20 backdrop-blur-xl glass-bg">
-      <div className="nm-surface dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
-        <div className="flex flex-col gap-2 mb-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-bold text-secondary-blue dark:text-sky-400">Panel de Control</h2>
-            <button onClick={handleModalClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90">
-              <X size={24} className="text-gray-600 dark:text-gray-400" />
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(213,220,226,0.7)] p-4">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-xl bg-white p-6 text-gray-900">
+        <div className="mb-4 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">Detalle del juego</h2>
+            <button onClick={handleModalClose} className="rounded-full p-1 hover:bg-gray-100">
+              <X size={24} className="text-gray-500" />
             </button>
           </div>
-          <form onSubmit={handleSearchSubmit} className="flex items-center w-full">
-            <div className="relative w-full nm-input-with-icon">
-              <div className="search-icon-container">
-                <MagnifyingGlass size={20} className="text-gray-500" />
+          <form onSubmit={handleSearchSubmit} className="flex w-full items-center">
+            <div className="relative w-full">
+              <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
+                <MagnifyingGlass size={20} className="text-gray-400" />
               </div>
               <input
                 ref={searchInputRef}
@@ -108,7 +90,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
                 onChange={e => setSearchValue(e.target.value)}
                 onFocus={() => triggerHaptic()}
                 placeholder="Buscar juego por ID..."
-                className="w-full bg-transparent focus:outline-none focus:ring-0 focus:border-transparent active:outline-none active:ring-0 active:border-transparent text-gray-800 dark:text-gray-200 border-b border-gray-300 dark:border-gray-600 py-2 rounded-none pr-4"
+                className="min-h-14 w-full rounded-lg border border-gray-200 bg-white py-2 pr-4 pl-10 text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none"
               />
             </div>
             <button type="submit" className="hidden">Buscar</button>
@@ -117,7 +99,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
 
         <div className="overflow-y-auto flex-grow">
           {isSearching && <div className="flex justify-center items-center p-4"><LoadingSpinner message="Buscando juego..." /></div>}
-          {searchError && <p className="text-sm text-red-500 dark:text-red-400 mb-3 p-2 bg-red-50 dark:bg-red-900/20 rounded-md">{searchError}</p>}
+          {searchError && <p className="text-sm text-red-500 dark:text-red-400 mb-3 p-2 bg-danger/10 dark:bg-red-900/20 rounded-md">{searchError}</p>}
 
           {gameDetail && !isSearching && (
             <>
@@ -141,21 +123,9 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
             </>
           )}
         </div>
-
-        {isAdmin && (
-          <div className="border-t border-gray-200 dark:border-gray-700 my-4 py-4">
-            <AdminSection
-              isUpdatingPhase={isUpdatingPhase}
-              eventPhase={eventPhase ?? 0}
-              onPhaseChange={handlePhaseChange}
-              hideTVViews={!!gameDetail}
-              hideAdminActions={!!gameDetail}
-            />
-          </div>
-        )}
       </div>
     </div>
   );
-}
+};
 
 export default ControlPanelModal;

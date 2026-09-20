@@ -40,7 +40,6 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
         if (['Delivered', 'In Event'].includes(status)) return 2;
         return 1;
       },
-      mainButtonClass: 'bg-accent-yellow text-gray-800',
     };
 
     const deliverConfig = {
@@ -66,7 +65,6 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
         if (status === 'In Event') return 1;
         return 2;
       },
-      mainButtonClass: 'bg-accent-green text-gray-800',
     };
 
     return mode === 'receive' ? receiveConfig : deliverConfig;
@@ -159,43 +157,34 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
   return (
     <div className="w-full">
       <div className="mb-6 text-center">
-        <h2 className="text-2xl sm:text-3xl font-bold text-secondary-blue dark:text-sky-400">
+        <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
           {user?.first_name} {user?.last_name}
         </h2>
         {mode === 'deliver' && trades[0]?.result.table_number && (
-          <p className="text-md text-gray-600 dark:text-gray-400 mt-1">Mesa: <span className="font-semibold">{trades[0].result.table_number}</span></p>
+          <p className="mt-1 text-base text-gray-500">Mesa: <span className="font-semibold text-gray-800">{trades[0].result.table_number}</span></p>
         )}
       </div>
 
-      <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-700/30 rounded-lg">
-        <p className="text-lg font-semibold text-gray-700 dark:text-gray-200">
+      <div className="staff-panel mb-6 p-4">
+        <p className="text-lg font-semibold text-gray-800">
           Resumen: {pendingItems.length} {pendingItems.length === 1 ? config.texts.pendingSingular : config.texts.pendingPlural} de {trades.length} en total:
         </p>
         {pendingItems.length > 0 && (
-          <ul className="mt-3 nm-list text-sm">
+          <ul className="mt-3 flex flex-col gap-3">
             {pendingItems.map((trade, idx) => {
               const isExpanded = expandedIndex === idx;
               return (
                 <li
                   key={`summary-${trade.result.assigned_trade_code}`}
-                  className={`w-full flex items-start p-2 dark:bg-gray-700/60 rounded-md shadow-sm cursor-pointer
-        ${isExpanded ? "bg-blue-50 dark:bg-purple-900/20" : ""}
-      `}
+                  className={`flex min-h-14 w-full cursor-pointer items-start rounded-lg border border-gray-200 px-3 py-3 ${
+                    isExpanded ? 'bg-primary/10' : 'bg-page'
+                  }`}
                   onClick={() => setExpandedIndex(isExpanded ? null : idx)}
-                  style={{
-                    overflow: "hidden",
-                    maxHeight: isExpanded ? "500px" : "48px",
-                    whiteSpace: isExpanded ? "normal" : "nowrap",
-                    transition: "max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s"
-                  }}
                 >
-                  <span className="font-bold text-secondary-blue dark:text-sky-400 w-10 min-w-[2.5rem] text-center shrink-0 text-lg mr-3">
+                  <span className="mr-3 w-10 shrink-0 text-center text-lg font-bold text-primary">
                     {trade.result.assigned_trade_code}
                   </span>
-                  <span
-                    className={`flex-1 text-gray-800 dark:text-sky-100 ${isExpanded ? "whitespace-normal break-words" : "truncate"}`}
-                    style={isExpanded ? { whiteSpace: "normal", wordBreak: "break-word" } : {}}
-                  >
+                  <span className={`flex-1 text-gray-800 ${isExpanded ? 'whitespace-normal break-words' : 'truncate'}`}>
                     {trade.math_item_exchanged.title}
                   </span>
                 </li>
@@ -204,7 +193,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
           </ul>
         )}
         {completedItemsCount > 0 && (
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+          <p className="mt-2 text-sm text-gray-500">
             ({completedItemsCount} ya {completedItemsCount === 1 ? config.texts.completedSingular : config.texts.completedPlural})
           </p>
         )}
@@ -213,9 +202,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
       {pendingItems.length > 0 && (
         <button
           onClick={handleConfirmAllPending}
-          className={
-            `w-full mb-6 nm-btn-primary disabled:opacity-50 disabled:cursor-not-allowed`
-          }
+          className="staff-btn staff-btn-primary mb-8"
           disabled={disabled}
           title={disabled ? config.texts.disabledMessage : ""}
         >
@@ -224,9 +211,9 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
       )}
 
       {trades.length === 0 && (
-        <p className="text-center text-gray-600 dark:text-gray-400 my-8 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">{config.texts.noItems}</p>
+        <p className="staff-card my-8 p-4 text-center text-gray-500">{config.texts.noItems}</p>
       )}
-      <ul className="nm-list">
+      <ul className="flex flex-col gap-3">
         {sortedTrades.map((trade: Trade) => (
           mode === 'receive' ? (
             config.isPending(trade) ? (
@@ -287,7 +274,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
       {pendingItems.length > 0 && selectedItems.size > 0 && (
         <button
           onClick={handleConfirmSelected}
-          className="w-full mt-4 nm-btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+          className="staff-btn staff-btn-outline mt-8"
           disabled={disabled}
           title={disabled ? config.texts.disabledMessage : ""}
         >
@@ -298,7 +285,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
       <button
         onClick={handleFinish}
         id="finish-button"
-        className="w-full mt-4 nm-btn-finish"
+        className="staff-btn staff-btn-want mt-3"
       >
         {pendingItems.length === 0 && trades.length > 0 ? config.texts.finishButtonCompleted : config.texts.finishButtonIdle}
       </button>

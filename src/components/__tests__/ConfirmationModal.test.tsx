@@ -84,7 +84,7 @@ describe('ConfirmationModal', () => {
       render(<ConfirmationModal {...defaultProps} actionType="all" />);
       const confirmButton = screen.getByRole('button', { name: `Entregar TODO (${mockItems.length})` });
       expect(confirmButton).toBeInTheDocument();
-      expect(confirmButton).toHaveClass('bg-accent-yellow');
+      expect(confirmButton).toHaveClass('staff-btn-primary');
     });
   });
 
@@ -93,7 +93,7 @@ describe('ConfirmationModal', () => {
       render(<ConfirmationModal {...defaultProps} actionType="selected" />);
       const confirmButton = screen.getByRole('button', { name: `Entregar Marcados (${mockItems.length})` });
       expect(confirmButton).toBeInTheDocument();
-      expect(confirmButton).toHaveClass('bg-secondary-blue');
+      expect(confirmButton).toHaveClass('staff-btn-primary');
     });
   });
 

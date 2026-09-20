@@ -1,5 +1,4 @@
 import { useControlPanel } from '@/contexts/ControlPanelContext';
-import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useAuth } from '@/hooks/useAuth';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -7,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import AppHeader from '../AppHeader';
 
 jest.mock('@/hooks/useAuth');
-jest.mock('@/contexts/EventPhaseContext');
 jest.mock('@/contexts/ControlPanelContext');
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
@@ -15,29 +13,24 @@ jest.mock('next/navigation', () => ({
 jest.mock('@/components/common/ui/LoadingSpinner', () => ({
   LoadingSpinner: () => <div data-testid="loading-spinner">Loading...</div>,
 }));
+jest.mock('../NotificationsBell', () => ({
+  __esModule: true,
+  default: () => <div data-testid="notifications-bell" />,
+}));
 
 const mockUseAuth = useAuth as jest.Mock;
-const mockUseEventPhase = useEventPhase as jest.Mock;
 const mockUseControlPanel = useControlPanel as jest.Mock;
 const mockUseRouter = useRouter as jest.Mock;
 
 describe('AppHeader', () => {
-  const mockRouter = { push: jest.fn() };
+  const mockRouter = { push: jest.fn(), back: jest.fn(), replace: jest.fn() };
   const mockLogout = jest.fn();
-  const mockToggleDarkMode = jest.fn();
   const mockOpenPanel = jest.fn();
 
   const defaultAuthContext = {
     userName: 'Test User',
     isAdmin: false,
     logout: mockLogout,
-    isDarkMode: false,
-    toggleDarkMode: mockToggleDarkMode,
-  };
-
-  const defaultEventPhaseContext = {
-    eventPhaseDisplay: 'Recepción',
-    isLoadingEventPhase: false,
   };
 
   const defaultControlPanelContext = {
@@ -47,7 +40,6 @@ describe('AppHeader', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseAuth.mockReturnValue(defaultAuthContext);
-    mockUseEventPhase.mockReturnValue(defaultEventPhaseContext);
     mockUseControlPanel.mockReturnValue(defaultControlPanelContext);
     mockUseRouter.mockReturnValue(mockRouter);
   });
@@ -63,6 +55,7 @@ describe('AppHeader', () => {
     render(<AppHeader pageTitle="My Page" pageIcon={PageIcon} />);
     expect(screen.getByText('My Page')).toBeInTheDocument();
     expect(screen.getByTestId('page-icon')).toBeInTheDocument();
+    expect(screen.getByTestId('notifications-bell')).toBeInTheDocument();
   });
 
   it('renders back button and handles click', () => {
@@ -73,37 +66,17 @@ describe('AppHeader', () => {
     expect(onBackClick).toHaveBeenCalledTimes(1);
   });
 
-  it('handles back button click with default router push', () => {
+  it('handles back button click with router.back', () => {
     render(<AppHeader showBackButton={true} />);
     const backButton = screen.getByRole('button', { name: /volver a la página anterior/i });
     fireEvent.click(backButton);
-    expect(mockRouter.push).toHaveBeenCalledWith('/');
+    expect(mockRouter.back).toHaveBeenCalledTimes(1);
   });
 
-
-  it('displays event phase only in desktop (hidden in mobile)', () => {
+  it('does not render a dark mode toggle', () => {
     render(<AppHeader />);
-    const eventPhase = screen.queryByText('Recepción');
-    expect(eventPhase).toBeInTheDocument();
-  });
-
-  it('never displays loading spinner', () => {
-    mockUseEventPhase.mockReturnValue({ ...defaultEventPhaseContext, isLoadingEventPhase: true });
-    render(<AppHeader />);
-    expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
-  });
-
-  it('toggles dark mode', () => {
-    render(<AppHeader />);
-    const darkModeButton = screen.getByRole('button', { name: /activar modo oscuro/i });
-    fireEvent.click(darkModeButton);
-    expect(mockToggleDarkMode).toHaveBeenCalledTimes(1);
-  });
-
-  it('shows sun icon in dark mode', () => {
-    mockUseAuth.mockReturnValue({ ...defaultAuthContext, isDarkMode: true });
-    render(<AppHeader />);
-    expect(screen.getByRole('button', { name: /activar modo claro/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /activar modo oscuro/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /activar modo claro/i })).not.toBeInTheDocument();
   });
 
   it('toggles search input visibility', () => {
@@ -158,7 +131,7 @@ describe('AppHeader', () => {
   describe('User Menu', () => {
     it('opens and closes the user menu', () => {
       render(<AppHeader />);
-      const menuButton = screen.getByRole('button', { name: /Test User/i });
+      const menuButton = screen.getByRole('button', { name: 'Menú' });
 
       fireEvent.click(menuButton);
       expect(screen.getByText('Cerrar Sesión')).toBeInTheDocument();
@@ -169,7 +142,7 @@ describe('AppHeader', () => {
 
     it('handles logout', () => {
       render(<AppHeader />);
-      const menuButton = screen.getByRole('button', { name: /Test User/i });
+      const menuButton = screen.getByRole('button', { name: 'Menú' });
       fireEvent.click(menuButton);
 
       const logoutButton = screen.getByText('Cerrar Sesión');
@@ -183,32 +156,20 @@ describe('AppHeader', () => {
       render(<AppHeader />);
       expect(screen.queryByTitle('Administrador')).not.toBeInTheDocument();
 
-      const menuButton = screen.getByRole('button', { name: /Test User/i });
+      const menuButton = screen.getByRole('button', { name: 'Menú' });
       fireEvent.click(menuButton);
       expect(screen.queryByText('Panel de Control')).not.toBeInTheDocument();
     });
 
-    it('shows admin crown and control panel for admin', () => {
+    it('shows admin crown but not control panel for admin', () => {
       mockUseAuth.mockReturnValue({ ...defaultAuthContext, isAdmin: true });
       render(<AppHeader />);
       expect(screen.getByTitle('Administrador')).toBeInTheDocument();
 
-      const menuButton = screen.getByRole('button', { name: /Test User/i });
+      const menuButton = screen.getByRole('button', { name: 'Menú' });
       fireEvent.click(menuButton);
-      expect(screen.getByText('Panel de Control')).toBeInTheDocument();
-    });
-
-    it('handles opening control panel for admin', () => {
-      mockUseAuth.mockReturnValue({ ...defaultAuthContext, isAdmin: true });
-      render(<AppHeader />);
-      const menuButton = screen.getByRole('button', { name: /Test User/i });
-      fireEvent.click(menuButton);
-
-      const controlPanelButton = screen.getByText('Panel de Control');
-      fireEvent.click(controlPanelButton);
-
-      expect(mockOpenPanel).toHaveBeenCalledWith();
       expect(screen.queryByText('Panel de Control')).not.toBeInTheDocument();
+      expect(screen.getByText('Cerrar Sesión')).toBeInTheDocument();
     });
   });
 });

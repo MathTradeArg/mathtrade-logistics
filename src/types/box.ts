@@ -6,10 +6,12 @@ export interface Box {
   created_by_last_name: string | null;
   id: number;
   number: number | null;
-  destiny: number; 
+  destiny: number;
   origin: number;
   math_items: Item[];
-  selectedItemIds: Set<number>;
+  selectedItemIds?: Set<number>;
   origin_name: string;
   destination_name: string;
+  closed_at?: string | null;
+  comment?: string | null;
 }

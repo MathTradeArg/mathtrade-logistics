@@ -25,10 +25,10 @@ const NonPackableDestinationsModal: React.FC<NonPackableDestinationsModalProps> 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-center items-center p-4 glass-bg">
-      <div className="nm-surface dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
-        <div className="flex justify-center items-center mb-4">
-          <h2 className="text-xl font-bold flex items-center nm-text-shadow text-secondary-blue dark:text-sky-100 nm-surface px-4 py-2 rounded-lg shadow-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(213,220,226,0.7)] p-4">
+      <div className="flex max-h-[90vh] w-full max-w-md flex-col rounded-xl bg-white p-6 text-gray-900">
+        <div className="mb-4 flex items-center justify-center">
+          <h2 className="text-xl font-bold">
             Destinos no empaquetables
           </h2>
         </div>
@@ -47,7 +47,7 @@ const NonPackableDestinationsModal: React.FC<NonPackableDestinationsModalProps> 
                   </h3>
                   <ul className="space-y-2 pt-2">
                     {destinations.fullyPacked.map((dest) => (
-                      <li key={dest.id} className="p-3 mb-4 nm-surface">
+                      <li key={dest.id} className="mb-3 rounded-lg border border-gray-200 bg-page p-3">
                         <span className="font-semibold text-gray-800 dark:text-gray-200">{dest.name}</span>
                       </li>
                     ))}
@@ -61,7 +61,7 @@ const NonPackableDestinationsModal: React.FC<NonPackableDestinationsModalProps> 
                   </h3>
                   <ul className="space-y-2 pt-2">
                     {destinations.notReady.map((dest) => (
-                      <li key={dest.id} className="p-3 mb-4 nm-surface">
+                      <li key={dest.id} className="mb-3 rounded-lg border border-gray-200 bg-page p-3">
                         <span className="font-semibold text-gray-800 dark:text-gray-200">{dest.name}</span>
                       </li>
                     ))}
@@ -74,7 +74,7 @@ const NonPackableDestinationsModal: React.FC<NonPackableDestinationsModalProps> 
 
         <button
           onClick={handleClose}
-          className="w-full nm-btn-secondary"
+          className="flex min-h-14 w-full items-center justify-center rounded-lg border border-gray-200 bg-white text-base font-semibold text-gray-800"
         >
           Cerrar
         </button>

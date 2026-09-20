@@ -44,7 +44,7 @@ describe('GameRowItem', () => {
     render(<GameRowItem {...defaultProps} variant="delivered" />);
     const title = screen.getByText('Catan');
     expect(title).toHaveClass('line-through');
-    const iconContainer = title.closest('li')?.querySelector('.bg-green-500');
+    const iconContainer = title.closest('li')?.querySelector('.bg-want');
     expect(iconContainer).toBeInTheDocument();
   });
 
@@ -52,7 +52,7 @@ describe('GameRowItem', () => {
     render(<GameRowItem {...defaultProps} variant="pendingOther" />);
     const title = screen.getByText('Catan');
     expect(title).toHaveClass('line-through');
-    const iconContainer = title.closest('li')?.querySelector('.bg-red-500');
+    const iconContainer = title.closest('li')?.querySelector('.bg-danger');
     expect(iconContainer).toBeInTheDocument();
   });
 

@@ -2,7 +2,6 @@
 
 import type { Trade } from "@/types";
 import { Warning, X } from 'phosphor-react';
-import '@/styles/glassmorphism.css';
 import { useHapticClick } from '@/hooks/useHapticClick';
 
 interface ConfirmationModalProps {
@@ -61,31 +60,31 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       : (actionType === 'all' ? `Entregar TODO (${itemsToDeliver.length})` : `Entregar Marcados (${itemsToDeliver.length})`));
 
   return (
-    <div className="fixed inset-0 flex justify-center items-center p-4 z-50 glass-bg">
-      <div className="nm-surface dark:bg-gray-800 p-6 rounded-xl shadow-2xl w-full max-w-md flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-secondary-blue dark:text-sky-400 flex items-center">
-            <Warning size={24} className="mr-2 text-accent-yellow" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(213,220,226,0.7)] p-4 backdrop-blur-sm">
+      <div className="staff-panel flex w-full max-w-md flex-col p-6 text-gray-900">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="flex items-center text-xl font-bold">
+            <Warning size={24} className="mr-2 text-warning" />
             {title}
           </h2>
-          <button onClick={handleClose} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-150 ease-in-out active:scale-90" aria-label="Cerrar">
-            <X size={24} className="text-gray-600 dark:text-gray-400" />
+          <button onClick={handleClose} className="rounded-full p-1 hover:bg-gray-100" aria-label="Cerrar">
+            <X size={24} className="text-gray-500" />
           </button>
         </div>
 
-        <p className="mb-1 text-gray-700 dark:text-gray-300">{actionDescriptionText}</p>
+        <p className="mb-3 text-gray-700">{actionDescriptionText}</p>
         
         {!isDeleteBoxMode && (
-          <div className="max-h-60 overflow-y-auto mb-6 p-3 bg-gray-100 dark:bg-gray-700/30 rounded-lg space-y-1">
+          <div className="mb-6 max-h-60 space-y-3 overflow-y-auto rounded-lg border border-gray-200 bg-page p-3">
             {itemsToDeliver.length > 0 ? (
               itemsToDeliver.map(item => (
-                <div key={`confirm-${item.result.assigned_trade_code}`} className="flex items-center p-1.5 nm-surface dark:bg-gray-700/60 rounded-md shadow-sm text-sm">
-                  <span className="font-bold text-secondary-blue dark:text-sky-400 w-10 text-center shrink-0 mr-2">{item.result.assigned_trade_code}</span>
-                  <span className="truncate min-w-0 flex-grow text-gray-700 dark:text-gray-200">{item.math_item_exchanged.title}</span>
+                <div key={`confirm-${item.result.assigned_trade_code}`} className="flex min-h-14 items-center rounded-lg bg-white px-3 text-sm">
+                  <span className="mr-2 w-10 shrink-0 text-center font-bold text-primary">{item.result.assigned_trade_code}</span>
+                  <span className="min-w-0 flex-grow text-gray-800">{item.math_item_exchanged.title}</span>
                 </div>
               ))
             ) : (
-              <p className="text-gray-500 dark:text-gray-400">No hay juegos seleccionados para esta acción.</p>
+              <p className="text-gray-500">No hay juegos seleccionados para esta acción.</p>
             )}
           </div>
         )}
@@ -94,27 +93,19 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           <div className="mb-6"></div>
         )}
 
-        <div className="flex justify-end space-x-3">
-          <button
-            onClick={handleClose}
-            className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold rounded-lg shadow-sm transition-all duration-150 ease-in-out active:scale-95"
-          >
-            Cancelar
-          </button>
+        <div className="flex flex-col gap-3">
           <button
             onClick={handleConfirm}
             disabled={!isDeleteBoxMode && itemsToDeliver.length === 0}
-            className={`px-4 py-2 font-semibold rounded-lg shadow-sm transition-all duration-150 ease-in-out active:scale-95 disabled:active:scale-100
-                        ${!isDeleteBoxMode && itemsToDeliver.length === 0 
-                            ? 'bg-gray-400 text-gray-700 cursor-not-allowed' 
-                            : isDeleteBoxMode
-                              ? 'bg-red-500 text-white hover:bg-red-600'
-                              : (actionType === 'all' 
-                                ? 'bg-accent-yellow text-gray-800 hover:opacity-85' 
-                                : 'bg-secondary-blue text-white hover:opacity-85')
-                        }`}
+            className={`staff-btn ${isDeleteBoxMode ? 'staff-btn-danger' : 'staff-btn-primary'}`}
           >
             {buttonText}
+          </button>
+          <button
+            onClick={handleClose}
+            className="staff-btn staff-btn-outline"
+          >
+            Cancelar
           </button>
         </div>
       </div>
