@@ -33,6 +33,7 @@ export default function OutgoingBoxPage() {
   const [removeTarget, setRemoveTarget] = useState<Item | null>(null);
   const [closedNumber, setClosedNumber] = useState<number | null>(null);
   const [showDelete, setShowDelete] = useState(false);
+  const [addedTitles, setAddedTitles] = useState<string[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -136,13 +137,29 @@ export default function OutgoingBoxPage() {
 
   const handleDelete = async () => {
     try {
-      const ok = await deleteBox(boxId);
-      if (ok) {
+      const result = await deleteBox(boxId);
+      if (result?.status === 'deleted') {
         router.replace(`/boxes/out/${destinationId}`);
+        return;
+      }
+      if (result?.status === 'has_items') {
+        setShowDelete(false);
+        let titles = result.titles;
+        if (titles.length === 0) {
+          const fresh = await getBox(boxId);
+          titles = fresh.math_items.map((item) => item.title).filter(Boolean);
+          setBox(fresh);
+        }
+        setAddedTitles(titles);
       }
     } catch {
       // toast via hook
     }
+  };
+
+  const handleAddedGamesAck = async () => {
+    setAddedTitles(null);
+    await load();
   };
 
   if (authIsLoading || isAuthenticated === null || isLoadingEventPhase) {
@@ -323,6 +340,14 @@ export default function OutgoingBoxPage() {
       >
         Solo se puede borrar una caja abierta y vacía.
       </StaffDialog>
+
+      <StaffDialog
+        open={addedTitles != null}
+        title={`Ya se agregaron los siguientes juegos: ${addedTitles?.join(', ')}`}
+        confirmLabel="OK"
+        confirmDisabled={isLoading}
+        onConfirm={handleAddedGamesAck}
+      />
 
       <StaffDialog
         open={closedNumber != null}
