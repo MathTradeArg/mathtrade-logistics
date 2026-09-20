@@ -1,12 +1,11 @@
 
-import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useAuth } from '@/hooks/useAuth';
-import { ArrowLeft, CaretDown, Crown, SignOut, Moon, MagnifyingGlass, Sun, User, X } from 'phosphor-react';
+import { ArrowLeft, Crown, DotsThreeVertical, MagnifyingGlass, SignOut, X } from 'phosphor-react';
 import { useRouter } from 'next/navigation';
 import React, { ComponentType, FormEvent, useState } from 'react';
-import { LoadingSpinner } from '@/components/common/ui/LoadingSpinner';
 import { useControlPanel } from '@/contexts/ControlPanelContext';
-import { useHapticClick } from '@/hooks/useHapticClick';  
+import { useHapticClick } from '@/hooks/useHapticClick';
+import NotificationsBell from './NotificationsBell';
 
 interface AppHeaderProps {
   pageTitle?: string;
@@ -21,22 +20,16 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   showBackButton = false,
   onBackClick,
 }) => {
-  const { userName, isAdmin, logout, isDarkMode, toggleDarkMode } = useAuth();
-  const { eventPhaseDisplay, isLoadingEventPhase } = useEventPhase();
+  const { userName, isAdmin, logout } = useAuth();
   const { openPanel } = useControlPanel();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMagnifyingGlassVisible, setIsMagnifyingGlassVisible] = useState(false);
   const [MagnifyingGlassValue, setMagnifyingGlassValue] = useState('');
 
-  const handleBack = useHapticClick(onBackClick ?? (() => router.push('/')));
+  const handleBack = useHapticClick(onBackClick ?? (() => router.back()));
   const handleToggleMagnifyingGlass = useHapticClick(() => setIsMagnifyingGlassVisible(!isMagnifyingGlassVisible));
-  const handleToggleDarkMode = useHapticClick(toggleDarkMode);
   const handleToggleMenu = useHapticClick(() => setIsMenuOpen(!isMenuOpen));
-  const handleOpenPanel = useHapticClick(() => {
-    openPanel();
-    setIsMenuOpen(false);
-  });
   const handleLogout = useHapticClick(() => {
     logout();
     setIsMenuOpen(false);
@@ -56,19 +49,19 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   }
 
   return (
-    <header className="w-full nm-surface nm-surface-no-top-radius dark:bg-gray-800 shadow-md p-4 flex flex-wrap md:flex-nowrap justify-between items-center sticky top-0 z-50 overflow-x-hidden">
-      <div className="flex min-w-0 flex-1 items-center gap-4 overflow-x-hidden">
+    <header className="sticky top-0 z-50 flex w-full flex-wrap items-center justify-between bg-white p-3 shadow-main md:flex-nowrap">
+      <div className="flex min-w-0 flex-1 items-center gap-3 overflow-x-hidden">
         {!isMagnifyingGlassVisible && (
           <>
             {showBackButton && (
-              <button onClick={handleBack} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label="Volver a la página anterior">
+              <button onClick={handleBack} className="rounded-full p-2 hover:bg-gray-100" aria-label="Volver a la página anterior">
                 <ArrowLeft size={24} />
               </button>
             )}
-            {pageIcon && React.createElement(pageIcon, { size: 28, className: "text-gray-700 dark:text-gray-300" })}
+            {pageIcon && React.createElement(pageIcon, { size: 28, className: "text-gray-700" })}
             {pageTitle && (
               <h1
-                className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200 truncate max-w-[40vw] md:max-w-[28vw] lg:max-w-[22vw]"
+                className="max-w-[60vw] truncate text-lg font-bold text-gray-900 md:text-xl"
                 title={pageTitle}
               >
                 {pageTitle}
@@ -77,9 +70,9 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           </>
         )}
         {isMagnifyingGlassVisible && (
-          <form onSubmit={handleMagnifyingGlassSubmit} className="flex items-center w-full">
-            <div className="relative w-full nm-input-with-icon">
-              <div className="search-icon-container">
+          <form onSubmit={handleMagnifyingGlassSubmit} className="flex w-full items-center gap-2">
+            <div className="relative min-w-0 flex-1">
+              <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
                 <MagnifyingGlass size={20} className="text-gray-500" />
               </div>
               <input
@@ -88,62 +81,47 @@ const AppHeader: React.FC<AppHeaderProps> = ({
                 value={MagnifyingGlassValue}
                 onChange={(e) => setMagnifyingGlassValue(e.target.value)}
                 placeholder="Buscar juego por ID..."
-                className="w-full bg-transparent focus:outline-none text-gray-800 dark:text-gray-200 pr-4 py-3"
+                className="w-full rounded-full bg-gray-100 py-3 pr-4 pl-10 text-gray-900 focus:border-primary focus:outline-none"
               />
             </div>
+            <button
+              type="submit"
+              className="staff-btn staff-btn-primary min-h-12 w-auto shrink-0 px-5 text-sm"
+            >
+              Buscar
+            </button>
           </form>
         )}
       </div>
 
-      <div className="flex items-center gap-4 flex-shrink-0 min-w-0">
-        {!isMagnifyingGlassVisible && !isLoadingEventPhase && eventPhaseDisplay && (
-          <div className="hidden md:block px-3 py-1.5 bg-secondary-blue/10 dark:bg-sky-400/20 text-secondary-blue dark:text-sky-300 rounded-full text-sm font-semibold">
-            {eventPhaseDisplay}
-          </div>
-        )}
-
-        <button onClick={handleToggleMagnifyingGlass} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label={isMagnifyingGlassVisible ? "Cerrar búsqueda" : "Abrir búsqueda"}>
+      <div className="flex min-w-0 flex-shrink-0 items-center gap-1">
+        {!isMagnifyingGlassVisible && <NotificationsBell />}
+        <button onClick={handleToggleMagnifyingGlass} className="rounded-full p-2 hover:bg-gray-100" aria-label={isMagnifyingGlassVisible ? "Cerrar búsqueda" : "Abrir búsqueda"}>
           {isMagnifyingGlassVisible ? <X size={20} /> : <MagnifyingGlass size={20} />}
         </button>
 
         {!isMagnifyingGlassVisible && (
-          <>
-        <button onClick={handleToggleDarkMode} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" aria-label={isDarkMode ? "Activar modo claro" : "Activar modo oscuro"}>
-          {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-
-        <div>
-          <button onClick={handleToggleMenu} className="flex items-center gap-2 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-            <User size={20} />
-            <span className="hidden md:inline font-semibold">{userName}</span>
-            {isAdmin && (
-              <span className="p-1 bg-yellow-400 rounded-full" title="Administrador">
-                <Crown size={12} className="text-gray-800" />
-              </span>
-            )}
-            <CaretDown size={16} className={`transition-transform ml-1 md:ml-2 ${isMenuOpen ? 'rotate-180' : ''}`} style={{ marginRight: 2 }} />
-          </button>
-          {isMenuOpen && (
-            <div className="fixed top-16 right-4 w-48 nm-surface dark:bg-gray-700 rounded-md shadow-lg py-1 z-[9999] border border-gray-200 dark:border-none animate-fade-in">
+          <div className="relative">
+            <button onClick={handleToggleMenu} className="flex items-center gap-1 rounded-full p-2 hover:bg-gray-100" aria-label="Menú">
               {isAdmin && (
-                <button
-                  onClick={handleOpenPanel}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
-                >
-                  Panel de Control
-                </button>
+                <span className="rounded-full bg-warning p-1" title="Administrador">
+                  <Crown size={12} className="text-gray-800" />
+                </span>
               )}
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2"
-              >
-                <SignOut size={16} />
-                Cerrar Sesión
-              </button>
-            </div>
-          )}
-        </div>
-          </>
+              <DotsThreeVertical size={20} />
+            </button>
+            {isMenuOpen && (
+              <div className="absolute right-0 z-[9999] mt-2 w-48 rounded-main bg-white py-1 shadow-main">
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-danger hover:bg-gray-100"
+                >
+                  <SignOut size={16} />
+                  Cerrar Sesión
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </header>

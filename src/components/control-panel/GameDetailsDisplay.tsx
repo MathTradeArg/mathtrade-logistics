@@ -71,13 +71,13 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
         return (
           <div className="pt-4 border-t border-gray-200 dark:border-gray-700 mb-6">
             <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">Cambiar estado de juego</h4>
-            <div className="flex flex-wrap gap-2">
+            <div className="mb-2 flex flex-col gap-3">
               {showEvento && (
                   <button
                     onClick={() => handleAction(5)}
                     disabled={isPerformingGameAction || actionsDisabledByPhase || (status === 6 && !isAdmin)}
-                    className="nm-btn-primary text-xs px-2 py-1 min-h-0 h-8 flex items-center justify-center leading-tight max-w-[120px] whitespace-normal text-center"
-                    style={{lineHeight: '1.1', fontSize: '12px', padding: '0 8px', height: '2.1rem'}}>
+                    className="min-h-14 rounded-lg bg-primary px-4 text-sm font-semibold text-white disabled:bg-cancel"
+                  >
                     En evento
                   </button>
               )}
@@ -85,8 +85,8 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
                   <button
                     onClick={() => handleAction(6)}
                     disabled={isPerformingGameAction || actionsDisabledByPhase}
-                    className="nm-btn-secondary text-xs px-2 py-1 min-h-0 h-8 flex items-center justify-center leading-tight max-w-[120px] whitespace-normal text-center"
-                    style={{lineHeight: '1.1', fontSize: '12px', padding: '0 8px', height: '2.1rem'}}>
+                    className="min-h-14 rounded-lg bg-want px-4 text-sm font-semibold text-white disabled:bg-cancel"
+                  >
                     Entregado
                   </button>
               )}
@@ -94,15 +94,15 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
                   <button
                     onClick={() => handleAction(4)}
                     disabled={isPerformingGameAction || actionsDisabledByPhase}
-                    className="nm-btn-warning text-xs px-2 py-1 min-h-0 h-8 flex items-center justify-center leading-tight max-w-[120px] whitespace-normal text-center"
-                    style={{lineHeight: '1.1', fontSize: '12px', padding: '0 8px', height: '2.1rem'}}>
+                    className="min-h-14 rounded-lg bg-amber-500 px-4 text-sm font-semibold text-gray-900 disabled:bg-amber-200"
+                  >
                     Pendiente
                   </button>
               )}
             </div>
             {isPerformingGameAction && <div className="flex items-center text-sm text-gray-500 mt-2"><LoadingSpinner/> <span className="ml-2">Procesando...</span></div>}
             {gameActionSuccess && <p className="text-sm text-green-600 dark:text-green-400 mt-2 flex items-center"><CheckCircle size={16} className="mr-1" /> {gameActionSuccess}</p>}
-            {gameActionError && <p className="text-sm text-red-600 dark:text-red-400 mt-2 flex items-center"><WarningCircle size={16} className="mr-1" /> {gameActionError}</p>}
+            {gameActionError && <p className="text-sm text-danger dark:text-red-400 mt-2 flex items-center"><WarningCircle size={16} className="mr-1" /> {gameActionError}</p>}
           </div>
         );
       })()}

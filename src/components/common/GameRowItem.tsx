@@ -40,11 +40,6 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
   onAddItem,
   disabled = false,
 }) => {
-  const baseLiClasses = "flex nm-list-item overflow-hidden transition-all duration-150 ease-in-out items-stretch";
-  const baseIdBoxClasses = "nm-idbox flex-shrink-0 flex items-center justify-center min-w-[54px] max-w-[54px] sm:min-w-[64px] sm:max-w-[64px] overflow-x-auto";
-  const baseTitleTextClasses = "text-sm sm:text-base font-medium leading-tight truncate";
-  const baseActionAreaClasses = "flex-shrink-0 w-12 sm:w-16 flex items-center justify-center p-2 sm:p-3 rounded-r-lg";
-
   const isInactiveByVariant = variant === 'delivered' || variant === 'pendingOther';
   const isBoxItemVariant = variant === 'box-item';
   const isAddToBoxVariant = variant === 'add-to-box';
@@ -64,41 +59,40 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
 
   const TextContainerTag = isCheckboxInteractive ? 'label' : 'div';
 
-  let variantLiClasses = "";
-  let variantIdBoxClasses = "";
-  let variantTitleTextClasses = "";
+  let rowClasses = 'bg-white text-gray-900';
+  let idBoxClasses = 'bg-gray-200 text-gray-800';
+  let titleClasses = 'text-gray-900';
   let actionContent = null;
 
   if (showCheckbox) {
     if (disabled) {
-      variantLiClasses = 'bg-gray-200/50 dark:bg-gray-800/50 opacity-60';
-      variantIdBoxClasses = 'bg-gray-300 dark:bg-gray-700';
+      rowClasses = 'bg-muted text-gray-400 opacity-60';
+      idBoxClasses = 'bg-gray-300 text-gray-500';
     } else if (isSelected) {
-      variantLiClasses = 'bg-gray-50 dark:bg-gray-700/50 active:scale-[0.98] nm-list-item-selected';
-      variantIdBoxClasses = 'bg-sky-300 dark:bg-sky-500';
+      rowClasses = 'border-l-4 border-primary bg-primary/10 text-gray-900';
+      idBoxClasses = 'bg-primary text-white';
     } else {
-      variantLiClasses = 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-600/30 active:scale-[0.98]';
-      variantIdBoxClasses = 'bg-gray-300 dark:bg-gray-700';
+      rowClasses = 'bg-white text-gray-900';
+      idBoxClasses = 'bg-gray-200 text-gray-800';
     }
-    variantTitleTextClasses = 'text-secondary-blue dark:text-sky-400';
   } else {
     switch (variant) {
       case 'actionable':
         if (isSelected) {
-          variantLiClasses = 'nm-list-item-selected hover:opacity-95 active:scale-[0.98]';
-          variantIdBoxClasses = 'bg-sky-300 dark:bg-sky-500';
-          variantTitleTextClasses = 'text-secondary-blue dark:text-sky-700';
+          rowClasses = 'border-l-4 border-primary bg-primary/10 text-gray-900';
+          idBoxClasses = 'bg-primary text-white';
+          titleClasses = 'text-gray-900';
         } else {
-          variantLiClasses = 'bg-gray-100 dark:bg-gray-800/70 opacity-60 hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700/80 active:scale-[0.98]';
-          variantIdBoxClasses = 'bg-gray-300 dark:bg-gray-700';
-          variantTitleTextClasses = 'text-gray-500 dark:text-gray-400';
+          rowClasses = 'bg-white text-gray-500';
+          idBoxClasses = 'bg-gray-200 text-gray-500';
+          titleClasses = 'text-gray-500';
         }
-        if (isRowSelectable) variantLiClasses += ' cursor-pointer';
+        if (isRowSelectable) rowClasses += ' cursor-pointer';
         break;
       case 'box-item':
-        variantLiClasses = 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-600/30';
-        variantIdBoxClasses = 'bg-blue-400 dark:bg-blue-600';
-        variantTitleTextClasses = 'text-secondary-blue dark:text-sky-400';
+        rowClasses = 'bg-white text-gray-900';
+        idBoxClasses = 'bg-primary text-white';
+        titleClasses = 'text-gray-900';
         actionContent = hasRemoveButton ? (
           <button
             onClick={(e) => {
@@ -106,17 +100,17 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
               triggerHaptic();
               onRemoveItem?.();
             }}
-            className="w-6 h-6 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 transition-colors"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-danger"
             title="Quitar de la caja"
           >
-            <Trash size={14} className="text-white" />
+            <Trash size={16} className="text-white" />
           </button>
         ) : null;
         break;
       case 'add-to-box':
-        variantLiClasses = 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-600/30';
-        variantIdBoxClasses = 'bg-green-400 dark:bg-green-600';
-        variantTitleTextClasses = 'text-secondary-blue dark:text-sky-400';
+        rowClasses = 'bg-white text-gray-900';
+        idBoxClasses = 'bg-want text-white';
+        titleClasses = 'text-gray-900';
         actionContent = hasAddButton ? (
           <button
             onClick={(e) => {
@@ -124,38 +118,38 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
               triggerHaptic();
               onAddItem?.();
             }}
-            className="w-6 h-6 rounded-full flex items-center justify-center bg-blue-500 hover:bg-blue-600 transition-colors"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-primary"
             title="Agregar a la caja"
           >
-            <Plus size={14} className="text-white" />
+            <Plus size={16} className="text-white" />
           </button>
         ) : null;
         break;
       case 'delivered':
-        variantLiClasses = 'bg-accent-green/30 dark:bg-accent-green/20 opacity-70';
-        variantIdBoxClasses = 'bg-green-400 dark:bg-green-600';
-        variantTitleTextClasses = 'text-gray-500 dark:text-gray-400 line-through';
+        rowClasses = 'bg-want/10 text-gray-500';
+        idBoxClasses = 'bg-want text-white';
+        titleClasses = 'text-gray-500 line-through';
         actionContent = (
-          <div className="w-5 h-5 rounded-full flex items-center justify-center bg-green-500">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-want">
             <Check size={16} className="text-white" />
           </div>
         );
         break;
       case 'pendingOther':
-        variantLiClasses = 'bg-gray-100 dark:bg-gray-800 opacity-80';
-        variantIdBoxClasses = 'bg-gray-300 dark:bg-gray-700';
-        variantTitleTextClasses = 'text-gray-500 dark:text-gray-400 line-through';
+        rowClasses = 'bg-muted text-gray-500';
+        idBoxClasses = 'bg-gray-300 text-gray-600';
+        titleClasses = 'text-gray-500 line-through';
         actionContent = (
-          <div className="w-5 h-5 rounded-full flex items-center justify-center bg-red-500">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-danger">
             <X size={16} className="text-white" />
           </div>
         );
         break;
       case 'default':
       default:
-        variantLiClasses = 'bg-gray-50 dark:bg-gray-700/50';
-        variantIdBoxClasses = 'bg-gray-300 dark:bg-gray-700';
-        variantTitleTextClasses = 'text-secondary-blue dark:text-sky-400';
+        rowClasses = 'bg-white text-gray-900';
+        idBoxClasses = 'bg-gray-200 text-gray-800';
+        titleClasses = 'text-gray-900';
         break;
     }
   }
@@ -170,45 +164,53 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
   };
 
   return (
-    <li className={`${baseLiClasses} ${variantLiClasses}`} onClick={handleInternalRowClick}>
-      <div className={clsx(baseIdBoxClasses, variantIdBoxClasses, { 'nm-idbox-selected': isSelected })}>
+    <li
+      className={clsx(
+        'flex min-h-14 items-stretch overflow-hidden rounded-lg border border-gray-200 shadow-sm',
+        rowClasses,
+      )}
+      onClick={handleInternalRowClick}
+    >
+      <div className={clsx('flex w-14 shrink-0 items-center justify-center sm:w-16', idBoxClasses)}>
         <span
-          className={`text-xl sm:text-2xl font-extrabold text-center w-full select-all ${finalIsVisuallyInactive ? 'text-white/70' : 'text-white'}`}
-          style={{ wordBreak: 'break-all', lineHeight: 1.1, paddingLeft: 2, paddingRight: 2, maxWidth: '100%' }}
+          className={clsx(
+            'w-full select-all px-1 text-center text-xl font-extrabold leading-tight sm:text-2xl',
+            finalIsVisuallyInactive && !idBoxClasses.includes('text-white') ? 'opacity-70' : '',
+          )}
+          style={{ wordBreak: 'break-all' }}
           title={typeof id === 'string' && id.length > 8 ? String(id) : undefined}
         >
           {id}
         </span>
       </div>
-      <div className={clsx(
-        `flex-grow min-w-0 p-2 sm:p-3 flex flex-col justify-center`,
-        {
-          'rounded-r-lg': !actionContent && !isCheckboxInteractive,
+      <div
+        className={clsx('flex min-w-0 flex-1 flex-col justify-center p-3', {
           'cursor-pointer': isCheckboxInteractive || (isRowSelectable && !showCheckbox),
-          'cursor-default': !isCheckboxInteractive && !(isRowSelectable && !showCheckbox)
-        })
-      }>
+        })}
+      >
         <TextContainerTag htmlFor={isCheckboxInteractive ? `checkbox-item-${id}` : undefined} className={isCheckboxInteractive ? 'cursor-pointer' : ''}>
-          <span className={`${baseTitleTextClasses} ${variantTitleTextClasses} block w-full truncate`} title={title}>{title}</span>
+          <span className={clsx('block w-full text-base font-medium leading-tight', titleClasses)} title={title}>
+            {title}
+          </span>
           {ownerName && (
-            <span className="block text-xs text-gray-500 dark:text-gray-400 truncate" title={`De: ${ownerName}`}>
+            <span className="mt-0.5 block text-sm text-gray-500" title={`De: ${ownerName}`}>
               De: {ownerName}
             </span>
           )}
         </TextContainerTag>
       </div>
       {(actionContent || isCheckboxInteractive) && (
-        <div className={`${baseActionAreaClasses} ${hasRemoveButton || hasAddButton ? 'w-10' : ''}`}>
+        <div className="flex w-12 shrink-0 items-center justify-center p-2 sm:w-16">
           {actionContent ? actionContent : (
             isCheckboxInteractive && (
               <input
                 type="checkbox"
                 id={`checkbox-item-${id}`}
                 disabled={disabled}
-                className="nm-checkbox"
+                className="h-5 w-5 rounded border-stroke text-primary"
                 checked={isSelected}
                 onChange={() => { triggerHaptic(); onCheckboxChange?.(); }}
-                onClick={e => { e.stopPropagation(); triggerHaptic(); }}
+                onClick={(e) => { e.stopPropagation(); triggerHaptic(); }}
               />
             )
           )}

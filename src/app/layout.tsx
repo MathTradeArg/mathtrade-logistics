@@ -5,14 +5,19 @@ import { EventPhaseProvider } from "@/contexts/EventPhaseContext";
 import { ActionStatusProvider } from "@/contexts/ActionStatusContext";
 import { AuthProvider } from "@/hooks/useAuth";
 import ToastContainer from "@/components/common/ToastContainer";
+import StaffChrome from "@/components/staff/StaffChrome";
 import type { Metadata } from "next";
-import { Nunito } from 'next/font/google';
+import localFont from 'next/font/local';
 import "./globals.css";
 
-
-const nunito = Nunito({
-  subsets: ['latin'],
-  variable: '--font-nunito',
+const mainFont = localFont({
+  src: [
+    { path: "./fonts/sfprodisplay-regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/sfprodisplay-semibolditalic.woff2", weight: "400", style: "italic" },
+    { path: "./fonts/sfprodisplay-bold.woff2", weight: "700", style: "normal" },
+  ],
+  variable: '--font-main',
+  fallback: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
 });
 
 export const metadata: Metadata = {
@@ -85,9 +90,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <EventPhaseProvider>
         <ControlPanelProvider>
           <ActionStatusProvider>
-            <html lang="es" className={`${nunito.variable} antialiased h-full`}>
-              <body className="nm-body text-gray-800 dark:text-gray-100 h-full">
-                {children}
+            <html lang="es" className={`${mainFont.variable} ${mainFont.className} antialiased h-full`}>
+              <body className="h-full bg-page text-gray-900">
+                <StaffChrome>
+                  {children}
+                </StaffChrome>
                 <GlobalControlPanel />
                 <ToastContainer />
               </body>

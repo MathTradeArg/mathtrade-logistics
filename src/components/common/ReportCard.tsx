@@ -12,9 +12,12 @@ interface ReportCardProps {
   report: EnrichedReport;
   onImageClick: (imageUrl: string) => void;
   onReportDeleted?: (reportId: number) => void;
+  onReportResolved?: (report: EnrichedReport) => void;
+  canManage?: boolean;
+  canComment?: boolean;
 }
 
-export default function ReportCard({ report, onImageClick, onReportDeleted }: ReportCardProps) {
+export default function ReportCard({ report, onImageClick, onReportDeleted, onReportResolved, canManage = false, canComment = false }: ReportCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [showAddComment, setShowAddComment] = useState(false);
   const [newComment, setNewComment] = useState('');
@@ -23,6 +26,7 @@ export default function ReportCard({ report, onImageClick, onReportDeleted }: Re
   
   const { execute: addComment, isLoading: isAddingComment } = useApi<ReportComment>(`reports/${report.id}/comments/`, { method: 'POST' });
   const { execute: deleteReport, isLoading: isDeletingReport } = useApi(`reports/${report.id}/`, { method: 'DELETE' });
+  const { execute: resolveReport, isLoading: isResolving } = useApi<EnrichedReport>(`reports/${report.id}/resolve/`, { method: 'POST' });
   const { setSuccess, setError } = useActionStatus();
   
   const handleToggleComments = useHapticClick(() => setShowComments(!showComments));
@@ -52,6 +56,20 @@ export default function ReportCard({ report, onImageClick, onReportDeleted }: Re
       setError('Error al eliminar el reporte');
     }
   });
+
+  const handleResolveReport = useHapticClick(async () => {
+    try {
+      const updated = await resolveReport();
+      triggerHaptic(15);
+      setSuccess('Reporte marcado como solucionado');
+      window.dispatchEvent(new Event('staff-notifications-changed'));
+      if (updated) onReportResolved?.(updated);
+    } catch (error) {
+      console.error('Error resolving report:', error);
+      triggerHaptic(25);
+      setError('Error al marcar el reporte como solucionado');
+    }
+  });
   
   const handleSubmitComment = useHapticClick(async () => {
     if (!newComment.trim()) return;
@@ -78,7 +96,7 @@ export default function ReportCard({ report, onImageClick, onReportDeleted }: Re
   });
 
   return (
-    <div className="nm-surface dark:bg-gray-800 rounded-xl shadow-md p-5 border border-gray-200 dark:border-gray-700">
+    <div className="rounded-xl border border-gray-200 bg-white p-5">
       <div className="flex justify-between items-start mb-3">
         <div className="flex-grow min-w-0">
           <div className="flex items-center">
@@ -90,18 +108,35 @@ export default function ReportCard({ report, onImageClick, onReportDeleted }: Re
             <h3 className="font-semibold text-lg">
               {report.reportedUserData ? 'Reporte de Usuario:' : report.itemData ? 'Reporte de Ítem:' : 'Reporte General'}
             </h3>
+            {report.resolved_at && (
+              <span className="ml-2 rounded-full bg-want/15 px-2 py-0.5 text-xs font-semibold text-want">Solucionado</span>
+            )}
           </div>
 
-          {(report.reportedUserData || report.itemData) && (
+          {(report.reportedUserData || report.itemData || report.box) && (
             <div className="flex items-center mt-1">
               <h3 className="font-normal text-lg" title={
                 report.reportedUserData ? `${report.reportedUserData.first_name} ${report.reportedUserData.last_name} ${report.reportedUserData.bgg_user ? `(${report.reportedUserData.bgg_user})` : ''}` :
                   report.itemData ? `${report.itemData.title} (#${report.itemData.assigned_trade_code})` : ''
               }>
                 {report.reportedUserData ? `${report.reportedUserData.first_name} ${report.reportedUserData.last_name} ${report.reportedUserData.bgg_user && `(${report.reportedUserData.bgg_user})`}` :
-                  report.itemData ? `${report.itemData.title} (#${report.itemData.assigned_trade_code})` : ''}
+                  report.itemData ? `${report.itemData.title} (#${report.itemData.assigned_trade_code || report.assigned_trade_code || report.item})` : ''}
               </h3>
             </div>
+          )}
+          {(report.box || report.box_number != null) && (
+            <p className="mt-1 text-sm text-gray-600">
+              Caja {report.box_number != null ? `#${report.box_number}` : ''}{report.box ? ` · id ${report.box}` : ''}
+              {report.box_origin_name ? ` · ${report.box_origin_name}` : ''}
+              {report.box_destination_name ? ` → ${report.box_destination_name}` : ''}
+            </p>
+          )}
+          {report.resolved_at && (
+            <p className="mt-1 text-sm text-want">
+              Solucionado {report.resolved_at}
+              {report.found_in_box_number != null ? ` · apareció en caja #${report.found_in_box_number}` : ''}
+              {report.found_in_box && report.found_in_box_number == null ? ` · apareció en caja id ${report.found_in_box}` : ''}
+            </p>
           )}
 
           {report.itemData && (report.itemData.first_name || report.itemData.last_name) && (
@@ -118,14 +153,16 @@ export default function ReportCard({ report, onImageClick, onReportDeleted }: Re
 
         {report.created && (
           <div className="flex flex-col items-end gap-2">
+            {canManage && (
             <button
               onClick={handleShowDeleteModal}
               disabled={isDeletingReport}
-              className="p-2 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2 rounded-full bg-red-100 dark:bg-red-900/30 text-danger dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title="Eliminar reporte"
             >
               <Trash className="w-4 h-4" />
             </button>
+            )}
             <div className="text-right">
               <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 {report.created}
@@ -141,6 +178,16 @@ export default function ReportCard({ report, onImageClick, onReportDeleted }: Re
       </div>
 
       <div className="space-y-4 mt-4">
+        {!report.resolved_at && (
+          <button
+            type="button"
+            onClick={handleResolveReport}
+            disabled={isResolving}
+            className="staff-btn staff-btn-want"
+          >
+            {isResolving ? 'Marcando...' : 'Marcar solucionado'}
+          </button>
+        )}
         <div className="flex items-start gap-3">
           <ChatText className="w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
           <p className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md flex-1">{report.comment}</p>
@@ -172,28 +219,30 @@ export default function ReportCard({ report, onImageClick, onReportDeleted }: Re
               {showComments ? <CaretUp className="w-4 h-4" /> : <CaretDown className="w-4 h-4" />}
             </button>
             
+            {canComment && (
             <button
               onClick={handleToggleAddComment}
-              className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+              className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-primary dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
               title="Agregar comentario"
             >
               <Plus className="w-4 h-4" />
             </button>
+            )}
           </div>
 
           {showComments && comments.length > 0 && (
             <div className="space-y-3">
               {comments.map((comment) => (
-                <div key={comment.id} className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 p-3 rounded-r-lg">
+                <div key={comment.id} className="bg-primary/10 dark:bg-blue-900/20 border-l-4 border-blue-400 p-3 rounded-r-lg">
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
                       {comment.user_info.first_name} {comment.user_info.last_name}
                     </span>
-                    <span className="text-xs text-blue-600 dark:text-blue-400">
+                    <span className="text-xs text-primary dark:text-blue-400">
                       {comment.created}
                     </span>
                   </div>
-                  <p className="text-sm text-blue-900 dark:text-blue-100">{comment.comment}</p>
+                  <p className="text-sm text-primary dark:text-blue-100">{comment.comment}</p>
                 </div>
               ))}
             </div>
@@ -219,7 +268,7 @@ export default function ReportCard({ report, onImageClick, onReportDeleted }: Re
                 <button
                   onClick={handleSubmitComment}
                   disabled={!newComment.trim() || isAddingComment}
-                  className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-medium bg-primary hover:bg-primary text-white rounded-lg shadow-sm transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isAddingComment ? 'Agregando...' : 'Agregar comentario'}
                 </button>

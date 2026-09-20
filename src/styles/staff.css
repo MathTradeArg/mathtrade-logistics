@@ -1,0 +1,72 @@
+.staff-nav-item {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+.staff-thumb-cta {
+  min-height: 56px;
+}
+
+.staff-btn {
+  display: flex;
+  min-height: 56px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0 1.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  outline: none;
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.staff-btn:hover:not(:disabled) {
+  opacity: 0.75;
+}
+
+.staff-btn-primary {
+  background-color: #009ddb;
+  color: #fff;
+}
+
+.staff-btn-want {
+  background-color: #00b86b;
+  color: #fff;
+}
+
+.staff-btn-danger {
+  background-color: #d9512f;
+  color: #fff;
+}
+
+.staff-btn-outline {
+  background-color: #fff;
+  color: #1f2937;
+  border: 1px solid #bbc6ce;
+}
+
+.staff-btn-outline:hover:not(:disabled) {
+  opacity: 1;
+  background-color: #f3f4f6;
+}
+
+.staff-btn:disabled {
+  background-color: #999;
+  color: #fff;
+  border-color: #999;
+  opacity: 1;
+}
+
+.staff-card {
+  background-color: #fff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.staff-panel {
+  background-color: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+}

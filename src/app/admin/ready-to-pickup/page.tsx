@@ -1,6 +1,5 @@
 "use client";
 
-import { AppHeader } from '@/components/common';
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
 import { useHapticClick } from '@/hooks/useHapticClick';
@@ -30,7 +29,7 @@ interface ExpandedSection {
 const statusConfig = {
   present: {
     label: 'Listos',
-    color: 'bg-blue-500',
+    color: 'bg-primary/100',
     icon: Users,
     description: 'Usuarios listos para retirar'
   },
@@ -48,7 +47,7 @@ const statusConfig = {
   },
   no_show: {
     label: 'No aparecieron',
-    color: 'bg-red-500',
+    color: 'bg-danger/100',
     icon: UserX,
     description: 'Usuarios que no se presentaron'
   }
@@ -57,15 +56,15 @@ const statusConfig = {
 const getValidTransitions = (currentStatus: UserStatus): UserStatus[] => {
   switch (currentStatus) {
     case 'present':
-      return ['receiving', 'no_show', 'completed'];
+      return ['no_show'];
     case 'receiving':
-      return ['completed'];
+      return ['no_show', 'completed'];
     case 'no_show':
       return ['receiving', 'completed'];
     case 'completed':
-      return [];
+      return ['receiving'];
     default:
-      return ['receiving', 'no_show', 'completed'];
+      return ['no_show'];
   }
 };
 
@@ -320,15 +319,15 @@ export default function ReadyToPickupPage() {
     switch (status) {
       case null:
       case 'present':
-        return 'nm-btn-primary';
+        return 'border-l-4 border-emerald-500';
       case 'receiving':
-        return 'nm-btn-secondary';
+        return 'border-l-4 border-blue-500';
       case 'completed':
-        return 'nm-btn-finish';
+        return 'border-l-4 border-zinc-400';
       case 'no_show':
-        return 'nm-btn-warning';
+        return 'border-l-4 border-danger';
       default:
-        return 'nm-btn-finish';
+        return 'border-l-4 border-gray-200';
     }
   };
 
@@ -338,11 +337,11 @@ export default function ReadyToPickupPage() {
       case 'present':
         return <Clock size={16} className="text-green-600 dark:text-green-400" />;
       case 'receiving':
-        return <RefreshCw size={16} className="text-blue-600 dark:text-blue-400" />;
+        return <RefreshCw size={16} className="text-primary dark:text-blue-400" />;
       case 'completed':
         return <CheckCircle size={16} className="text-green-600 dark:text-green-400" />;
       case 'no_show':
-        return <UserX size={16} className="text-red-600 dark:text-red-400" />;
+        return <UserX size={16} className="text-danger dark:text-red-400" />;
       default:
         return null;
     }
@@ -354,15 +353,15 @@ export default function ReadyToPickupPage() {
     
     return (
       <div
-        className={`nm-list-item p-3 mb-3 ${statusColor} cursor-pointer transition-all duration-200 hover:scale-[1.02]`}
+        className={`rounded-lg border border-gray-200 bg-white p-3 mb-3 ${statusColor} cursor-pointer`}
         onClick={() => openUserModal(user)}
       >
         <div className="flex justify-between items-start">
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-lg leading-tight nm-text-shadow truncate">
+          <div className="flex-1">
+            <p className="font-bold text-lg leading-tight">
               {user.first_name} {user.last_name}
             </p>
-            <p className="text-sm opacity-75 mt-1 nm-text-shadow truncate">
+            <p className="text-sm text-gray-500 mt-1">
               {user.username}
               {user.table_number && ` • Mesa ${user.table_number}`}
               {user.window_id && ` • ${user.window_name}`}
@@ -396,16 +395,16 @@ export default function ReadyToPickupPage() {
     };
 
     return (
-      <div className="fixed inset-0 flex justify-center items-center p-4 z-50 glass-bg">
-        <div className="nm-surface max-w-lg w-full max-h-[90vh] overflow-y-auto">
-          <div className="sticky top-0 nm-surface p-4 border-b border-gray-200 dark:border-gray-700 z-10">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(213,220,226,0.7)] p-4">
+        <div className="rounded-lg bg-white max-w-lg w-full max-h-[90vh] overflow-y-auto">
+          <div className="sticky top-0 rounded-lg bg-white p-4 border-b border-gray-200 dark:border-gray-700 z-10">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold nm-text-shadow">
+              <h2 className="text-xl font-bold ">
                 Información del Usuario
               </h2>
               <button
                 onClick={closeUserModal}
-                className="nm-btn-secondary p-2 min-h-0"
+                className="min-h-14 rounded-lg border border-gray-200 bg-white px-4 font-semibold text-gray-800 p-2 min-h-0"
               >
                 <UserX size={20} />
               </button>
@@ -414,13 +413,13 @@ export default function ReadyToPickupPage() {
 
           <div className="p-4">
             <div className="space-y-4">
-              <div className="nm-surface p-4">
+              <div className="rounded-lg bg-white p-4">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                     <Users size={24} className="text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg nm-text-shadow">
+                    <h3 className="font-bold text-lg ">
                       {selectedUser.first_name} {selectedUser.last_name}
                     </h3>
                     <p className="text-sm opacity-75">
@@ -454,8 +453,8 @@ export default function ReadyToPickupPage() {
                   <div>
                     <p className="font-medium text-gray-600 dark:text-gray-400">Juegos a retirar</p>
                     <div className="flex items-center gap-2">
-                      <Package size={16} className="text-blue-600 dark:text-blue-400" />
-                      <span className="font-semibold text-lg text-blue-600 dark:text-blue-400">
+                      <Package size={16} className="text-primary dark:text-blue-400" />
+                      <span className="font-semibold text-lg text-primary dark:text-blue-400">
                         {selectedUser.ready_games_count || 0}
                       </span>
                     </div>
@@ -473,8 +472,8 @@ export default function ReadyToPickupPage() {
               </div>
 
               {validTransitions.length > 0 && (
-                <div className="nm-surface p-4">
-                  <h4 className="font-bold mb-3 nm-text-shadow">
+                <div className="rounded-lg bg-white p-4">
+                  <h4 className="font-bold mb-3 ">
                     Cambiar Estado
                   </h4>
                   <div className="space-y-2">
@@ -485,10 +484,10 @@ export default function ReadyToPickupPage() {
                           userStatusChangeClick(selectedUser.id, transition);
                           closeUserModal();
                         }}
-                        className={`w-full p-3 rounded-lg flex items-center gap-3 transition-all duration-200 ${transition === 'receiving' ? 'nm-btn-secondary' :
-                            transition === 'completed' ? 'nm-btn-primary' :
-                              transition === 'no_show' ? 'nm-btn-warning' :
-                                'nm-btn-finish'
+                        className={`w-full min-h-14 p-3 rounded-lg flex items-center gap-3 ${transition === 'receiving' ? 'border border-gray-200 bg-white text-gray-800' :
+                            transition === 'completed' ? 'bg-primary text-white' :
+                              transition === 'no_show' ? 'bg-danger text-white' :
+                                'bg-want text-white'
                           }`}
                       >
                         <div className="w-6 h-6 flex items-center justify-center">
@@ -507,7 +506,7 @@ export default function ReadyToPickupPage() {
               )}
 
               {validTransitions.length === 0 && (
-                <div className="nm-surface p-4 text-center">
+                <div className="rounded-lg bg-white p-4 text-center">
                   <CheckCircle size={48} className="mx-auto mb-3 text-green-500" />
                   <p className="font-medium text-gray-600 dark:text-gray-400">
                     Este usuario ha completado el proceso
@@ -547,15 +546,15 @@ export default function ReadyToPickupPage() {
     return (
       <div 
         data-section={sectionKey}
-        className="nm-surface overflow-visible"
+        className="rounded-lg bg-white overflow-visible"
       >
         <button
           ref={el => { sectionRefs.current[sectionKey] = el; }}
           onClick={() => toggleStateExpansion(sectionKey)}
           className={`w-full flex items-center justify-between p-4 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
             expanded 
-              ? 'sticky top-16 z-40 nm-surface shadow-lg border-b-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900' 
-              : 'nm-surface'
+              ? 'sticky top-16 z-40 rounded-lg bg-white shadow-lg border-b-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900' 
+              : 'rounded-lg bg-white'
           }`}
         >
           <div className="flex items-center gap-3">
@@ -571,7 +570,7 @@ export default function ReadyToPickupPage() {
         </button>
         
         {expanded && users.length > 0 && (
-          <div className="nm-surface p-4 pt-2">
+          <div className="rounded-lg bg-white p-4 pt-2">
             <div className="space-y-2">
               {visibleUsers.map((user: ProcessedUserWithWindow) => (
                 <UserItem key={user.id} user={user} />
@@ -582,7 +581,7 @@ export default function ReadyToPickupPage() {
                 <button
                   onClick={() => loadMoreItems(sectionKey)}
                   disabled={isLoadingMore}
-                  className="nm-btn-secondary px-4 py-2 text-sm disabled:opacity-50 flex items-center gap-2 mx-auto"
+                  className="min-h-14 rounded-lg border border-gray-200 bg-white px-4 font-semibold text-gray-800 px-4 py-2 text-sm disabled:opacity-50 flex items-center gap-2 mx-auto"
                 >
                   {isLoadingMore ? (
                     <>
@@ -604,19 +603,12 @@ export default function ReadyToPickupPage() {
   };
 
   return (
-    <div className="w-full min-h-screen nm-surface text-gray-900 dark:text-gray-100 nm-font">
-      <AppHeader
-        pageTitle="Administrar Usuarios"
-        pageIcon={Users as any}
-        showBackButton={true}
-        onBackClick={() => router.push('/')}
-      />
-
+    <div className="w-full text-gray-900">
       <main className="w-full p-3 md:p-4 lg:p-6 flex flex-col">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 md:mb-6 gap-4">
           <div className="text-center sm:text-left flex-1">
             {lastUpdated && (
-              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 nm-text-shadow">
+              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 ">
                 Última actualización: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 <span className="ml-2 text-yellow-600 dark:text-yellow-400">• Manual</span>
               </p>
@@ -627,7 +619,7 @@ export default function ReadyToPickupPage() {
             <button
               onClick={fetchDataClick}
               disabled={isRefreshing}
-              className="nm-btn-primary flex items-center gap-1 text-sm px-3 py-2 disabled:opacity-50"
+              className="min-h-14 rounded-lg bg-primary px-4 font-semibold text-white flex items-center gap-1 text-sm px-3 py-2 disabled:opacity-50"
             >
               <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
               <span className="hidden sm:inline">Actualizar</span>
@@ -648,7 +640,7 @@ export default function ReadyToPickupPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onFocus={() => triggerHaptic()}
-                className="w-full pl-10 pr-4 py-3 nm-input"
+                className="w-full pl-10 pr-4 py-3 min-h-14 rounded-lg border border-gray-200 bg-white px-3 text-gray-900"
               />
             </div>
           </div>
@@ -656,22 +648,22 @@ export default function ReadyToPickupPage() {
 
         <div className="flex-1">
           {isLoadingData && mainUsers.length === 0 && (
-            <div className="nm-surface p-6 md:p-8 text-center">
-              <p className="text-lg md:text-xl lg:text-2xl text-sky-600 dark:text-sky-400 nm-text-shadow">Cargando usuarios...</p>
+            <div className="rounded-lg bg-white p-6 md:p-8 text-center">
+              <p className="text-lg md:text-xl lg:text-2xl text-sky-600 dark:text-sky-400 ">Cargando usuarios...</p>
             </div>
           )}
 
           {error && (
-            <div className="nm-surface p-4 md:p-6 bg-red-50 dark:bg-red-900/30 border-2 border-red-500 text-center mb-4 md:mb-6">
-              <p className="text-sm md:text-lg lg:text-xl text-red-700 dark:text-red-300 nm-text-shadow">
+            <div className="rounded-lg bg-white p-4 md:p-6 bg-danger/10 dark:bg-red-900/30 border-2 border-danger text-center mb-4 md:mb-6">
+              <p className="text-sm md:text-lg lg:text-xl text-danger dark:text-red-300 ">
                 {error}
               </p>
             </div>
           )}
 
           {!isLoadingData && mainUsers.length === 0 && !error && (
-            <div className="nm-surface p-6 md:p-8 text-center">
-              <p className="text-gray-600 dark:text-gray-300 text-lg md:text-xl lg:text-2xl nm-text-shadow">
+            <div className="rounded-lg bg-white p-6 md:p-8 text-center">
+              <p className="text-gray-600 dark:text-gray-300 text-lg md:text-xl lg:text-2xl ">
                 No hay usuarios para mostrar.
               </p>
             </div>
@@ -680,8 +672,8 @@ export default function ReadyToPickupPage() {
           {mainUsers.length > 0 && (
             <div className="space-y-4 md:space-y-6">
               {searchTerm ? (
-                <div className="nm-surface p-4">
-                  <h3 className="text-lg font-semibold mb-4 nm-text-shadow">
+                <div className="rounded-lg bg-white p-4">
+                  <h3 className="text-lg font-semibold mb-4 ">
                     Resultados de búsqueda ({filteredUsers.length})
                   </h3>
                   {filteredUsers.length === 0 ? (
@@ -711,7 +703,7 @@ export default function ReadyToPickupPage() {
                     sectionKey="receiving"
                     title="Recibiendo sus items"
                     icon={RefreshCw}
-                    iconColor="text-blue-600 dark:text-blue-400"
+                    iconColor="text-primary dark:text-blue-400"
                     users={usersByState.receiving}
                     expanded={expandedSections.receiving}
                   />
@@ -729,7 +721,7 @@ export default function ReadyToPickupPage() {
                     sectionKey="no_show"
                     title="No se presentaron"
                     icon={UserX}
-                    iconColor="text-red-600 dark:text-red-400"
+                    iconColor="text-danger dark:text-red-400"
                     users={usersByState.no_show}
                     expanded={expandedSections.no_show}
                   />
@@ -740,25 +732,24 @@ export default function ReadyToPickupPage() {
         </div>
 
         {volunteerAndAdminUsers.length > 0 && (
-          <div className="nm-surface p-4 mt-8 rounded-xl bg-blue-50 dark:bg-blue-900/20">
-            <h3 className="text-lg font-bold text-blue-700 dark:text-blue-300 mb-3 nm-text-shadow flex items-center gap-2">
+          <div className="rounded-lg bg-white p-4 mt-8 rounded-xl bg-primary/10 dark:bg-blue-900/20">
+            <h3 className="text-lg font-bold text-blue-700 dark:text-blue-300 mb-3  flex items-center gap-2">
               <Users size={20} /> Voluntarios y Admins
             </h3>
             <div className="space-y-2">
               {volunteerAndAdminUsers.map(user => (
                 <div
                   key={user.id}
-                  className={`nm-list-item p-3 mb-3 bg-blue-100 dark:bg-blue-800/40 text-blue-900 dark:text-blue-100 cursor-pointer transition-all duration-200 hover:scale-[1.02] rounded-lg`}
+                  className="mb-3 cursor-pointer rounded-lg border border-primary/30 bg-primary/10 p-3 text-primary"
                   onClick={() => openUserModal(user)}
                   title={`Ver estado de ${user.first_name} ${user.last_name}`}
-                  style={{ overflow: 'hidden' }}
                 >
                   <div className="flex justify-between items-start">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-lg leading-tight nm-text-shadow truncate">
+                    <div className="flex-1">
+                      <p className="font-bold text-lg leading-tight">
                         {user.first_name} {user.last_name}
                       </p>
-                      <p className="text-sm opacity-75 mt-1 nm-text-shadow truncate">
+                      <p className="text-sm opacity-75 mt-1">
                         {(!user.roles || (!user.roles.includes('volunteer') && !user.roles.includes('admin'))) && (
                           <>
                             @{user.username}

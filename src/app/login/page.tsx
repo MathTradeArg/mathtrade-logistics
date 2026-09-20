@@ -153,39 +153,37 @@ function LoginForm({ email, setEmail, password, setPassword, isMounted, isLoadin
   };
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-dvh bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="w-full max-w-sm p-8 space-y-8 nm-surface dark:bg-gray-800 shadow-2xl rounded-xl">
-        <h1 className="text-3xl font-bold text-center text-gray-800 dark:text-white">Bienvenido</h1>
+    <main className="flex min-h-dvh flex-col items-center justify-center bg-page p-4 text-gray-900">
+      <div className="staff-panel w-full max-w-sm space-y-8 p-8">
+        <h1 className="text-center text-3xl font-bold">Bienvenido</h1>
         <form
           onSubmit={handleSubmit} className="space-y-7"
         >
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
               Email
             </label>
             <input
               id="email" name="email" type="email" autoComplete="email" required
               value={email} onChange={(e) => setEmail(e.target.value)}
-              className="mt-2 block w-full px-4 py-3 nm-input rounded-lg shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-0 focus:border-transparent active:outline-none active:ring-0 active:border-transparent sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-              style={{ boxShadow: 'none' }}
+              className="mt-2 block min-h-14 w-full rounded-md border border-stroke bg-white px-4 text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:shadow-[0_0_6px_theme(colors.primary)]"
               placeholder="tu@email.com"
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Contraseña
             </label>
             <input
               id="password" name="password" type="password" autoComplete="current-password" required
               value={password} onChange={(e) => setPassword(e.target.value)}
-              className="mt-2 block w-full px-4 py-3 nm-input rounded-lg shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-0 focus:border-transparent active:outline-none active:ring-0 active:border-transparent sm:text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
-              style={{ boxShadow: 'none' }}
+              className="mt-2 block min-h-14 w-full rounded-md border border-stroke bg-white px-4 text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:shadow-[0_0_6px_theme(colors.primary)]"
               placeholder="••••••••"
             />
           </div>
 
           {(error || loginError) && (
-            <p className="text-sm text-red-600 dark:text-red-400 text-center p-3 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-md">
+            <p className="rounded-lg border border-danger/30 bg-danger/10 p-3 text-center text-sm text-danger">
               {loginError || error}
             </p>
           )}
@@ -194,7 +192,7 @@ function LoginForm({ email, setEmail, password, setPassword, isMounted, isLoadin
             <button
               type="submit"
               disabled={isLoading || (isMounted && !RECAPTCHA_SITE_KEY)}
-              className="w-full flex justify-center py-3 px-4 nm-btn-primary text-base font-semibold transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="staff-btn staff-btn-primary"
             >
               {isLoading ? 'Entrando...' : 'Entrar'}
             </button>

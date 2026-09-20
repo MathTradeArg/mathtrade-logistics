@@ -1,84 +1,57 @@
 "use client";
 
-import { AppHeader, LandingPageLink } from '@/components/common';
 import { LoadingSpinner } from '@/components/common/ui';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useAuth } from '@/hooks/useAuth';
-import { Warning, ArchiveBox, ArrowCircleRight, QrCode } from 'phosphor-react';
-import { Suspense } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
 
 function LandingPageContent() {
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
-  const { eventPhase, isLoadingEventPhase, eventPhaseDisplay } = useEventPhase();
+  const { eventPhase, isLoadingEventPhase } = useEventPhase();
+  const router = useRouter();
 
+  useEffect(() => {
+    if (authIsLoading || isAuthenticated === null || isLoadingEventPhase) return;
+    if (!isAuthenticated) return;
+    if (eventPhase === 1) router.replace('/boxes/in');
+    if (eventPhase === 2) router.replace('/deliver');
+  }, [authIsLoading, isAuthenticated, isLoadingEventPhase, eventPhase, router]);
 
-  if (authIsLoading || isAuthenticated === null || isLoadingEventPhase) {
+  if (
+    authIsLoading ||
+    isAuthenticated === null ||
+    isLoadingEventPhase ||
+    eventPhase === 1 ||
+    eventPhase === 2
+  ) {
     return (
-      <div className="flex justify-center items-center min-h-screen nm-surface">
+      <div className="flex min-h-screen items-center justify-center bg-page">
         <LoadingSpinner message="Cargando aplicación..." />
       </div>
     );
   }
 
-  const isReceivingEnabled = eventPhase === 1 || eventPhase === 2;
-  const isDeliveringEnabled = eventPhase === 2;
-  const isBoxesEnabled = eventPhase === 1 || eventPhase === 2;
-
   return (
-    <main className="flex flex-col items-center min-h-dvh text-gray-900 dark:text-gray-100">
-      {isAuthenticated && (
-        <AppHeader
-          showBackButton={false}
-        />
-      )}
-
-      <section className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 sm:gap-4 mt-4 mb-4 px-4 sm:px-6 flex-grow items-stretch">
-
-        <LandingPageLink
-          href="/receive-games"
-          icon={<QrCode size={48} className="text-secondary-blue dark:text-sky-400 md:mb-4" />}
-          title="Recibir Juegos"
-          description="Recibí los juegos de un usuario escaneando su QR."
-          titleClassName="text-secondary-blue dark:text-sky-400"
-          disabled={!isReceivingEnabled}
-          disabledText="La recepción de juegos no está habilitada en la fase actual del evento."
-        />
-        <LandingPageLink
-          href="/deliver-to-user"
-          icon={<ArrowCircleRight size={48} className="text-accent-green dark:text-green-400 md:mb-4" />}
-          title="Entregar Juegos"
-          description="Entregale sus juegos a un usuario escaneando su QR."
-          titleClassName="text-accent-green dark:text-green-400"
-          disabled={!isDeliveringEnabled}
-          disabledText="La entrega de juegos no está habilitada en la fase actual del evento."
-        />
-        <LandingPageLink
-          href="/boxes"
-          icon={<ArchiveBox size={48} className="text-teal-600 dark:text-teal-400 md:mb-4" />}
-          title="Gestión de Cajas"
-          description="Gestioná el armado y desarmado de cajas."
-          titleClassName="text-teal-600 dark:text-teal-400"
-          disabled={!isBoxesEnabled}
-          disabledText="La gestión de cajas no está habilitada en la fase actual del evento."
-        />
-        <LandingPageLink
-          href="/reports"
-          icon={<Warning size={48} className="text-orange-500 dark:text-orange-400 md:mb-4" />}
-          title="Reportar"
-          description="Reportá un ítem o un usuario."
-          titleClassName="text-orange-500 dark:text-orange-400"
-          disabled={!isReceivingEnabled}
-          disabledText=""
-        />
-
-      </section>
+    <main className="flex min-h-[70dvh] flex-col items-center justify-center px-6 text-center text-gray-900">
+      <h1 className="text-xl font-bold">El evento no empezó</h1>
+      <p className="mt-3 max-w-sm text-gray-600">
+        Esperá a que un admin abra la recepción. Mientras tanto podés entrar a Más.
+      </p>
+      <Link
+        href="/more"
+        className="staff-btn staff-btn-primary mt-8 max-w-sm"
+      >
+        Ir a Más
+      </Link>
     </main>
   );
 }
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center min-h-screen"><LoadingSpinner message="Cargando..." /></div>}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><LoadingSpinner message="Cargando..." /></div>}>
       <LandingPageContent />
     </Suspense>
   );

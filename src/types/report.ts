@@ -33,9 +33,18 @@ export interface Report {
     bgg_user?: string;
   } | null;
   item: number | null;
+  item_title?: string | null;
+  assigned_trade_code?: number | null;
+  box?: number | null;
+  box_number?: number | null;
+  box_origin_name?: string | null;
+  box_destination_name?: string | null;
+  found_in_box?: number | null;
+  found_in_box_number?: number | null;
   images: string | null;
   comment: string;
   created: string;
+  resolved_at?: string | null;
   comments: ReportComment[];
 }
 

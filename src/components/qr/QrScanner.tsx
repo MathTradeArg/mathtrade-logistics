@@ -34,9 +34,9 @@ const QrScanner: React.FC<QrScannerProps> = ({ onScan, disabled = false, disable
   return (
     <div className="w-full max-w-md mx-auto my-2 flex flex-col items-center space-y-5"> 
       {isClient && (
-        <div className={`${styles.qrReaderContainer} w-full aspect-square rounded-2xl bg-gray-100 dark:bg-[#23272f] flex items-center justify-center`} style={{ background: 'inherit' }}>
+        <div className={`${styles.qrReaderContainer} flex aspect-square w-full items-center justify-center rounded-2xl bg-gray-100`}>
           {disabled ? (
-            <div className="text-center p-4 text-gray-500 dark:text-gray-400">
+            <div className="p-4 text-center text-gray-500">
               <CameraSlash size={48} className="mx-auto mb-4" />
               <p>{disabledMessage}</p>
             </div>
@@ -46,14 +46,14 @@ const QrScanner: React.FC<QrScannerProps> = ({ onScan, disabled = false, disable
               onError={handleError}
               onScan={handleScanFromLibrary}
               constraints={{ video: { facingMode: "environment" } }}
-              className="w-full h-full"
+              className="h-full w-full"
             />
           )}
         </div>
       )}
-      {scanError && <p className="text-red-500 dark:text-red-400 text-center mt-4 text-sm nm-font nm-text-no-shadow">{scanError}</p>}
+      {scanError && <p className="mt-4 text-center text-sm text-danger">{scanError}</p>}
       {!disabled && (
-        <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-2 nm-font nm-text-no-shadow">Apuntá al QR</p>
+        <p className="mt-2 text-center text-sm text-gray-500">Apuntá al QR</p>
       )}
     </div>
   );

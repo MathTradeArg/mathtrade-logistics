@@ -82,7 +82,7 @@ describe('ControlPanelModal', () => {
 
   it('renders the modal when isOpen is true', () => {
     renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={false} />);
-    expect(screen.getByText('Panel de Control')).toBeInTheDocument();
+    expect(screen.getByText('Detalle del juego')).toBeInTheDocument();
   });
 
   it('calls onClose with false when close button is clicked and no action was successful', () => {
@@ -124,60 +124,32 @@ describe('ControlPanelModal', () => {
     expect(screen.queryByText('Acciones de Administrador')).not.toBeInTheDocument();
   });
 
-  it('renders AdminSection if user is admin', () => {
+  it('does not render AdminSection for admins; phase lives in Más', () => {
     renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
-    expect(screen.getByText('Acciones de Administrador')).toBeInTheDocument();
+    expect(screen.queryByText('Acciones de Administrador')).not.toBeInTheDocument();
   });
 
   it('calls updateGameStatus and onClose with true after a successful game action', async () => {
-  const mockOnClose = jest.fn(); 
-  const updateGameStatusMock = jest.fn().mockResolvedValue({ success: true });
-
-  const gameDetail = {
-    id: 1, assigned_trade_code: 123, item_to: { id: 1, title: 'Test Game' },
-    membership: { id: 1, first_name: 'John', last_name: 'Doe' }, status: 4 as GameStatusCode,
-  };
-
-  mockUseControlPanel.mockReturnValue({
-    ...defaultControlPanelContext,
-    gameDetail,
-    updateGameStatus: updateGameStatusMock,
-  });
-
-  renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
-
-  fireEvent.click(screen.getByText('Perform Game Action'));
-
-  await waitFor(() => {
-    expect(updateGameStatusMock).toHaveBeenCalledWith(123, 5);
-  });
-
-  const closeButton = screen.getAllByRole('button')[0];
-  fireEvent.click(closeButton);
-
-  await waitFor(() => {
-    expect(mockOnClose).toHaveBeenCalledWith(true);
-  });
-});
-
-  it('calls updateEventPhase and onClose with true after a successful phase change', async () => {
-    const mockUpdateEventPhase = jest.fn().mockResolvedValue({ success: true, message: 'Phase updated' });
     const mockOnClose = jest.fn();
+    const updateGameStatusMock = jest.fn().mockResolvedValue({ success: true });
 
-    mockUseEventPhase.mockReturnValue({
-      ...defaultEventPhaseContext,
-      updateEventPhase: mockUpdateEventPhase,
+    const gameDetail = {
+      id: 1, assigned_trade_code: 123, item_to: { id: 1, title: 'Test Game' },
+      membership: { id: 1, first_name: 'John', last_name: 'Doe' }, status: 4 as GameStatusCode,
+    };
+
+    mockUseControlPanel.mockReturnValue({
+      ...defaultControlPanelContext,
+      gameDetail,
+      updateGameStatus: updateGameStatusMock,
     });
-
-    window.confirm = jest.fn(() => true);
 
     renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
 
-    const phaseButton = screen.getByRole('button', { name: 'Entrega' });
-    fireEvent.click(phaseButton);
+    fireEvent.click(screen.getByText('Perform Game Action'));
 
     await waitFor(() => {
-      expect(mockUpdateEventPhase).toHaveBeenCalledWith(2);
+      expect(updateGameStatusMock).toHaveBeenCalledWith(123, 5);
     });
 
     const closeButton = screen.getAllByRole('button')[0];
@@ -203,7 +175,7 @@ describe('ControlPanelModal', () => {
       ...defaultControlPanelContext,
       gameDetail,
       gameActionError: errorMessage,
-      updateGameStatus: updateGameStatusMock, 
+      updateGameStatus: updateGameStatusMock,
     });
 
     renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
@@ -219,25 +191,6 @@ describe('ControlPanelModal', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('displays an error message when updateEventPhase fails', async () => {
-    const errorMessage = 'Failed to update phase';
-    const updateEventPhaseMock = jest.fn().mockResolvedValue({ success: false, message: errorMessage });
-    mockUseEventPhase.mockReturnValue({
-      ...defaultEventPhaseContext,
-      updateEventPhase: updateEventPhaseMock,
-    });
-
-    window.confirm = jest.fn(() => true);
-
-    renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Entrega' }));
-
-    await waitFor(() => {
-      expect(mockSetError).toHaveBeenCalledWith(errorMessage);
-    });
-  });
-
   it('displays a loading spinner when updating game status', async () => {
     const gameDetail = {
       id: 1, assigned_trade_code: 123, item_to: { id: 1, title: 'Test Game' }, membership: { id: 1, first_name: 'John', last_name: 'Doe' }, status: 4 as GameStatusCode, table_number: 'A1', change_by: { id: 2, first_name: 'Admin', last_name: 'User' },
@@ -250,23 +203,5 @@ describe('ControlPanelModal', () => {
     renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
 
     expect(screen.getByText('Procesando...')).toBeInTheDocument();
-  });
-
-  it('displays a loading spinner when updating event phase', async () => {
-    const mockUpdateEventPhase = jest.fn(() => new Promise(() => { }));
-    mockUseEventPhase.mockReturnValue({
-      ...defaultEventPhaseContext,
-      updateEventPhase: mockUpdateEventPhase,
-    });
-
-    window.confirm = jest.fn(() => true);
-
-    renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
-
-    fireEvent.click(screen.getByRole('button', { name: 'Entrega' }));
-
-    await waitFor(() => {
-      expect(screen.getByText('Actualizando fase...')).toBeInTheDocument();
-    });
   });
 });
