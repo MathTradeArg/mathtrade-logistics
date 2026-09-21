@@ -12,7 +12,7 @@ import { compressImage } from '@/utils/imageCompressor';
 import { triggerHaptic } from '@/utils/haptics';
 import { ChangeEvent, FormEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { missingReportComment } from './missingReport';
+import { missingReportComment, parseMissingItems } from './missingReport';
 
 const normalizeSearchString = (str: string): string => {
   if (!str) return '';
@@ -44,18 +44,19 @@ function NewReportContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const preloadedBoxId = Number(searchParams.get('box') || 0) || null;
-  const preloadedItemId = Number(searchParams.get('item') || 0) || null;
+  const preloadedItems = parseMissingItems(searchParams);
   const isMissing = searchParams.get('kind') === 'missing' || Boolean(preloadedBoxId);
   const [currentStep, setCurrentStep] = useState<ReportStep>(isMissing ? 'describe_problem' : 'initial');
   const [reportType, setReportType] = useState<'item' | 'user' | null>(isMissing ? 'item' : null);
   const [searchTermItems, setSearchTermItems] = useState('');
   const [selectedItem, setSelectedItem] = useState<Item | null>(() => {
-    if (!preloadedItemId) return null;
+    const first = preloadedItems[0];
+    if (!first?.item_id && !first?.assigned_trade_code) return null;
     return {
-      item_id: preloadedItemId,
-      id: preloadedItemId,
-      title: searchParams.get('title') || `Item ${preloadedItemId}`,
-      assigned_trade_code: Number(searchParams.get('code') || 0),
+      item_id: first.item_id || first.assigned_trade_code,
+      id: first.item_id || first.assigned_trade_code,
+      title: first.title,
+      assigned_trade_code: first.assigned_trade_code,
     };
   });
   const [selectedUser, setSelectedUser] = useState<{ id: number; first_name: string; last_name: string } | null>(null);
@@ -69,10 +70,7 @@ function NewReportContent() {
           boxId: preloadedBoxId,
           boxNumber: searchParams.get('boxNumber') ? Number(searchParams.get('boxNumber')) : null,
           originName: searchParams.get('origin') || undefined,
-          itemId: preloadedItemId,
-          title: searchParams.get('title') || undefined,
-          code: searchParams.get('code') || undefined,
-          codes: searchParams.get('codes') || undefined,
+          items: preloadedItems,
         })
       : ''
   ));
@@ -172,15 +170,75 @@ function NewReportContent() {
           throw new Error(`Respuesta inesperada al subir la imagen '${photo.name}'.`);
         }),
       );
-      setProcessingMessage('Enviando reporte...');
-      const reportBody: { comment: string; reported_user?: number; item?: number; images?: string; box?: number } = {
-        comment: reportReason,
+      const itemsToReport = reportType === 'item'
+        ? (preloadedItems.length > 0
+          ? preloadedItems.filter((item) => item.item_id)
+          : selectedItem?.item_id
+            ? [{ item_id: selectedItem.item_id, title: selectedItem.title, assigned_trade_code: selectedItem.assigned_trade_code }]
+            : [])
+        : [];
+      const uploadedImages = uploadedImageIds.length > 0 ? uploadedImageIds.join(',') : undefined;
+      const already: string[] = [];
+      let created = 0;
+
+      const postReport = async (
+        body: { comment: string; reported_user?: number; item?: number; images?: string; box?: number },
+        label: string,
+      ) => {
+        try {
+          await submitReportApi(body);
+          created += 1;
+        } catch (err) {
+          const errorBody = (err as { body?: { item?: string[] } })?.body;
+          if (errorBody && Array.isArray(errorBody.item) && errorBody.item.includes('reported item with this item already exists.')) {
+            already.push(label);
+            return;
+          }
+          throw err;
+        }
       };
-      if (reportType === 'user' && selectedUser) reportBody.reported_user = selectedUser.id;
-      else if (reportType === 'item' && selectedItem) reportBody.item = selectedItem.item_id;
-      if (selectedBoxId) reportBody.box = selectedBoxId;
-      if (uploadedImageIds.length > 0) reportBody.images = uploadedImageIds.join(',');
-      await submitReportApi(reportBody);
+
+      setProcessingMessage(itemsToReport.length > 1 ? `Enviando ${itemsToReport.length} reportes...` : 'Enviando reporte...');
+      if (reportType === 'user' && selectedUser) {
+        await postReport({
+          comment: reportReason,
+          reported_user: selectedUser.id,
+          box: selectedBoxId || undefined,
+          images: uploadedImages,
+        }, selectedUser.first_name);
+      } else if (itemsToReport.length > 0) {
+        for (const [index, item] of itemsToReport.entries()) {
+          setProcessingMessage(`Enviando reporte ${index + 1}/${itemsToReport.length}...`);
+          const comment = itemsToReport.length === 1
+            ? reportReason
+            : missingReportComment({
+                boxId: selectedBoxId || 0,
+                boxNumber: searchParams.get('boxNumber') ? Number(searchParams.get('boxNumber')) : null,
+                originName: searchParams.get('origin') || undefined,
+                items: [item],
+              });
+          await postReport({
+            comment,
+            item: item.item_id,
+            box: selectedBoxId || undefined,
+            images: uploadedImages,
+          }, item.title);
+        }
+      } else {
+        await postReport({
+          comment: reportReason,
+          box: selectedBoxId || undefined,
+          images: uploadedImages,
+        }, 'caja');
+      }
+
+      if (created === 0 && already.length > 0) {
+        setReportError(`Ya existe un reporte para: ${already.join(', ')}.`);
+        return;
+      }
+      if (already.length > 0) {
+        setReportError(`Se enviaron ${created}. Ya existían: ${already.join(', ')}.`);
+      }
       setCurrentStep('submitted');
     } catch (err) {
       const errorBody = (err as { body?: { item?: string[] } })?.body;
@@ -195,7 +253,7 @@ function NewReportContent() {
       setIsProcessing(false);
       setProcessingMessage('');
     }
-  }, [isAuthenticated, itemPhotos, reportReason, reportType, selectedUser, selectedItem, selectedBoxId, submitReportApi, uploadImageApi]);
+  }, [isAuthenticated, itemPhotos, reportReason, reportType, selectedUser, selectedItem, selectedBoxId, preloadedItems, searchParams, submitReportApi, uploadImageApi]);
 
   if (authIsLoading || isAuthenticated === null) {
     return <div className="flex min-h-[50dvh] items-center justify-center"><LoadingSpinner message="Validando sesión..." /></div>;
@@ -272,16 +330,20 @@ function NewReportContent() {
 
       {currentStep === 'describe_problem' && (
         <form onSubmit={handleReportSubmit} className="space-y-4">
-          {(selectedBoxId || selectedItem) && (
-            <div className="staff-card p-4 text-sm text-gray-700">
+          {(selectedBoxId || preloadedItems.length > 0 || selectedItem) && (
+            <div className="staff-card space-y-1 p-4 text-sm text-gray-700">
               {selectedBoxId && <p>Caja id {selectedBoxId}{searchParams.get('boxNumber') ? ` · #${searchParams.get('boxNumber')}` : ''}</p>}
-              {selectedItem && (
-                <p>
-                  Juego id {selectedItem.item_id}
-                  {selectedItem.assigned_trade_code ? ` · #${selectedItem.assigned_trade_code}` : ''}
-                  {selectedItem.title ? ` · ${selectedItem.title}` : ''}
+              {(preloadedItems.length > 0 ? preloadedItems : selectedItem ? [{
+                item_id: selectedItem.item_id,
+                title: selectedItem.title,
+                assigned_trade_code: selectedItem.assigned_trade_code,
+              }] : []).map((item) => (
+                <p key={`${item.item_id}-${item.assigned_trade_code}`}>
+                  Juego id {item.item_id}
+                  {item.assigned_trade_code ? ` · #${item.assigned_trade_code}` : ''}
+                  {item.title ? ` · ${item.title}` : ''}
                 </p>
-              )}
+              ))}
             </div>
           )}
           <textarea
@@ -293,14 +355,20 @@ function NewReportContent() {
             className="w-full rounded-lg border border-gray-200 bg-white p-4"
           />
           <button type="submit" disabled={isProcessing} className="min-h-14 w-full rounded-lg bg-primary font-semibold text-white disabled:bg-cancel">
-            {isProcessing ? (processingMessage || 'Enviando...') : 'Enviar reporte'}
+            {isProcessing
+              ? (processingMessage || 'Enviando...')
+              : preloadedItems.length > 1
+                ? `Enviar ${preloadedItems.length} reportes`
+                : 'Enviar reporte'}
           </button>
         </form>
       )}
 
       {currentStep === 'submitted' && (
         <div className="rounded-lg bg-white p-6 text-center">
-          <p className="text-lg font-bold">Reporte enviado</p>
+          <p className="text-lg font-bold">
+            {preloadedItems.length > 1 ? `${preloadedItems.length} reportes enviados` : 'Reporte enviado'}
+          </p>
           <button type="button" onClick={resetForm} className="mt-6 min-h-14 w-full rounded-lg bg-primary font-semibold text-white">Crear otro reporte</button>
         </div>
       )}

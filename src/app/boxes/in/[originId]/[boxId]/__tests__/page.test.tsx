@@ -72,11 +72,30 @@ describe('IncomingBoxPage', () => {
   it('links Reportar faltante to a preloaded report with box and game ids', async () => {
     render(<IncomingBoxPage />, { wrapper });
 
-    const link = await screen.findByRole('link', { name: 'Reportar faltante' });
+    const earth = await screen.findByRole('checkbox', { name: /Earth/ });
+    fireEvent.click(earth);
+
+    const link = screen.getByRole('link', { name: 'Reportar faltante' });
     expect(link).toHaveAttribute(
       'href',
-      '/more/report?kind=missing&box=392&boxNumber=16&origin=Salta',
+      '/more/report?kind=missing&box=392&boxNumber=16&origin=Salta&item=89&code=502&title=Earth',
     );
+  });
+
+  it('preloads every selected game when reporting several missing items', async () => {
+    render(<IncomingBoxPage />, { wrapper });
+
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Catan/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Earth/ }));
+
+    const link = screen.getByRole('link', { name: 'Reportar faltante (2)' });
+    const href = link.getAttribute('href') || '';
+    const params = new URLSearchParams(href.split('?')[1]);
+    expect(params.get('box')).toBe('392');
+    expect(JSON.parse(params.get('items') || '[]')).toEqual([
+      { item_id: 88, title: 'Catan', assigned_trade_code: 501 },
+      { item_id: 89, title: 'Earth', assigned_trade_code: 502 },
+    ]);
   });
 
   it('lets volunteers inspect a transit box and rearmar it without marking received', async () => {
