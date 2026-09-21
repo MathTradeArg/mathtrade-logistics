@@ -148,9 +148,12 @@ export default function IncomingBoxPage() {
               originName: box.origin_name,
               items: pending.filter((item) => selected.has(item.assigned_trade_code)),
             })}
-            className="mt-3 flex min-h-14 items-center justify-center text-base font-semibold text-gray-500"
+            className={`mt-3 flex min-h-14 items-center justify-center text-base font-semibold ${
+              selected.size === 0 ? 'pointer-events-none text-gray-300' : 'text-gray-500'
+            }`}
+            aria-disabled={selected.size === 0}
           >
-            Reportar faltante
+            Reportar faltante{selected.size > 1 ? ` (${selected.size})` : ''}
           </Link>
         </>
       )}
