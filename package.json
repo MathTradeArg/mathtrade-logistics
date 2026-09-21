@@ -28,7 +28,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "lucide-react": "^0.514.0",
     "msw": "^2.10.2",
-    "next": "^15.3.3",
+    "next": "^15.5.25",
     "phosphor-react": "^1.4.1",
     "postcss": "^8.5.5",
     "react": "~18.2.0",
