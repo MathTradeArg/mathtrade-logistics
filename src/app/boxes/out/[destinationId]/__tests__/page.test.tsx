@@ -112,7 +112,11 @@ describe('BoxesOutDestinationPage', () => {
 
     render(<BoxesOutDestinationPage />, { wrapper });
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Nueva caja' }));
+    const btn = await screen.findByRole('button', { name: 'Nueva caja' });
+    // The button starts out disabled while the initial box/item fetch is in
+    // flight — findByRole can resolve on that first, still-disabled render.
+    await waitFor(() => expect(btn).not.toBeDisabled());
+    fireEvent.click(btn);
 
     await waitFor(() => {
       expect(mockOpenBox).toHaveBeenCalledWith(8, expect.any(String));
