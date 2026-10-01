@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { usePathname, useRouter } from 'next/navigation';
 import {
   createContext,
@@ -12,6 +13,7 @@ import {
 
 interface UserDetails {
   id: number | string;
+  username?: string;
   first_name: string;
   last_name?: string;
   math_admin: boolean;
@@ -80,6 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsAuthenticated(true);
       setUserName(storedUserName);
       setUserId(storedUserId);
+      Sentry.setUser({ id: storedUserId, username: localStorage.getItem('userUsername') || undefined });
       setisAdmin(storedIsAdmin === 'true');
     } else {
       setIsAuthenticated(false);
@@ -116,6 +119,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem('userId');
     }
     localStorage.setItem('isAdmin', userIsAdmin.toString());
+    if (userDetails.username) {
+      localStorage.setItem('userUsername', userDetails.username);
+    }
+    // Who an error happened to: id and username, never the email.
+    Sentry.setUser({ id: idStr || undefined, username: userDetails.username });
 
     setIsAuthenticated(true);
     setUserName(name);
@@ -129,6 +137,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('userName');
     localStorage.removeItem('userId');
     localStorage.removeItem('isAdmin');
+    localStorage.removeItem('userUsername');
+    Sentry.setUser(null);
     setIsAuthenticated(false);
     setUserName(null);
     setUserId(null);
