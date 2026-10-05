@@ -138,11 +138,6 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
               {report.found_in_box && report.found_in_box_number == null ? ` · apareció en caja id ${report.found_in_box}` : ''}
             </p>
           )}
-          {!report.resolved_at && (report.itemData || report.item) ? (
-            <p className="mt-2 text-sm text-orange-800 bg-orange-50 border border-orange-200 rounded px-2 py-1.5">
-              Mientras esté abierto, este ejemplar queda fuera de la corrida del Math Trade. Al marcarlo solucionado vuelve a entrar.
-            </p>
-          ) : null}
 
           {report.itemData && (report.itemData.first_name || report.itemData.last_name) && (
             <div className="flex items-center mt-2">
