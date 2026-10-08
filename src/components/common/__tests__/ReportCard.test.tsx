@@ -42,6 +42,18 @@ describe('ReportCard', () => {
     expect(screen.getByText('Telegram')).toHaveAttribute('href', 'https://t.me/leof');
   });
 
+  it('turns a local phone (WhatsApp = phone) into an Argentine wa.me number', () => {
+    const local = { ...report, itemData: { ...report.itemData!, whatsapp: '011 5555-0000' } };
+    render(<ReportCard report={local} onImageClick={jest.fn()} />);
+    expect(screen.getByText('WhatsApp')).toHaveAttribute('href', 'https://wa.me/5491155550000');
+  });
+
+  it('keeps a number that already starts with 54', () => {
+    const intl = { ...report, itemData: { ...report.itemData!, whatsapp: '541155550000' } };
+    render(<ReportCard report={intl} onImageClick={jest.fn()} />);
+    expect(screen.getByText('WhatsApp')).toHaveAttribute('href', 'https://wa.me/541155550000');
+  });
+
   it('omits contact links when the owner has none', () => {
     const noContact = { ...report, itemData: { ...report.itemData!, whatsapp: null, telegram: null } };
     render(<ReportCard report={noContact} onImageClick={jest.fn()} />);
