@@ -146,6 +146,14 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
                 De: <span className="font-semibold">
                   {report.itemData.first_name} {report.itemData.last_name}
                 </span>
+                {report.itemData.whatsapp && (
+                  <a className="ml-2 underline text-want" target="_blank" rel="noreferrer"
+                     href={`https://wa.me/${report.itemData.whatsapp.replace(/\D/g, '')}`}>WhatsApp</a>
+                )}
+                {report.itemData.telegram && (
+                  <a className="ml-2 underline text-want" target="_blank" rel="noreferrer"
+                     href={`https://t.me/${report.itemData.telegram.replace(/^@/, '')}`}>Telegram</a>
+                )}
               </p>
             </div>
           )}
