@@ -6,6 +6,7 @@ import { useApi } from '@/hooks/useApi';
 import { useHapticClick } from '@/hooks/useHapticClick';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { triggerHaptic } from '@/utils/haptics';
+import { whatsappLink } from '@/utils/whatsapp';
 import ConfirmationModal from '@/components/ConfirmationModal';
 
 interface ReportCardProps {
@@ -146,6 +147,14 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
                 De: <span className="font-semibold">
                   {report.itemData.first_name} {report.itemData.last_name}
                 </span>
+                {whatsappLink(report.itemData.whatsapp) && (
+                  <a className="ml-2 underline text-want" target="_blank" rel="noreferrer"
+                     href={whatsappLink(report.itemData.whatsapp)}>WhatsApp</a>
+                )}
+                {report.itemData.telegram && (
+                  <a className="ml-2 underline text-want" target="_blank" rel="noreferrer"
+                     href={`https://t.me/${report.itemData.telegram.replace(/^@/, '')}`}>Telegram</a>
+                )}
               </p>
             </div>
           )}

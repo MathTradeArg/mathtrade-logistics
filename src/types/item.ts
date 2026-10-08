@@ -4,6 +4,8 @@ export interface Item {
   assigned_trade_code: number;
   first_name?: string;
   last_name?: string;
+  whatsapp?: string | null;
+  telegram?: string | null;
   location?: number;
   location_name?: string;
   status?: number;
