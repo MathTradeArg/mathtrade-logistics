@@ -39,6 +39,8 @@ function asMessage(message: StaffNotification['message']): NotificationMessage {
 }
 
 function ownerActivityPrefix(notification: StaffNotification, message: NotificationMessage): string {
+  // RI 'rereport': a new report joined an open one (BE merges it).
+  if (notification.type === 'RI') return message.kind === 'rereport' ? 'Reportado de nuevo: ' : '';
   if (notification.type !== 'RIU') return '';
   return message.kind === 'edit' ? 'Editado: ' : 'Respuesta del dueño: ';
 }
