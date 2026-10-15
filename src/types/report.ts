@@ -46,6 +46,17 @@ export interface Report {
   created: string;
   resolved_at?: string | null;
   comments: ReportComment[];
+  // The reported copy as its owner offered it (staff-only).
+  item_detail?: {
+    owner?: {
+      id: number;
+      first_name: string;
+      last_name: string;
+      username?: string;
+      whatsapp?: string | null;
+      telegram?: string | null;
+    } | null;
+  } | null;
 }
 
 export interface EnrichedReport extends Report {

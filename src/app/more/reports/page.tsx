@@ -40,17 +40,24 @@ function AllReportsContent() {
         item_id: report.item,
         title: report.item_title || `Item ${report.item}`,
         assigned_trade_code: report.assigned_trade_code || 0,
+        first_name: report.item_detail?.owner?.first_name,
+        last_name: report.item_detail?.owner?.last_name,
+        whatsapp: report.item_detail?.owner?.whatsapp,
+        telegram: report.item_detail?.owner?.telegram,
       } : undefined,
     }));
     if (!searchTerm.trim()) return allEnriched;
     const normalizedSearchTerm = searchTerm.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     return allEnriched.filter((report) => {
       const reportedUserName = report.reportedUserData ? `${report.reportedUserData.first_name} ${report.reportedUserData.last_name}` : '';
+      const ownerName = report.itemData?.first_name || report.itemData?.last_name
+        ? `${report.itemData?.first_name || ''} ${report.itemData?.last_name || ''}` : '';
       const itemTitle = report.item_title || report.itemData?.title || '';
       const itemCode = String(report.assigned_trade_code || report.itemData?.assigned_trade_code || '');
       const boxNumber = report.box_number != null ? String(report.box_number) : '';
       const boxId = report.box != null ? String(report.box) : '';
       return reportedUserName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(normalizedSearchTerm)
+        || ownerName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(normalizedSearchTerm)
         || itemTitle.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(normalizedSearchTerm)
         || itemCode.includes(normalizedSearchTerm)
         || boxNumber.includes(normalizedSearchTerm)
