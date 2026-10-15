@@ -95,4 +95,53 @@ describe('NotificationsBell', () => {
       expect(push).toHaveBeenCalledWith('/more/reports');
     });
   });
+
+  it('titles RIU owner activity by kind and still opens the reports view', async () => {
+    mockUseApi.mockImplementation((endpoint: string, options?: { method?: string }) => {
+      if (endpoint === 'notifications/' && options?.method === 'PATCH') {
+        return { data: null, execute: patchNotification.mockResolvedValue(undefined) };
+      }
+      if (endpoint === 'notifications-bulk/') {
+        return { data: null, execute: markAllRead };
+      }
+      return {
+        data: {
+          unread: 2,
+          admin_unread: 2,
+          results: [
+            {
+              id: 11,
+              type: 'RIU',
+              unread: true,
+              created: '2026-10-15',
+              message: { report_id: 5, item_id: 88, item_name: 'Catan', kind: 'edit',
+                user_first_name: 'Ana', user_last_name: 'Dueña' },
+            },
+            {
+              id: 12,
+              type: 'RIU',
+              unread: true,
+              created: '2026-10-15',
+              message: { report_id: 5, item_id: 88, item_name: 'Catan', kind: 'reply',
+                comment: 'Ya subí la foto', user_first_name: 'Ana', user_last_name: 'Dueña' },
+            },
+          ],
+        },
+        execute: fetchNotifications.mockResolvedValue(undefined),
+      };
+    });
+
+    render(<NotificationsBell />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Notificaciones, 2 sin leer' }));
+    expect(screen.getByText('Editado: Catan')).toBeInTheDocument();
+    expect(screen.getByText('Respuesta del dueño: Catan')).toBeInTheDocument();
+    expect(screen.getByText('Ya subí la foto')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Editado: Catan'));
+    await waitFor(() => {
+      expect(patchNotification).toHaveBeenCalledWith({ unread: false }, '11/');
+      expect(push).toHaveBeenCalledWith('/more/reports');
+    });
+  });
 });

@@ -15,6 +15,8 @@ type NotificationMessage = {
   user_last_name?: string;
   comment?: string;
   text?: string;
+  // RIU (owner activity on a reported item): 'reply' | 'edit'.
+  kind?: string;
 };
 
 type StaffNotification = {
@@ -36,8 +38,15 @@ function asMessage(message: StaffNotification['message']): NotificationMessage {
   return { text: String(message || '') };
 }
 
+function ownerActivityPrefix(notification: StaffNotification, message: NotificationMessage): string {
+  if (notification.type !== 'RIU') return '';
+  return message.kind === 'edit' ? 'Editado: ' : 'Respuesta del dueño: ';
+}
+
 function notificationTitle(notification: StaffNotification): string {
   const message = asMessage(notification.message);
+  const prefix = ownerActivityPrefix(notification, message);
+  if (prefix) return `${prefix}${message.item_name || (message.item_id ? `item ${message.item_id}` : 'ejemplar')}`;
   if (message.item_name) return message.item_name;
   if (message.box_number != null) return `Caja #${message.box_number}`;
   if (message.box_id) return `Caja id ${message.box_id}`;
