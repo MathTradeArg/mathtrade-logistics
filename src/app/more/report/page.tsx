@@ -75,6 +75,8 @@ function NewReportContent() {
       : ''
   ));
   const [reportError, setReportError] = useState('');
+  // Items whose report joined an open one (POST reports/ answered merged).
+  const [mergedLabels, setMergedLabels] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingMessage, setProcessingMessage] = useState('');
   const [fullScreenPhoto, setFullScreenPhoto] = useState<string | null>(null);
@@ -94,6 +96,7 @@ function NewReportContent() {
     setPhotoPreviews([]);
     setReportReason('');
     setReportError('');
+    setMergedLabels([]);
     setIsProcessing(false);
     setProcessingMessage('');
     clearUploadImageError();
@@ -179,6 +182,7 @@ function NewReportContent() {
         : [];
       const uploadedImages = uploadedImageIds.length > 0 ? uploadedImageIds.join(',') : undefined;
       const already: string[] = [];
+      const merged: string[] = [];
       let created = 0;
 
       const postReport = async (
@@ -188,8 +192,11 @@ function NewReportContent() {
         try {
           // 'logistics': the backend keeps these reports internal (hidden from
           // the item owner) until an admin shares them from the web.
-          await submitReportApi({ ...body, source: 'logistics' });
+          const result = await submitReportApi({ ...body, source: 'logistics' });
           created += 1;
+          // Same item, same box, open staff report (no photos): the backend
+          // added the text to that report's thread instead.
+          if (result?.merged) merged.push(label);
         } catch (err) {
           const errorBody = (err as { body?: { item?: string[] } })?.body;
           if (errorBody && Array.isArray(errorBody.item) && errorBody.item.includes('reported item with this item already exists.')) {
@@ -241,6 +248,7 @@ function NewReportContent() {
       if (already.length > 0) {
         setReportError(`Se enviaron ${created}. Ya existían: ${already.join(', ')}.`);
       }
+      setMergedLabels(merged);
       setCurrentStep('submitted');
     } catch (err) {
       const errorBody = (err as { body?: { item?: string[] } })?.body;
@@ -371,6 +379,13 @@ function NewReportContent() {
           <p className="text-lg font-bold">
             {preloadedItems.length > 1 ? `${preloadedItems.length} reportes enviados` : 'Reporte enviado'}
           </p>
+          {mergedLabels.length > 0 && (
+            <p className="mt-2 text-sm text-gray-600">
+              {mergedLabels.length === 1 && preloadedItems.length <= 1
+                ? 'Ya había un reporte abierto para este ítem: agregamos tu mensaje a esa conversación.'
+                : `Ya había un reporte abierto para: ${mergedLabels.join(', ')}. Agregamos tu mensaje a esas conversaciones.`}
+            </p>
+          )}
           <button type="button" onClick={resetForm} className="mt-6 min-h-14 w-full rounded-lg bg-primary font-semibold text-white">Crear otro reporte</button>
         </div>
       )}
