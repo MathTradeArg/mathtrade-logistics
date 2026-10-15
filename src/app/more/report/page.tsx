@@ -186,7 +186,9 @@ function NewReportContent() {
         label: string,
       ) => {
         try {
-          await submitReportApi(body);
+          // 'logistics': the backend keeps these reports internal (hidden from
+          // the item owner) until an admin shares them from the web.
+          await submitReportApi({ ...body, source: 'logistics' });
           created += 1;
         } catch (err) {
           const errorBody = (err as { body?: { item?: string[] } })?.body;

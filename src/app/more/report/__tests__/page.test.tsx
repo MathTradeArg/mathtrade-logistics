@@ -52,8 +52,8 @@ describe('NewReportPage multi missing', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Enviar 2 reportes' }));
 
     await waitFor(() => expect(mockSubmit).toHaveBeenCalledTimes(2));
-    expect(mockSubmit.mock.calls[0][0]).toMatchObject({ item: 88, box: 392 });
-    expect(mockSubmit.mock.calls[1][0]).toMatchObject({ item: 89, box: 392 });
+    expect(mockSubmit.mock.calls[0][0]).toMatchObject({ item: 88, box: 392, source: 'logistics' });
+    expect(mockSubmit.mock.calls[1][0]).toMatchObject({ item: 89, box: 392, source: 'logistics' });
     expect(await screen.findByText('2 reportes enviados')).toBeInTheDocument();
   });
 });
