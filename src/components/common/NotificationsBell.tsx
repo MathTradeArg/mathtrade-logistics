@@ -15,7 +15,7 @@ type NotificationMessage = {
   user_last_name?: string;
   comment?: string;
   text?: string;
-  // RIU (owner activity on a reported item): 'reply' | 'edit'.
+  // RIU (owner activity on a reported item): 'reply' | 'edit' | 'deleted'.
   kind?: string;
 };
 
@@ -42,6 +42,7 @@ function ownerActivityPrefix(notification: StaffNotification, message: Notificat
   // RI 'rereport': a new report joined an open one (BE merges it).
   if (notification.type === 'RI') return message.kind === 'rereport' ? 'Reportado de nuevo: ' : '';
   if (notification.type !== 'RIU') return '';
+  if (message.kind === 'deleted') return 'Eliminado por el dueño: ';
   return message.kind === 'edit' ? 'Editado: ' : 'Respuesta del dueño: ';
 }
 

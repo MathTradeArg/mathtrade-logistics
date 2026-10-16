@@ -118,6 +118,14 @@ describe('NotificationsBell', () => {
                 user_first_name: 'Ana', user_last_name: 'Dueña' },
             },
             {
+              id: 13,
+              type: 'RIU',
+              unread: true,
+              created: '2026-10-15',
+              message: { report_id: 6, item_id: 89, item_name: 'Azul', kind: 'deleted',
+                user_first_name: 'Ana', user_last_name: 'Dueña' },
+            },
+            {
               id: 12,
               type: 'RIU',
               unread: true,
@@ -136,6 +144,7 @@ describe('NotificationsBell', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Notificaciones, 2 sin leer' }));
     expect(screen.getByText('Editado: Catan')).toBeInTheDocument();
     expect(screen.getByText('Respuesta del dueño: Catan')).toBeInTheDocument();
+    expect(screen.getByText('Eliminado por el dueño: Azul')).toBeInTheDocument();
     expect(screen.getByText('Ya subí la foto')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Editado: Catan'));
