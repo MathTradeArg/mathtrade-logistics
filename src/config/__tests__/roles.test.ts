@@ -1,4 +1,4 @@
-import { isPathAllowed, roleHome } from '../roles';
+import { homeFor, isPathAllowed, roleHome } from '../roles';
 
 describe('isPathAllowed', () => {
   it('lets only window into /receive', () => {
@@ -63,5 +63,42 @@ describe('roleHome', () => {
 
   it('goes to / while the phase is unknown', () => {
     expect(roleHome('window', null)).toBe('/');
+  });
+});
+
+describe('city users', () => {
+  const referrer = { kind: 'referrer' as const, city: { id: 7, name: 'Mendoza' } };
+
+  it('lets a pure referrer visit /city/** and /more', () => {
+    expect(isPathAllowed('/city', null, false, referrer)).toBe(true);
+    expect(isPathAllowed('/city/boxes/1/30', null, false, referrer)).toBe(true);
+    expect(isPathAllowed('/city/shipments/new', null, false, referrer)).toBe(true);
+    expect(isPathAllowed('/more', null, false, referrer)).toBe(true);
+    expect(isPathAllowed('/', null, false, referrer)).toBe(true);
+  });
+
+  it('keeps a pure referrer off the event screens', () => {
+    expect(isPathAllowed('/boxes/out', null, false, referrer)).toBe(false);
+    expect(isPathAllowed('/lookup', null, false, referrer)).toBe(false);
+    expect(isPathAllowed('/select-role', null, false, referrer)).toBe(false);
+    expect(isPathAllowed('/cityx', null, false, referrer)).toBe(false);
+  });
+
+  it('gives a volunteer+referrer their role paths plus /city', () => {
+    expect(isPathAllowed('/boxes/out', 'boxes', false, referrer)).toBe(true);
+    expect(isPathAllowed('/lookup', 'boxes', false, referrer)).toBe(true);
+    expect(isPathAllowed('/city/boxes', 'boxes', false, referrer)).toBe(true);
+    expect(isPathAllowed('/receive', 'boxes', false, referrer)).toBe(false);
+  });
+
+  it('keeps /city closed to users without a city', () => {
+    expect(isPathAllowed('/city', 'boxes', false)).toBe(false);
+  });
+
+  it('homeFor sends a pure city user to /city, others to their role home', () => {
+    expect(homeFor(null, 1, referrer)).toBe('/city');
+    expect(homeFor(null, null, { kind: 'local', city: { id: 7, name: 'Mendoza' } })).toBe('/city');
+    expect(homeFor('boxes', 2, referrer)).toBe('/boxes/out');
+    expect(homeFor(null, 1, null)).toBe('/');
   });
 });

@@ -32,19 +32,19 @@ describe('useBoxLifecycle', () => {
   });
 
 
-  it('opens a box with destination_id and an idempotency key, not a full item list', async () => {
+  it('opens a box with destination_id, origin_id and an idempotency key, not a full item list', async () => {
     fetchMock.mockResponseOnce(JSON.stringify(openBox));
     const { result } = renderHook(() => useBoxLifecycle(), { wrapper });
 
     await act(async () => {
-      await result.current.openBox(4);
+      await result.current.openBox(4, 1);
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, options] = fetchMock.mock.calls[0];
     expect(String(url)).toContain('logistics/boxes/open/');
     expect(options?.method).toBe('POST');
-    expect(JSON.parse(String(options?.body))).toEqual({ destination_id: 4 });
+    expect(JSON.parse(String(options?.body))).toEqual({ destination_id: 4, origin_id: 1 });
     expect(JSON.parse(String(options?.body)).math_items).toBeUndefined();
     expect((options?.headers as Record<string, string>)['Idempotency-Key']).toBe('key-1');
   });
@@ -76,8 +76,8 @@ describe('useBoxLifecycle', () => {
     let first!: Promise<unknown>;
     let second!: unknown;
     await act(async () => {
-      first = result.current.openBox(4);
-      second = await result.current.openBox(4);
+      first = result.current.openBox(4, 1);
+      second = await result.current.openBox(4, 1);
       await first;
     });
 

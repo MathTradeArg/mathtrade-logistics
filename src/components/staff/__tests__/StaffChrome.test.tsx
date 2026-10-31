@@ -110,6 +110,35 @@ describe('StaffChrome role guard', () => {
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
+  describe('a pure referrer', () => {
+    const cityAccess = { kind: 'referrer', city: { id: 7, name: 'Mendoza' } };
+
+    it.each(['/', '/boxes/out', '/lookup', '/select-role'])('on %s goes to /city', (path) => {
+      mockUseAuth.mockReturnValue(auth({ role: null, cityAccess }));
+      mockUsePathname.mockReturnValue(path);
+      render(<StaffChrome><p>page</p></StaffChrome>);
+      expect(mockReplace).toHaveBeenCalledWith('/city');
+      expect(mockReplace).not.toHaveBeenCalledWith('/select-role');
+    });
+
+    it.each(['/city', '/city/boxes/1', '/more'])('stays on %s', (path) => {
+      mockUseAuth.mockReturnValue(auth({ role: null, cityAccess }));
+      mockUsePathname.mockReturnValue(path);
+      render(<StaffChrome><p>page</p></StaffChrome>);
+      expect(mockReplace).not.toHaveBeenCalled();
+    });
+
+    it('with a role keeps the role guard and may visit /city', () => {
+      mockUseAuth.mockReturnValue(auth({ role: 'boxes', cityAccess }));
+      mockUsePathname.mockReturnValue('/city/boxes');
+      const { rerender } = render(<StaffChrome><p>page</p></StaffChrome>);
+      expect(mockReplace).not.toHaveBeenCalled();
+      mockUsePathname.mockReturnValue('/receive');
+      rerender(<StaffChrome><p>page</p></StaffChrome>);
+      expect(mockReplace).toHaveBeenCalledWith('/boxes/in');
+    });
+  });
+
   it('shows a roleNotice as a success toast and clears it', () => {
     const clearRoleNotice = jest.fn();
     mockUseAuth.mockReturnValue(auth({

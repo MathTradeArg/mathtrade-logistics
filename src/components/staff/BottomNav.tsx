@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import clsx from 'clsx';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowCircleRight, DotsThreeOutline, MagnifyingGlass, Package, QrCode, Tray } from 'phosphor-react';
+import { ArrowCircleRight, DotsThreeOutline, MagnifyingGlass, Package, QrCode, Tray, Truck } from 'phosphor-react';
 
 const ICONS: Record<NavSlotId, typeof QrCode> = {
   receive: QrCode,
@@ -15,13 +15,16 @@ const ICONS: Record<NavSlotId, typeof QrCode> = {
   deliver: ArrowCircleRight,
   lookup: MagnifyingGlass,
   more: DotsThreeOutline,
+  cityBoxes: Package,
+  cityShipments: Truck,
+  cityReceived: Tray,
 };
 
 export default function BottomNav() {
   const pathname = usePathname();
   const { eventPhase } = useEventPhase();
-  const { role, isAdmin } = useAuth();
-  const slots = getBottomNavSlots(eventPhase, { role, isAdmin });
+  const { role, isAdmin, cityAccess } = useAuth();
+  const slots = getBottomNavSlots(eventPhase, { role, isAdmin, city: cityAccess });
 
   return (
     <nav

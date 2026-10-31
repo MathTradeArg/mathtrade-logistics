@@ -58,3 +58,43 @@ describe('Mi rol page chrome', () => {
     expect(shouldShowBack('/more/role')).toBe(true);
   });
 });
+
+describe('city nav', () => {
+  const referrer = { kind: 'referrer' as const, city: { id: 7, name: 'Mendoza' } };
+  const local = { kind: 'local' as const, city: { id: 7, name: 'Mendoza' } };
+  const cityLabels = (phase: number | null, role: VolunteerRole | null, city: typeof referrer | typeof local) =>
+    getBottomNavSlots(phase, { role, isAdmin: false, city }).map((s) => s.label);
+
+  it.each([0, 1, 2, null])('gives a referrer Armar, Envíos, Más in phase %p', (phase) => {
+    expect(cityLabels(phase, null, referrer)).toEqual(['Armar', 'Envíos', 'Más']);
+  });
+
+  it('gives a local volunteer Armar and Más', () => {
+    expect(cityLabels(1, null, local)).toEqual(['Armar', 'Más']);
+  });
+
+  it('keeps the role slots for a volunteer+referrer and the admin nav for admins', () => {
+    expect(cityLabels(1, 'boxes', referrer)).toEqual(['Llegan', 'Empacar', 'Más']);
+    expect(getBottomNavSlots(1, { role: null, isAdmin: true, city: referrer }).map((s) => s.label))
+      .toEqual(['Recibir', 'Llegan', 'Empacar', 'Más']);
+  });
+
+  it('marks the city slots active on their sub-routes', () => {
+    const slots = getBottomNavSlots(1, { role: null, isAdmin: false, city: referrer });
+    const boxes = slots.find((s) => s.id === 'cityBoxes')!;
+    const shipments = slots.find((s) => s.id === 'cityShipments')!;
+    expect(isSlotActive('/city/boxes/1/30', boxes, 1, slots)).toBe(true);
+    expect(isSlotActive('/city/shipments', boxes, 1, slots)).toBe(false);
+    expect(isSlotActive('/city/shipments/4', shipments, 1, slots)).toBe(true);
+  });
+
+  it('titles and back buttons for /city/*', () => {
+    expect(getPageTitle('/city')).toBe('Mi ciudad');
+    expect(getPageTitle('/city/boxes')).toBe('Armar cajas');
+    expect(getPageTitle('/city/boxes/1/30')).toBe('Armar cajas');
+    expect(getPageTitle('/city/instructivo')).toBe('Instructivo');
+    expect(getPageTitle('/city/shipments/new')).toBe('Envíos');
+    expect(shouldShowBack('/city')).toBe(false);
+    expect(shouldShowBack('/city/boxes')).toBe(true);
+  });
+});

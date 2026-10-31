@@ -1,4 +1,5 @@
 export * from './box';
+export * from './city';
 export * from './game';
 export * from './item';
 export * from './report';

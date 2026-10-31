@@ -76,4 +76,11 @@ describe('BoxesOutPage', () => {
     expect(screen.queryByText('#1')).not.toBeInTheDocument();
     expect(screen.queryByText('AMBA')).not.toBeInTheDocument();
   });
+
+  it('lists the hub boxes explicitly and the items without AMBA', async () => {
+    render(<BoxesOutPage />, { wrapper });
+    await screen.findByText('Córdoba');
+    expect(mockListBoxes).toHaveBeenCalledWith({ origin: 1 });
+    expect(mockListItems).toHaveBeenCalledWith({ excludeAmba: 1 });
+  });
 });

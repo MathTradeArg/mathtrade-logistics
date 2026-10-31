@@ -41,7 +41,7 @@ function authHeaders(extra?: Record<string, string>): Record<string, string> {
 export async function boxFetch<T>(
   path: string,
   options: {
-    method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: unknown;
     idempotencyKey?: string;
   } = {},
@@ -129,10 +129,16 @@ export async function listItems(params: ItemListParams = {}): Promise<Item[]> {
   return Array.isArray(data) ? data : [];
 }
 
-export async function openBox(destinationId: number, idempotencyKey: string): Promise<Box> {
+/** Opens an empty box from `originId` (the hub at the event, the city
+ *  elsewhere) to `destinationId`. */
+export async function openBox(
+  destinationId: number,
+  originId: number,
+  idempotencyKey: string,
+): Promise<Box> {
   const data = await boxFetch<Box>('logistics/boxes/open/', {
     method: 'POST',
-    body: { destination_id: destinationId },
+    body: { destination_id: destinationId, origin_id: originId },
     idempotencyKey,
   });
   if (!data) {

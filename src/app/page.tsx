@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 
 function LandingPageContent() {
-  const { isAuthenticated, isLoading: authIsLoading, isAdmin, role } = useAuth();
+  const { isAuthenticated, isLoading: authIsLoading, isAdmin, role, cityAccess } = useAuth();
   const { eventPhase, isLoadingEventPhase } = useEventPhase();
   const router = useRouter();
 
@@ -22,8 +22,10 @@ function LandingPageContent() {
   } else if (role) {
     const home = roleHome(role, eventPhase);
     if (home !== '/') redirectTo = home;
+  } else if (!role && cityAccess) {
+    redirectTo = '/city';
   }
-  const waitingForGuard = !isAdmin && role === null;
+  const waitingForGuard = !isAdmin && role === null && !cityAccess;
 
   useEffect(() => {
     if (authIsLoading || isAuthenticated === null || isLoadingEventPhase) return;

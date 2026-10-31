@@ -1,6 +1,9 @@
+import type { CityAccess } from '@/types/city';
 import type { VolunteerRole } from '@/types/volunteer';
 
-export type NavSlotId = 'receive' | 'arrive' | 'pack' | 'deliver' | 'lookup' | 'more';
+export type NavSlotId =
+  | 'receive' | 'arrive' | 'pack' | 'deliver' | 'lookup' | 'more'
+  | 'cityBoxes' | 'cityShipments' | 'cityReceived';
 
 export type NavSlot = {
   id: NavSlotId;
@@ -48,7 +51,18 @@ const ROLE_SLOTS: Record<VolunteerRole, NavSlotId[]> = {
 };
 const LOOKUP_SLOT: NavSlot = { id: 'lookup', href: '/lookup', label: 'Consultar' };
 
-export type NavAccess = { role: VolunteerRole | null; isAdmin: boolean };
+export type NavAccess = { role: VolunteerRole | null; isAdmin: boolean; city?: CityAccess };
+
+const MORE_SLOT: NavSlot = { id: 'more', href: '/more', label: 'Más' };
+const CITY_BOXES_SLOT: NavSlot = { id: 'cityBoxes', href: '/city/boxes', label: 'Armar' };
+const CITY_SHIPMENTS_SLOT: NavSlot = { id: 'cityShipments', href: '/city/shipments', label: 'Envíos' };
+
+/** Nav of a city user without an event role; it doesn't depend on the phase.
+ *  Recibidas stays hidden until it exists (design D5/D6). */
+function citySlots(city: NonNullable<CityAccess>): NavSlot[] {
+  if (city.kind === 'referrer') return [CITY_BOXES_SLOT, CITY_SHIPMENTS_SLOT, MORE_SLOT];
+  return [CITY_BOXES_SLOT, MORE_SLOT];
+}
 
 /** Slots by phase, narrowed to the volunteer's role (design decision 6).
  *  Admins keep the full phase nav; the default keeps that behaviour. */
@@ -56,6 +70,7 @@ export function getBottomNavSlots(
   eventPhase: number | null,
   access: NavAccess = { role: null, isAdmin: true },
 ): NavSlot[] {
+  if (!access.isAdmin && !access.role && access.city) return citySlots(access.city);
   const slots = phaseSlots(eventPhase);
   if (access.isAdmin) return slots;
   const allowed = access.role ? ROLE_SLOTS[access.role] : [];
@@ -65,6 +80,10 @@ export function getBottomNavSlots(
 }
 
 export function getPageTitle(pathname: string): string {
+  if (pathname.startsWith('/city/boxes')) return 'Armar cajas';
+  if (pathname.startsWith('/city/instructivo')) return 'Instructivo';
+  if (pathname.startsWith('/city/shipments')) return 'Envíos';
+  if (pathname === '/city' || pathname.startsWith('/city/')) return 'Mi ciudad';
   if (pathname.startsWith('/select-role')) return 'Tu rol';
   if (pathname.startsWith('/lookup')) return 'Consultar';
   if (pathname.startsWith('/receive')) return 'Recibir';
@@ -89,6 +108,7 @@ export function getPageTitle(pathname: string): string {
 }
 
 export function shouldShowBack(pathname: string): boolean {
+  if (pathname.startsWith('/city/')) return true;
   if (pathname.startsWith('/admin')) return true;
   if (pathname === '/reports/all' || pathname.startsWith('/reports/all/')) return true;
   if (pathname.startsWith('/more/') && pathname !== '/more') return true;
@@ -109,6 +129,9 @@ export function isSlotActive(
 ): boolean {
   if (slot.disabled) return false;
 
+  if (slot.id === 'cityBoxes' || slot.id === 'cityShipments' || slot.id === 'cityReceived') {
+    return pathMatches(pathname, slot.href);
+  }
   if (slot.id === 'lookup') {
     return pathMatches(pathname, '/lookup');
   }
