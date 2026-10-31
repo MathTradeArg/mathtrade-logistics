@@ -4,7 +4,7 @@ import AppHeader from '@/components/common/AppHeader';
 import BottomNav from '@/components/staff/BottomNav';
 import { StaffTitleProvider, useStaffTitleValue } from '@/components/staff/StaffTitleContext';
 import { getPageTitle, isBarePath, shouldShowBack } from '@/config/nav';
-import { isPathAllowed, roleHome } from '@/config/roles';
+import { homeFor, isPathAllowed } from '@/config/roles';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,7 +17,9 @@ import { ReactNode, useEffect } from 'react';
 function useRoleGuard() {
   const pathname = usePathname() ?? '';
   const router = useRouter();
-  const { isAuthenticated, isLoading, isAdmin, role, roleKnown, roleNotice, clearRoleNotice } = useAuth();
+  const {
+    isAuthenticated, isLoading, isAdmin, role, roleKnown, roleNotice, clearRoleNotice, cityAccess,
+  } = useAuth();
   const { eventPhase, isLoadingEventPhase } = useEventPhase();
   const { setSuccess } = useActionStatus();
 
@@ -32,14 +34,22 @@ function useRoleGuard() {
     if (isLoading || !isAuthenticated || isAdmin || isLoadingEventPhase || isBarePath(pathname)) return;
     // A session from before roles existed: wait for refreshMe (runs on mount) to say.
     if (!roleKnown) return;
+    // A city user without an event role lives in /city and Más; never /select-role.
+    if (role === null && cityAccess) {
+      if (pathname === '/' || !isPathAllowed(pathname, null, false, cityAccess)) router.replace('/city');
+      return;
+    }
     if (role === null) {
       if (pathname !== '/select-role') router.replace('/select-role');
       return;
     }
-    if (pathname === '/select-role' || !isPathAllowed(pathname, role, false)) {
-      router.replace(roleHome(role, eventPhase));
+    if (pathname === '/select-role' || !isPathAllowed(pathname, role, false, cityAccess)) {
+      router.replace(homeFor(role, eventPhase, cityAccess));
     }
-  }, [pathname, role, roleKnown, isAdmin, isAuthenticated, isLoading, eventPhase, isLoadingEventPhase, router]);
+  }, [
+    pathname, role, roleKnown, isAdmin, isAuthenticated, isLoading, eventPhase, isLoadingEventPhase,
+    cityAccess, router,
+  ]);
 }
 
 function StaffChromeInner({ children }: { children: ReactNode }) {

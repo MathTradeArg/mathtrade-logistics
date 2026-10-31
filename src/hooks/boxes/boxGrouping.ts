@@ -96,7 +96,17 @@ export type DestinationGroup = {
   closedBoxCount: number;
 };
 
-export function groupPackingDestinations(items: Item[], boxes: Box[]): DestinationGroup[] {
+/** The event scan flow marks a game packable (status 5) at the hub; boxes
+ *  built in a city ignore the status, as the backend does (add_item). */
+export function isPackable(item: Item, requirePackableStatus = true): boolean {
+  return !requirePackableStatus || item.status === 5;
+}
+
+export function groupPackingDestinations(
+  items: Item[],
+  boxes: Box[],
+  requirePackableStatus = true,
+): DestinationGroup[] {
   const boxed = boxedTradeIds(boxes);
   const openBoxed = boxedTradeIds(boxes.filter(isBoxOpen));
   const closedBoxesByDest = new Map<number, number>();
@@ -115,7 +125,7 @@ export function groupPackingDestinations(items: Item[], boxes: Box[]): Destinati
       inOpenCount: 0,
       closedBoxCount: closedBoxesByDest.get(item.location) || 0,
     };
-    if (item.status === 5 && !boxed.has(item.id)) {
+    if (isPackable(item, requirePackableStatus) && !boxed.has(item.id)) {
       current.readyCount += 1;
     } else if (openBoxed.has(item.id)) {
       current.inOpenCount += 1;
@@ -141,4 +151,11 @@ export function groupPackingDestinations(items: Item[], boxes: Box[]): Destinati
 
 export function findBoxForTrade(boxes: Box[], tradeId: number): Box | undefined {
   return boxes.find((box) => box.math_items.some((item) => item.id === tradeId));
+}
+
+/** The label written on a city box: `<origin_number>-<number>` (per-origin
+ *  and per-destination counters), or `#<number>` without the first one. */
+export function boxLabel(box: Pick<Box, 'number' | 'origin_number'>): string {
+  if (box.origin_number != null && box.number != null) return `${box.origin_number}-${box.number}`;
+  return `#${box.number ?? '?'}`;
 }
