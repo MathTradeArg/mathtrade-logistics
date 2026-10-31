@@ -1,6 +1,6 @@
 "use client";
 
-import { boxLabel } from '@/hooks/boxes/boxGrouping';
+import { boxGoesViaHub, boxLabel, destinationLabel } from '@/hooks/boxes/boxGrouping';
 import type { Tracking } from '@/types';
 
 /** Code, destination, boxes, counts and the receipt thumbnail of a shipment. */
@@ -11,7 +11,10 @@ export default function TrackingSummary({
   tracking: Tracking;
   onOpenImage: (url: string) => void;
 }) {
-  const destinationName = tracking.boxes[0]?.destination_name || `Destino ${tracking.destiny}`;
+  const destinationName = destinationLabel(
+    tracking.boxes[0]?.destination_name || `Destino ${tracking.destiny}`,
+    tracking.boxes.some((box) => boxGoesViaHub(box)),
+  );
   const labels = tracking.boxes.map(boxLabel).join(', ');
   return (
     <div className="flex items-start gap-3">

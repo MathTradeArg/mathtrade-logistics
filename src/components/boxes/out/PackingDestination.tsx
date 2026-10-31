@@ -5,7 +5,7 @@ import { GameRow, PhaseBlocked, StaffDialog, StaffEmpty, StaffError, StaffPage, 
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
-import { boxContentsSummary, isBoxOpen, openBoxTitle } from '@/hooks/boxes/boxGrouping';
+import { boxContentsSummary, destinationLabel, goesViaHub, isBoxOpen, openBoxTitle } from '@/hooks/boxes/boxGrouping';
 import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box, Item } from '@/types';
@@ -47,10 +47,18 @@ export default function PackingDestination({
   const asLocation = viewParams?.as_location;
   const mathtrade = viewParams?.mathtrade;
 
-  const destinationName =
+  const viaHub = goesViaHub(
+    origin,
+    destinationId,
+    [...items, ...boxes.flatMap((box) => box.math_items)]
+      .some((item) => item.location === destinationId && item.via_meeting),
+  );
+  const destinationName = destinationLabel(
     boxes[0]?.destination_name ||
-    items.find((item) => item.location === destinationId)?.location_name ||
-    'Destino';
+      items.find((item) => item.location === destinationId)?.location_name ||
+      'Destino',
+    viaHub,
+  );
   useStaffTitle(destinationName);
 
   const fetchData = useCallback(async (): Promise<Box[]> => {

@@ -3,7 +3,7 @@
 import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, StaffEmpty, StaffError } from '@/components/staff';
 import { listBoxes } from '@/hooks/boxes/boxApi';
-import { boxLabel } from '@/hooks/boxes/boxGrouping';
+import { boxGoesViaHub, boxLabel, destinationLabel, splitByRoute } from '@/hooks/boxes/boxGrouping';
 import { saveTracking, uploadReceipt, type TrackingInput } from '@/hooks/city/cityApi';
 import type { Box, Tracking } from '@/types';
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
@@ -61,11 +61,16 @@ export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: 
   );
 
   const destinations = useMemo(() => {
-    const map = new Map<number, string>();
-    closedBoxes.forEach((box) => map.set(box.destiny, box.destination_name || `Destino ${box.destiny}`));
-    (tracking?.boxes ?? []).forEach((box) => map.set(box.destiny, box.destination_name || `Destino ${box.destiny}`));
+    const map = new Map<number, { name: string; viaHub: boolean }>();
+    [...closedBoxes, ...(tracking?.boxes ?? [])].forEach((box) => {
+      const current = map.get(box.destiny);
+      map.set(box.destiny, {
+        name: box.destination_name || current?.name || `Destino ${box.destiny}`,
+        viaHub: Boolean(current?.viaHub) || boxGoesViaHub(box),
+      });
+    });
     return Array.from(map.entries())
-      .map(([id, name]) => ({ id, name }))
+      .map(([id, { name, viaHub }]) => ({ id, name, viaHub, label: destinationLabel(name, viaHub) }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [closedBoxes, tracking]);
 
@@ -157,8 +162,12 @@ export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: 
           className={inputClass}
         >
           <option value="">Elegí un destino</option>
-          {destinations.map((dest) => (
-            <option key={dest.id} value={dest.id}>{dest.name}</option>
+          {splitByRoute(destinations, (dest) => dest.id, (dest) => dest.viaHub).map((section) => (
+            <optgroup key={section.key} label={section.title}>
+              {section.entries.map((dest) => (
+                <option key={dest.id} value={dest.id}>{dest.label}</option>
+              ))}
+            </optgroup>
           ))}
         </select>
         {destinations.length === 0 && (

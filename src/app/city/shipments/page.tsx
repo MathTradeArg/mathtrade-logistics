@@ -9,7 +9,7 @@ import { apiErrorMessage } from '@/components/city/errors';
 import { GameRow, StaffEmpty, StaffError, StaffPage, StaffSearch, StaffSegmented, ThumbCta } from '@/components/staff';
 import { useCityView } from '@/contexts/CityViewContext';
 import { listItems } from '@/hooks/boxes/boxApi';
-import { matchesSearch } from '@/hooks/boxes/boxGrouping';
+import { destinationLabel, goesViaHub, matchesSearch } from '@/hooks/boxes/boxGrouping';
 import { listTrackings } from '@/hooks/city/cityApi';
 import type { Item, Tracking } from '@/types';
 import { fileSlug, downloadSheet } from '@/utils/xlsx';
@@ -26,6 +26,11 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 const giverName = (item: Item) => `${item.first_name ?? ''} ${item.last_name ?? ''}`.trim() || '—';
+
+/** "Catamarca · Vía AMBA" when the copy travels through the event. */
+const itemDestination = (item: Item, cityId: number | null) => (item.location_name
+  ? destinationLabel(item.location_name, goesViaHub(cityId, item.location, item.via_meeting))
+  : '');
 
 export default function CityShipmentsPage() {
   const { cityId, cityName, kind, params, readOnly } = useCityView();
@@ -75,10 +80,10 @@ export default function CityShipmentsPage() {
 
   const visibleItems = useMemo(
     () => items.filter((item) => matchesSearch(
-      `${formatTradeCode(item.assigned_trade_code)} ${giverName(item)} ${item.title} ${item.location_name ?? ''}`,
+      `${formatTradeCode(item.assigned_trade_code)} ${giverName(item)} ${item.title} ${itemDestination(item, cityId)}`,
       query,
     )),
-    [items, query],
+    [items, query, cityId],
   );
 
   if (cityId === null) return <NoCity />;
@@ -90,7 +95,7 @@ export default function CityShipmentsPage() {
         'Entregador': giverName(item),
         'Juego': item.title,
         'Caja': itemBoxLabel(item),
-        'Destino': item.location_name ?? '',
+        'Destino': itemDestination(item, cityId),
       })),
       `ejemplares_${fileSlug(cityName)}.xlsx`,
       'Ejemplares',
@@ -148,7 +153,7 @@ export default function CityShipmentsPage() {
                   <li key={item.id}>
                     <GameRow
                       title={`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}
-                      subtitle={`${giverName(item)} · Caja ${itemBoxLabel(item)} · ${item.location_name ?? '—'}`}
+                      subtitle={`${giverName(item)} · Caja ${itemBoxLabel(item)} · ${itemDestination(item, cityId) || '—'}`}
                     />
                   </li>
                 ))}
