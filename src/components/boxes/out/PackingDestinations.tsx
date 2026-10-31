@@ -13,6 +13,7 @@ import {
   groupPackingDestinations,
   isBoxOpen,
   matchesSearch,
+  packingDestinationId,
   receptorName,
   splitByRoute,
 } from '@/hooks/boxes/boxGrouping';
@@ -89,14 +90,14 @@ export default function PackingDestinations({
     return destinations.filter((dest) => {
       if (matchesSearch(dest.label, query)) return true;
       return items.some((item) => {
-        if (item.location !== dest.destinationId) return false;
+        if (packingDestinationId(item, origin) !== dest.destinationId) return false;
         return matchesSearch(
-          [item.title, String(item.assigned_trade_code), receptorName(item)].join(' '),
+          [item.title, String(item.assigned_trade_code), receptorName(item), item.location_name ?? ''].join(' '),
           query,
         );
       });
     });
-  }, [destinations, items, query]);
+  }, [destinations, items, query, origin]);
 
   // From a city, the boxes to AMBA (staying there or travelling on) are listed
   // apart from the ones that go straight to another city.
@@ -111,7 +112,7 @@ export default function PackingDestinations({
     if (query.trim().length < 2) return [];
     return items.filter((item) =>
       matchesSearch(
-        [item.title, String(item.assigned_trade_code), receptorName(item)].join(' '),
+        [item.title, String(item.assigned_trade_code), receptorName(item), item.location_name ?? ''].join(' '),
         query,
       ),
     ).slice(0, 8);
@@ -120,15 +121,17 @@ export default function PackingDestinations({
   const handleItemHit = (item: Item) => {
     const box = findBoxForTrade(boxes, item.id);
     if (box && isBoxOpen(box)) {
-      router.push(`${basePath}/${box.destiny}/${box.id}`);
+      const destId = packingDestinationId(item, origin) ?? box.destiny;
+      router.push(`${basePath}/${destId}/${box.id}`);
       return;
     }
     if (box && !isBoxOpen(box)) {
       setError(`Ese juego ya está en la caja #${box.number} (cerrada).`);
       return;
     }
-    if (item.location) {
-      router.push(`${basePath}/${item.location}`);
+    const destId = packingDestinationId(item, origin);
+    if (destId) {
+      router.push(`${basePath}/${destId}`);
     }
   };
 

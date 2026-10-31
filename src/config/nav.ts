@@ -101,6 +101,7 @@ export function getPageTitle(pathname: string): string {
   if (pathname === '/reports/all' || pathname.startsWith('/reports/all/')) return 'Reportes';
   if (pathname.startsWith('/reports')) return 'Reportar';
   if (pathname === '/more/role' || pathname.startsWith('/more/role/')) return 'Mi rol';
+  if (pathname.startsWith('/more/print')) return 'Imprimir';
   if (pathname.startsWith('/more/tools/amba-pending')) return 'Pendientes AMBA';
   if (pathname.startsWith('/more/reports/amba-missing')) return 'Faltantes AMBA';
   if (pathname.startsWith('/more/tools')) return 'Herramientas';

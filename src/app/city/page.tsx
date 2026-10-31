@@ -28,6 +28,13 @@ export default function CityHomePage() {
               />
             </li>
             <li>
+              <GameRow
+                title="Imprimir etiquetas"
+                subtitle="Etiquetas para las cajas que salen de tu ciudad"
+                href="/more/print?tab=labels"
+              />
+            </li>
+            <li>
               <GameRow title="Instructivo" subtitle="Cómo preparar las cajas" href="/city/instructivo" />
             </li>
             <li>

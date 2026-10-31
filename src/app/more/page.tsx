@@ -38,6 +38,9 @@ export default function MorePage() {
             <GameRow title="Mi ciudad" href="/city" />
           </li>
           <li>
+            <GameRow title="Imprimir etiquetas" href="/more/print?tab=labels" />
+          </li>
+          <li>
             <GameRow title="Instructivo" href="/city/instructivo" />
           </li>
           <li>
@@ -95,6 +98,9 @@ export default function MorePage() {
         </li>
         <li>
           <Link href="/more/tools" className={rowClass}>Herramientas</Link>
+        </li>
+        <li>
+          <Link href="/more/print" className={rowClass}>Imprimir</Link>
         </li>
       </ul>
 

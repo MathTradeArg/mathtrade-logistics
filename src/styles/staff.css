@@ -70,3 +70,35 @@
   border-radius: 16px;
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
 }
+
+@media print {
+  header,
+  nav[aria-label="Navegación principal"],
+  .no-print {
+    display: none !important;
+  }
+
+  body,
+  .bg-page {
+    background: #fff !important;
+  }
+
+  .print-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .print-sheet {
+    page-break-after: always;
+    break-after: page;
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+
+  .print-sheet:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+}

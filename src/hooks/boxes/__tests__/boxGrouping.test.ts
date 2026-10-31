@@ -1,5 +1,5 @@
 import { EVENT_LOCATION_ID } from '@/constants/event';
-import { boxContentsSummary, boxDestinationLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, splitByRoute, groupPackingDestinations, openBoxSubtitle, openBoxTitle, packerName } from '@/hooks/boxes/boxGrouping';
+import { boxContentsSummary, boxDestinationLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, splitByRoute, groupPackingDestinations, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import type { Box, Item } from '@/types';
 
 const box = (overrides: Partial<Box> & Pick<Box, 'id' | 'origin' | 'origin_name'>): Box => ({
@@ -50,38 +50,49 @@ describe('boxGrouping', () => {
     expect(cordoba.closedBoxCount).toBe(0);
   });
 
-  it('marks a city destination reached through the event as "Vía AMBA"', () => {
+  it('packs city via_meeting items into a separate via-AMBA lane from direct AMBA', () => {
     const CORDOBA = 8;
     const CATAMARCA = 12;
+    const MENDOZA = 7;
     const ROSARIO = 9;
     const items: Item[] = [
-      { id: 1, title: 'A', assigned_trade_code: 1, status: 2, location: CATAMARCA, location_name: 'Catamarca', via_meeting: true },
-      { id: 2, title: 'B', assigned_trade_code: 2, status: 2, location: ROSARIO, location_name: 'Rosario', via_meeting: false },
-      { id: 3, title: 'C', assigned_trade_code: 3, status: 2, location: EVENT_LOCATION_ID, location_name: 'AMBA', via_meeting: true },
+      { id: 1, title: 'A', assigned_trade_code: 1, status: 2, location: CATAMARCA, location_name: 'Catamarca', via_meeting: true, receptor_first_name: 'Ana', receptor_last_name: 'Paz' },
+      { id: 4, title: 'D', assigned_trade_code: 4, status: 2, location: MENDOZA, location_name: 'Mendoza', via_meeting: true, receptor_first_name: 'Dani', receptor_last_name: 'Sol' },
+      { id: 2, title: 'B', assigned_trade_code: 2, status: 2, location: ROSARIO, location_name: 'Rosario', via_meeting: false, receptor_first_name: 'Beto', receptor_last_name: 'Ríos' },
+      { id: 3, title: 'C', assigned_trade_code: 3, status: 2, location: EVENT_LOCATION_ID, location_name: 'AMBA', via_meeting: true, receptor_first_name: 'Ciro', receptor_last_name: 'Luz' },
     ];
 
+    // From a city, Catamarca and Mendoza (via_meeting) share the VIA_AMBA lane (-1),
+    // separate from direct AMBA (1) and direct Rosario (9).
     const groups = groupPackingDestinations(items, [], false, CORDOBA);
-    const label = (id: number) => {
-      const group = groups.find((g) => g.destinationId === id)!;
-      return destinationLabel(group.destinationName, group.viaHub);
-    };
-    expect(label(CATAMARCA)).toBe('Catamarca · Vía AMBA');
-    expect(label(ROSARIO)).toBe('Rosario');
-    expect(label(EVENT_LOCATION_ID)).toBe('AMBA');
+    expect(groups.map((g) => [g.destinationId, g.destinationName, g.readyCount, g.viaHub])).toEqual([
+      [EVENT_LOCATION_ID, 'AMBA', 1, false],
+      [VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL, 2, true],
+      [ROSARIO, 'Rosario', 1, false],
+    ]);
+    expect(packingDestinationId(items[0], CORDOBA)).toBe(VIA_AMBA_DESTINATION_ID);
+    expect(packingDestinationId(items[1], CORDOBA)).toBe(VIA_AMBA_DESTINATION_ID);
+    expect(packingDestinationId(items[2], CORDOBA)).toBe(ROSARIO);
+    expect(packingDestinationId(items[3], CORDOBA)).toBe(EVENT_LOCATION_ID);
+    expect(packingItemSubtitle(items[0], CORDOBA)).toBe('Sigue a Catamarca · Ana Paz');
+    expect(packingItemSubtitle(items[2], CORDOBA)).toBe('Beto Ríos');
+    expect(packingItemSubtitle(items[3], CORDOBA)).toBe('Ciro Luz');
 
-    // At the event the hop is already done.
+    // At the event, the hop is done: Catamarca is packed under its own destination.
     expect(goesViaHub(EVENT_LOCATION_ID, CATAMARCA, true)).toBe(false);
-    expect(groupPackingDestinations(items, [], false, EVENT_LOCATION_ID).some((g) => g.viaHub)).toBe(false);
-    expect(groupPackingDestinations(items, [], false).some((g) => g.viaHub)).toBe(false);
+    expect(packingDestinationId(items[0], EVENT_LOCATION_ID)).toBe(CATAMARCA);
+    expect(packingItemSubtitle(items[0], EVENT_LOCATION_ID)).toBe('Ana Paz');
+    const eventGroups = groupPackingDestinations(items, [], false, EVENT_LOCATION_ID);
+    expect(eventGroups.map((g) => g.destinationId)).toContain(CATAMARCA);
 
-    const closed = box({
-      id: 20, origin: CORDOBA, origin_name: 'Córdoba', destiny: CATAMARCA, destination_name: 'Catamarca',
+    expect(destinationLabel('Catamarca', true)).toBe('Catamarca · Vía AMBA');
+    expect(destinationLabel(VIA_AMBA_DESTINATION_LABEL, true)).toBe(VIA_AMBA_DESTINATION_LABEL);
+    expect(destinationLabel('Rosario', false)).toBe('Rosario');
+    const closedViaAmbaBox = box({
+      id: 20, origin: CORDOBA, origin_name: 'Córdoba', destiny: EVENT_LOCATION_ID, destination_name: 'AMBA',
       math_items: [items[0]],
     });
-    expect(boxDestinationLabel(closed)).toBe('Catamarca · Vía AMBA');
-    // An empty box takes the mark from the games still to pack.
-    expect(boxDestinationLabel({ ...closed, math_items: [] })).toBe('Catamarca');
-    expect(boxDestinationLabel({ ...closed, math_items: [] }, items)).toBe('Catamarca · Vía AMBA');
+    expect(boxDestinationLabel(closedViaAmbaBox)).toBe(VIA_AMBA_DESTINATION_LABEL);
   });
 
   it('splits direct destinations from the ones that go to AMBA, AMBA first', () => {
