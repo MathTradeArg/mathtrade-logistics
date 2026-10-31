@@ -181,3 +181,96 @@ describe('useAuth refreshMe', () => {
     }
   });
 });
+
+function CityProbe() {
+  const { referrer, cityAccess, login, logout } = useAuth();
+  return (
+    <div>
+      <p data-testid="referrer">{referrer ? `${referrer.id}:${referrer.name}` : 'none'}</p>
+      <p data-testid="access">{cityAccess ? `${cityAccess.kind}:${cityAccess.city.id}` : 'none'}</p>
+      <button
+        type="button"
+        onClick={() => login('tok2', {
+          id: 2, first_name: 'Rita', math_admin: false, is_volunteer: false, role: null,
+          referrer: { id: 7, name: 'Mendoza' }, local_city: null,
+        })}
+      >
+        login
+      </button>
+      <button type="button" onClick={() => logout()}>logout</button>
+    </div>
+  );
+}
+
+describe('useAuth city state', () => {
+  let fetchMock: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    localStorage.clear();
+    fetchMock = jest.fn();
+    global.fetch = fetchMock;
+  });
+
+  const loggedIn = () => {
+    localStorage.setItem('authToken', 'tok');
+    localStorage.setItem('userName', 'Rita R');
+    localStorage.setItem('userId', '2');
+    localStorage.setItem('isAdmin', 'false');
+    localStorage.setItem('logisticsRole', '');
+  };
+
+  it('login stores the referrer city', () => {
+    render(<AuthProvider><CityProbe /></AuthProvider>);
+    fireEvent.click(screen.getByText('login'));
+    expect(screen.getByTestId('referrer')).toHaveTextContent('7:Mendoza');
+    expect(screen.getByTestId('access')).toHaveTextContent('referrer:7');
+    expect(JSON.parse(localStorage.getItem('logisticsReferrer') as string)).toEqual({ id: 7, name: 'Mendoza' });
+    expect(localStorage.getItem('logisticsLocalCity')).toBeNull();
+  });
+
+  it('reads the stored city at mount and ignores bad JSON', () => {
+    loggedIn();
+    localStorage.setItem('logisticsReferrer', '{bad');
+    localStorage.setItem('logisticsLocalCity', JSON.stringify({ id: 9, name: 'Salta' }));
+    fetchMock.mockReturnValue(new Promise(() => {}));
+    render(<AuthProvider><CityProbe /></AuthProvider>);
+    expect(screen.getByTestId('referrer')).toHaveTextContent('none');
+    expect(screen.getByTestId('access')).toHaveTextContent('local:9');
+  });
+
+  it('/me updates the city and clears it when null', async () => {
+    loggedIn();
+    fetchMock.mockResolvedValueOnce(meResponse({
+      id: 2, first_name: 'Rita', last_name: 'R', math_admin: false, is_volunteer: false, role: null,
+      referrer: { id: 7, name: 'Mendoza' }, local_city: null,
+    }));
+    const { unmount } = render(<AuthProvider><CityProbe /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('referrer')).toHaveTextContent('7:Mendoza'));
+    expect(JSON.parse(localStorage.getItem('logisticsReferrer') as string)).toEqual({ id: 7, name: 'Mendoza' });
+    unmount();
+
+    fetchMock.mockResolvedValueOnce(meResponse({
+      id: 2, first_name: 'Rita', last_name: 'R', math_admin: false, is_volunteer: true, role: 'boxes',
+      referrer: null, local_city: null,
+    }));
+    render(<AuthProvider><CityProbe /></AuthProvider>);
+    await waitFor(() => expect(localStorage.getItem('logisticsReferrer')).toBeNull());
+    expect(screen.getByTestId('referrer')).toHaveTextContent('none');
+    expect(screen.getByTestId('access')).toHaveTextContent('none');
+  });
+
+  it('logout removes the city', async () => {
+    loggedIn();
+    localStorage.setItem('logisticsReferrer', JSON.stringify({ id: 7, name: 'Mendoza' }));
+    fetchMock.mockReturnValue(new Promise(() => {}));
+    render(<AuthProvider><CityProbe /></AuthProvider>);
+    expect(screen.getByTestId('referrer')).toHaveTextContent('7:Mendoza');
+    act(() => {
+      fireEvent.click(screen.getByText('logout'));
+    });
+    expect(localStorage.getItem('logisticsReferrer')).toBeNull();
+    expect(localStorage.getItem('logisticsLocalCity')).toBeNull();
+    await waitFor(() => expect(screen.getByTestId('referrer')).toHaveTextContent('none'));
+  });
+});

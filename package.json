@@ -39,7 +39,8 @@
     "react-qrcode-scanner-mi": "^1.0.6",
     "sharp": "^0.34.2",
     "ts-jest": "^29.1.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

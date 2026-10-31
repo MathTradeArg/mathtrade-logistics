@@ -39,6 +39,15 @@ let candidatesExecute: jest.Mock;
 let createExecute: jest.Mock;
 let deleteExecute: jest.Mock;
 let patchExecute: jest.Mock;
+let locationsExecute: jest.Mock;
+
+const local: EventVolunteer = {
+  id: 9,
+  user: { id: 90, first_name: 'Lucia', last_name: 'Local', email: 'lu@mail.com' },
+  role: null,
+  city: { id: 5, name: 'Mendoza' },
+  added_by: { id: 50, first_name: 'Rita', last_name: 'Referente' },
+};
 
 const renderPage = () => render(
   <ActionStatusProvider>
@@ -55,8 +64,13 @@ describe('VolunteersPage', () => {
     deleteExecute = jest.fn().mockResolvedValue(undefined);
     patchExecute = jest.fn().mockImplementation((body: { role: string | null }) =>
       Promise.resolve({ ...ana, role: body.role }));
+    locationsExecute = jest.fn().mockResolvedValue([
+      { id: 5, name: 'Mendoza', referral: { id: 50 } },
+      { id: 6, name: 'Sin referente', referral: null },
+    ]);
     mockUseApi.mockImplementation((endpoint: string, options?: { method?: string }) => {
       const method = options?.method ?? 'GET';
+      if (endpoint === 'locations/') return { execute: locationsExecute };
       if (endpoint === 'logistics/volunteers/candidates/') return { execute: candidatesExecute };
       if (method === 'POST') return { execute: createExecute };
       if (method === 'DELETE') return { execute: deleteExecute };
@@ -138,5 +152,45 @@ describe('VolunteersPage', () => {
     await waitFor(() => expect(deleteExecute).toHaveBeenCalledWith(undefined, '7/'));
     await waitFor(() => expect(screen.queryByText('Ana Gomez')).not.toBeInTheDocument());
     expect(screen.getByText('Voluntarios (0)')).toBeInTheDocument();
+  });
+
+  it('shows the city column and filters by city', async () => {
+    listExecute.mockResolvedValue([ana, local]);
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+    renderPage();
+
+    expect(await screen.findByText('Lucia Local')).toBeInTheDocument();
+    expect(screen.getByText('Evento · ana@mail.com')).toBeInTheDocument();
+    expect(screen.getByText('Mendoza · lu@mail.com')).toBeInTheDocument();
+    // Local rows have no role select.
+    expect(screen.getByLabelText('Rol de Ana Gomez')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Rol de Lucia Local')).not.toBeInTheDocument();
+
+    const filter = screen.getByLabelText('Filtrar por ciudad');
+    fireEvent.change(filter, { target: { value: '5' } });
+    expect(screen.queryByText('Ana Gomez')).not.toBeInTheDocument();
+    expect(screen.getByText('Lucia Local')).toBeInTheDocument();
+    expect(screen.getByText('Voluntarios (1)')).toBeInTheDocument();
+
+    fireEvent.change(filter, { target: { value: 'event' } });
+    expect(screen.getByText('Ana Gomez')).toBeInTheDocument();
+    expect(screen.queryByText('Lucia Local')).not.toBeInTheDocument();
+  });
+
+  it('adds a local volunteer with the city referrer as added_by', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+    renderPage();
+    await screen.findByText('Ana Gomez');
+
+    const target = screen.getByLabelText('Agregar como');
+    await waitFor(() => expect(within(target).getByRole('option', { name: 'Local de Mendoza' })).toBeInTheDocument());
+    expect(within(target).queryByRole('option', { name: 'Local de Sin referente' })).not.toBeInTheDocument();
+    fireEvent.change(target, { target: { value: '5' } });
+
+    fireEvent.change(screen.getByLabelText('Buscar usuario para agregar como voluntario'), {
+      target: { value: 'juan' },
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Agregar a Juan Perez' }));
+    await waitFor(() => expect(createExecute).toHaveBeenCalledWith({ user_id: 80, added_by_id: 50 }));
   });
 });

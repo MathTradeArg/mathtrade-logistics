@@ -2,7 +2,7 @@ import { ActionStatusProvider } from '@/contexts/ActionStatusContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import * as boxApi from '@/hooks/boxes/boxApi';
 import { useAuth } from '@/hooks/useAuth';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import BoxesOutDestinationPage from '../page';
 
 jest.mock('@/hooks/useAuth');
@@ -102,6 +102,9 @@ describe('BoxesOutDestinationPage', () => {
       '/boxes/out/8/399',
     );
     expect(screen.getByText('Root')).toBeInTheDocument();
+    // The event screens list the hub's boxes only.
+    expect(mockListBoxes).toHaveBeenCalledWith({ destination: 8, origin: 1 });
+    expect(mockListItems).toHaveBeenCalledWith({ destination: 8, origin: undefined });
   });
 
   it('opens a box immediately when none are already open', async () => {
@@ -119,7 +122,7 @@ describe('BoxesOutDestinationPage', () => {
     fireEvent.click(btn);
 
     await waitFor(() => {
-      expect(mockOpenBox).toHaveBeenCalledWith(8, expect.any(String));
+      expect(mockOpenBox).toHaveBeenCalledWith(8, 1, expect.any(String));
     });
     expect(screen.queryByText(/ya hay una caja abierta/i)).not.toBeInTheDocument();
     expect(mockPush).toHaveBeenCalledWith('/boxes/out/8/410');
@@ -151,11 +154,20 @@ describe('BoxesOutDestinationPage', () => {
 
     render(<BoxesOutDestinationPage />, { wrapper });
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Nueva caja' }));
-    fireEvent.click(await screen.findByRole('button', { name: 'Sí, abrir otra' }));
+    // Wait for the initial load to finish (the button is disabled while it
+    // runs), and let each click's async work settle before asserting.
+    const newBox = await screen.findByRole('button', { name: 'Nueva caja' });
+    await waitFor(() => expect(newBox).not.toBeDisabled());
+    await act(async () => {
+      fireEvent.click(newBox);
+    });
+    const confirm = await screen.findByRole('button', { name: 'Sí, abrir otra' });
+    await act(async () => {
+      fireEvent.click(confirm);
+    });
 
     await waitFor(() => {
-      expect(mockOpenBox).toHaveBeenCalledWith(8, expect.any(String));
+      expect(mockOpenBox).toHaveBeenCalledWith(8, 1, expect.any(String));
     });
     expect(mockPush).toHaveBeenCalledWith('/boxes/out/8/410');
   });

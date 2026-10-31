@@ -86,4 +86,21 @@ describe('LoginPage', () => {
       expect(mockContextLogin).toHaveBeenCalledWith(mockLoginResponse.token, mockLoginResponse.user);
     });
   });
+
+  it('passes a referrer payload to login unchanged', async () => {
+    const referrerUser = {
+      id: 2, first_name: 'Rita', last_name: 'R', math_admin: false, is_volunteer: false, role: null,
+      referrer: { id: 7, name: 'Mendoza' }, local_city: null,
+    };
+    mockExecuteLogin.mockResolvedValue({ token: 'ref-token', user: referrerUser });
+
+    render(<LoginPage />);
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: 'r@test.com' } });
+    fireEvent.change(screen.getByLabelText(/contraseña/i), { target: { value: 'pw' } });
+    fireEvent.click(screen.getByRole('button', { name: /entrar/i }));
+
+    await waitFor(() => {
+      expect(mockContextLogin).toHaveBeenCalledWith('ref-token', referrerUser);
+    });
+  });
 });

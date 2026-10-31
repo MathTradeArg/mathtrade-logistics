@@ -3,6 +3,7 @@
 import * as Sentry from "@sentry/nextjs";
 import { ROLES } from '@/config/roles';
 import { useApi } from '@/hooks/useApi';
+import type { CityAccess, CityRef } from '@/types/city';
 import type { VolunteerRole } from '@/types/volunteer';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -24,6 +25,8 @@ interface UserDetails {
   math_admin: boolean;
   is_volunteer?: boolean;
   role?: VolunteerRole | null;
+  referrer?: CityRef | null;
+  local_city?: CityRef | null;
 }
 
 /** GET/PATCH logistics/me/ */
@@ -34,6 +37,8 @@ export interface MeResponse {
   math_admin: boolean;
   is_volunteer: boolean;
   role: VolunteerRole | null;
+  referrer?: CityRef | null;
+  local_city?: CityRef | null;
 }
 
 // localStorage key for the volunteer's role; '' means "not chosen yet". A
@@ -41,6 +46,32 @@ export interface MeResponse {
 const ROLE_KEY = 'logisticsRole';
 const REFRESH_ON_NAV_MS = 10_000;
 const REFRESH_INTERVAL_MS = 30_000;
+
+// JSON {id, name} of the user's referrer city / local-volunteer city.
+const REFERRER_KEY = 'logisticsReferrer';
+const LOCAL_CITY_KEY = 'logisticsLocalCity';
+
+function readStoredCity(key: string): CityRef | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed.id === 'number' && typeof parsed.name === 'string'
+      ? { id: parsed.id, name: parsed.name }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeCity(key: string, city: CityRef | null | undefined) {
+  if (city) localStorage.setItem(key, JSON.stringify({ id: city.id, name: city.name }));
+  else localStorage.removeItem(key);
+}
+
+function sameCity(a: CityRef | null, b: CityRef | null): boolean {
+  return a === b || (!!a && !!b && a.id === b.id && a.name === b.name);
+}
 
 function readStoredRole(): VolunteerRole | null {
   const stored = localStorage.getItem(ROLE_KEY);
@@ -60,6 +91,12 @@ interface AuthContextType {
   roleKnown: boolean;
   /** Set when a refresh finds that someone else changed the role. */
   roleNotice: string | null;
+  /** City the user is referrer of (with a membership in the active edition). */
+  referrer: CityRef | null;
+  /** City the user is a local volunteer of. */
+  localCity: CityRef | null;
+  /** What the user can do for a city: referrer first, else local volunteer. */
+  cityAccess: CityAccess;
   login: (token: string, userDetails: UserDetails) => void;
   logout: () => void;
   toggleDarkMode: () => void;
@@ -82,6 +119,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<VolunteerRole | null>(null);
   const [roleKnown, setRoleKnown] = useState(false);
   const [roleNotice, setRoleNotice] = useState<string | null>(null);
+  const [referrer, setReferrer] = useState<CityRef | null>(null);
+  const [localCity, setLocalCity] = useState<CityRef | null>(null);
   const roleRef = useRef<VolunteerRole | null>(null);
   const lastRefresh = useRef(0);
   const refreshInFlight = useRef(false);
@@ -134,6 +173,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       roleRef.current = storedRole;
       setRole(storedRole);
       setRoleKnown(localStorage.getItem(ROLE_KEY) !== null);
+      setReferrer(readStoredCity(REFERRER_KEY));
+      setLocalCity(readStoredCity(LOCAL_CITY_KEY));
     } else {
       setIsAuthenticated(false);
       setUserName(null);
@@ -142,6 +183,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       roleRef.current = null;
       setRole(null);
       setRoleKnown(false);
+      setReferrer(null);
+      setLocalCity(null);
       if (pathname !== '/login') {
         router.push('/login');
       }
@@ -174,6 +217,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('isAdmin', userIsAdmin.toString());
     const userRole = userDetails.role ?? null;
     localStorage.setItem(ROLE_KEY, userRole ?? '');
+    const userReferrer = userDetails.referrer ?? null;
+    const userLocalCity = userDetails.local_city ?? null;
+    storeCity(REFERRER_KEY, userReferrer);
+    storeCity(LOCAL_CITY_KEY, userLocalCity);
     if (userDetails.username) {
       localStorage.setItem('userUsername', userDetails.username);
     }
@@ -188,6 +235,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRole(userRole);
     setRoleKnown(true);
     setRoleNotice(null);
+    setReferrer(userReferrer);
+    setLocalCity(userLocalCity);
     // The login response already carries the role: no need to ask /me right away.
     lastRefresh.current = Date.now();
     router.push('/');
@@ -200,6 +249,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('isAdmin');
     localStorage.removeItem('userUsername');
     localStorage.removeItem(ROLE_KEY);
+    localStorage.removeItem(REFERRER_KEY);
+    localStorage.removeItem(LOCAL_CITY_KEY);
     Sentry.setUser(null);
     setIsAuthenticated(false);
     setUserName(null);
@@ -209,6 +260,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRole(null);
     setRoleKnown(false);
     setRoleNotice(null);
+    setReferrer(null);
+    setLocalCity(null);
     router.push('/login');
   }, [router]);
 
@@ -242,6 +295,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       localStorage.setItem(ROLE_KEY, next ?? '');
       setRoleKnown(true);
+      const nextReferrer = me.referrer ?? null;
+      const nextLocal = me.local_city ?? null;
+      storeCity(REFERRER_KEY, nextReferrer);
+      storeCity(LOCAL_CITY_KEY, nextLocal);
+      // Keep the same object when nothing changed, so consumers don't re-render.
+      setReferrer((prev) => (sameCity(prev, nextReferrer) ? prev : nextReferrer));
+      setLocalCity((prev) => (sameCity(prev, nextLocal) ? prev : nextLocal));
     } catch (err) {
       // Only an auth answer logs out; network errors and 5xx keep the session.
       const status = (err as { status?: number } | null)?.status;
@@ -275,6 +335,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [isAuthenticated, refreshMe]);
 
+  const cityAccess = useMemo<CityAccess>(() => {
+    if (referrer) return { kind: 'referrer', city: referrer };
+    if (localCity) return { kind: 'local', city: localCity };
+    return null;
+  }, [referrer, localCity]);
+
   // Memoized so useApi's own loading state in refreshMe doesn't re-render every consumer.
   const value = useMemo(() => ({
     isAuthenticated,
@@ -286,6 +352,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     role,
     roleKnown,
     roleNotice,
+    referrer,
+    localCity,
+    cityAccess,
     login,
     logout,
     toggleDarkMode,
@@ -294,6 +363,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     refreshMe,
   }), [
     isAuthenticated, userName, userId, isAdmin, isLoading, isDarkMode, role, roleKnown, roleNotice,
+    referrer, localCity, cityAccess,
     login, logout, toggleDarkMode, clearRoleNotice, applyRole, refreshMe,
   ]);
 

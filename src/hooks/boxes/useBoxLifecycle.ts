@@ -64,12 +64,12 @@ export function useBoxLifecycle() {
     }
   }, [clearMessages, setError]);
 
-  const openBox = useCallback(async (destinationId: number): Promise<Box | null> => {
+  const openBox = useCallback(async (destinationId: number, originId: number): Promise<Box | null> => {
     return runExclusive(async () => {
       if (!openKeyRef.current) {
         openKeyRef.current = newIdempotencyKey();
       }
-      const box = await openBoxApi(destinationId, openKeyRef.current);
+      const box = await openBoxApi(destinationId, originId, openKeyRef.current);
       openKeyRef.current = null;
       setSuccess('Caja abierta.');
       return box;

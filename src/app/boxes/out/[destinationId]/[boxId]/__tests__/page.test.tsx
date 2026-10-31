@@ -76,6 +76,12 @@ describe('OutgoingBoxPage delete empty', () => {
     mockListItems.mockResolvedValue([]);
   });
 
+  it('lists the hub open boxes of the destination', async () => {
+    render(<OutgoingBoxPage />, { wrapper });
+    await screen.findByRole('button', { name: 'Borrar caja vacía' });
+    expect(mockListBoxes).toHaveBeenCalledWith({ destination: 2, origin: 1, status: 'open' });
+  });
+
   it('warns with added games and refreshes the box after OK', async () => {
     mockDeleteBox.mockResolvedValue({ status: 'has_items', titles: ['Catan', 'Azul'] });
 

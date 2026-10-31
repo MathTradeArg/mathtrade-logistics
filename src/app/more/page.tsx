@@ -11,7 +11,7 @@ import { useState } from 'react';
 const rowClass = 'staff-card flex min-h-14 w-full items-center px-4 text-left font-medium text-gray-900';
 
 export default function MorePage() {
-  const { isAuthenticated, isAdmin, isLoading: authIsLoading, role } = useAuth();
+  const { isAuthenticated, isAdmin, isLoading: authIsLoading, role, cityAccess } = useAuth();
   const { eventPhase, isLoadingEventPhase, updateEventPhase } = useEventPhase();
   const [isUpdatingPhase, setIsUpdatingPhase] = useState(false);
 
@@ -27,9 +27,55 @@ export default function MorePage() {
     return <div className="flex min-h-[50dvh] items-center justify-center"><LoadingSpinner message="Cargando..." /></div>;
   }
 
+  // A referrer / local volunteer without an event role: the staff rows call
+  // staff-only endpoints, so they only get their city.
+  if (!isAdmin && !role && cityAccess) {
+    return (
+      <StaffPage>
+        <h2 className="text-sm font-semibold text-gray-500">{cityAccess.city.name}</h2>
+        <ul className="mt-3 flex flex-col gap-3">
+          <li>
+            <GameRow title="Mi ciudad" href="/city" />
+          </li>
+          <li>
+            <GameRow title="Instructivo" href="/city/instructivo" />
+          </li>
+          <li>
+            <GameRow title="Usuarios" href="/city/users" />
+          </li>
+          {cityAccess.kind === 'referrer' && (
+            <li>
+              <GameRow title="Voluntarios" href="/city/volunteers" />
+            </li>
+          )}
+        </ul>
+      </StaffPage>
+    );
+  }
+
   return (
     <StaffPage>
       <ul className="flex flex-col gap-3">
+        {cityAccess && (
+          <li>
+            <GameRow title={`Mi ciudad: ${cityAccess.city.name}`} href="/city" />
+          </li>
+        )}
+        {isAdmin && !cityAccess && (
+          <li>
+            <GameRow title="Ver una ciudad" href="/city" />
+          </li>
+        )}
+        {cityAccess && (
+          <li>
+            <GameRow title={`Usuarios de ${cityAccess.city.name}`} href="/city/users" />
+          </li>
+        )}
+        {cityAccess?.kind === 'referrer' && (
+          <li>
+            <GameRow title={`Voluntarios de ${cityAccess.city.name}`} href="/city/volunteers" />
+          </li>
+        )}
         {!isAdmin && role && (
           <li>
             <GameRow title={`Mi rol: ${ROLES[role].label}`} href="/more/role" />

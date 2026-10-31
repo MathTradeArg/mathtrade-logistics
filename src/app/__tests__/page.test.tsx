@@ -81,6 +81,17 @@ describe('HomePage', () => {
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
+  it('sends a pure referrer to /city in any phase', async () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true, isLoading: false, isAdmin: false, role: null,
+      cityAccess: { kind: 'referrer', city: { id: 7, name: 'Mendoza' } },
+    });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 0, isLoadingEventPhase: false });
+    render(<HomePage />);
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/city'));
+  });
+
   it('leaves a volunteer without a role to the guard (spinner, no redirect)', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, isAdmin: false, role: null });
     mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });

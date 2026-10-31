@@ -6,6 +6,8 @@ export interface Box {
   created_by_last_name: string | null;
   id: number;
   number: number | null;
+  origin_number?: number | null;
+  tracking?: string | null;
   destiny: number;
   origin: number;
   math_items: Item[];

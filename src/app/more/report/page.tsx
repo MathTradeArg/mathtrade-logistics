@@ -8,6 +8,7 @@ import { StaffPage } from '@/components/staff';
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
 import { generateHashedFilename } from '@/utils/file';
+import { fileToBase64 } from '@/utils/file';
 import { compressImage } from '@/utils/imageCompressor';
 import { triggerHaptic } from '@/utils/haptics';
 import { ChangeEvent, FormEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -19,16 +20,6 @@ const normalizeSearchString = (str: string): string => {
   return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 };
 
-const fileToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      if (typeof reader.result === 'string') resolve(reader.result);
-      else reject(new Error('Error al leer el archivo de imagen.'));
-    };
-    reader.onerror = (error) => reject(error);
-  });
 
 interface Item {
   item_id: number;
