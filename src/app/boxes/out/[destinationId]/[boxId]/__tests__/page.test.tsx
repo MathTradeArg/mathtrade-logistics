@@ -106,4 +106,25 @@ describe('OutgoingBoxPage delete empty', () => {
     expect(screen.queryByRole('button', { name: 'Borrar caja vacía' })).not.toBeInTheDocument();
     expect(mockGetBox).toHaveBeenCalledTimes(2);
   });
+
+  it('filters available games by search query when adding to a box', async () => {
+    mockListItems.mockResolvedValue([
+      { id: 21, title: 'Terraforming Mars', assigned_trade_code: 301, status: 5, location: 2, receptor_first_name: 'Ana' },
+      { id: 22, title: 'Wingspan', assigned_trade_code: 302, status: 5, location: 2, receptor_first_name: 'Beto' },
+    ]);
+
+    render(<OutgoingBoxPage />, { wrapper });
+
+    const addBtn = await screen.findByRole('button', { name: 'Agregar juegos' });
+    fireEvent.click(addBtn);
+
+    expect(await screen.findByText(/Terraforming Mars/)).toBeInTheDocument();
+    expect(screen.getByText(/Wingspan/)).toBeInTheDocument();
+
+    const searchInput = screen.getByRole('searchbox', { name: 'Buscar juego para agregar' });
+    fireEvent.change(searchInput, { target: { value: '302' } });
+
+    expect(screen.queryByText(/Terraforming Mars/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Wingspan/)).toBeInTheDocument();
+  });
 });

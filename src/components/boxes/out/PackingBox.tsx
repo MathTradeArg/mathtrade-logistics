@@ -1,12 +1,12 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, PhaseBlocked, StaffDialog, StaffEmpty, StaffError, StaffPage, ThumbCta } from '@/components/staff';
+import { GameRow, PhaseBlocked, StaffDialog, StaffEmpty, StaffError, StaffPage, StaffSearch, ThumbCta } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { getBox, listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
-import { apiDestinationId, boxDestinationLabel, boxedTradeIds, boxContentsSummary, boxMatchesLane, isBoxOpen, isPackable, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
+import { apiDestinationId, boxDestinationLabel, boxedTradeIds, boxContentsSummary, boxMatchesLane, isBoxOpen, isPackable, matchesSearch, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, receptorName, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box, Item } from '@/types';
@@ -46,6 +46,7 @@ export default function PackingBox({
   const [openBoxes, setOpenBoxes] = useState<Box[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [mode, setMode] = useState<Mode>('view');
+  const [addQuery, setAddQuery] = useState('');
   const [selectedAdds, setSelectedAdds] = useState<Set<number>>(new Set());
   const [movingTradeId, setMovingTradeId] = useState<number | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Item | null>(null);
@@ -112,6 +113,21 @@ export default function PackingBox({
         !boxed.has(item.id),
     );
   }, [box, items, openBoxes, phaseGated, origin, effectiveLaneId]);
+
+  const filteredAvailableItems = useMemo(() => {
+    if (!addQuery.trim()) return availableItems;
+    return availableItems.filter((item) =>
+      matchesSearch(
+        [
+          item.title,
+          String(item.assigned_trade_code),
+          receptorName(item),
+          item.location_name ?? '',
+        ].join(' '),
+        addQuery,
+      ),
+    );
+  }, [availableItems, addQuery]);
 
   const boxDestLabel = box
     ? effectiveLaneId === VIA_AMBA_DESTINATION_ID
@@ -276,7 +292,10 @@ export default function PackingBox({
             <button
               type="button"
               disabled={inFlight || availableItems.length === 0}
-              onClick={() => setMode('add')}
+              onClick={() => {
+                setAddQuery('');
+                setMode('add');
+              }}
               className="staff-btn staff-btn-outline mt-6"
             >
               Agregar juegos
@@ -300,16 +319,31 @@ export default function PackingBox({
         <>
           <button
             type="button"
-            onClick={() => setMode('view')}
+            onClick={() => {
+              setAddQuery('');
+              setMode('view');
+            }}
             className="mb-4 min-h-14 text-base font-semibold text-gray-600"
           >
             Volver a la caja
           </button>
-          {availableItems.length === 0 ? (
-            <StaffEmpty>No hay juegos listos fuera de caja para este destino.</StaffEmpty>
+          <div className="mb-4">
+            <StaffSearch
+              value={addQuery}
+              onChange={(event) => setAddQuery(event.target.value)}
+              placeholder="Buscar juego, código o receptor"
+              aria-label="Buscar juego para agregar"
+            />
+          </div>
+          {filteredAvailableItems.length === 0 ? (
+            <StaffEmpty>
+              {availableItems.length === 0
+                ? 'No hay juegos listos fuera de caja para este destino.'
+                : 'No hay juegos que coincidan con la búsqueda.'}
+            </StaffEmpty>
           ) : (
             <ul className="flex flex-col gap-3">
-              {availableItems.map((item) => {
+              {filteredAvailableItems.map((item) => {
                 const checked = selectedAdds.has(item.id);
                 return (
                   <li key={item.id}>
