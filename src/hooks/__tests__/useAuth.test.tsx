@@ -12,10 +12,11 @@ jest.mock('next/navigation', () => ({
 jest.mock('@sentry/nextjs', () => ({ setUser: jest.fn() }));
 
 function Probe() {
-  const { role, roleNotice, isAdmin, isAuthenticated, applyRole } = useAuth();
+  const { role, roleKnown, roleNotice, isAdmin, isAuthenticated, applyRole } = useAuth();
   return (
     <div>
       <p data-testid="role">{role ?? 'none'}</p>
+      <p data-testid="known">{String(roleKnown)}</p>
       <p data-testid="notice">{roleNotice ?? ''}</p>
       <p data-testid="admin">{String(isAdmin)}</p>
       <p data-testid="auth">{String(isAuthenticated)}</p>
@@ -73,6 +74,36 @@ describe('useAuth refreshMe', () => {
     await waitFor(() => expect(localStorage.getItem('logisticsRole')).toBe(''));
     expect(screen.getByTestId('role')).toHaveTextContent('none');
     expect(screen.getByTestId('notice')).toBeEmptyDOMElement();
+  });
+
+  it('treats a missing role key as unknown until /me answers', async () => {
+    let answer: (value: unknown) => void = () => {};
+    fetchMock.mockReturnValue(new Promise((resolve) => { answer = resolve; }));
+    render(<AuthProvider><Probe /></AuthProvider>);
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId('known')).toHaveTextContent('false');
+
+    await act(async () => { answer(me('boxes')); });
+    expect(screen.getByTestId('known')).toHaveTextContent('true');
+    expect(screen.getByTestId('role')).toHaveTextContent('boxes');
+    // First time we learn it: not "an admin changed it".
+    expect(screen.getByTestId('notice')).toBeEmptyDOMElement();
+    expect(localStorage.getItem('logisticsRole')).toBe('boxes');
+  });
+
+  it('stores an explicit null role as known', async () => {
+    fetchMock.mockResolvedValue(me(null));
+    render(<AuthProvider><Probe /></AuthProvider>);
+    await waitFor(() => expect(screen.getByTestId('known')).toHaveTextContent('true'));
+    expect(screen.getByTestId('role')).toHaveTextContent('none');
+    expect(localStorage.getItem('logisticsRole')).toBe('');
+  });
+
+  it('knows a stored role (even an empty one) right away', () => {
+    localStorage.setItem('logisticsRole', '');
+    fetchMock.mockReturnValue(new Promise(() => {}));
+    render(<AuthProvider><Probe /></AuthProvider>);
+    expect(screen.getByTestId('known')).toHaveTextContent('true');
   });
 
   it('updates isAdmin from /me', async () => {

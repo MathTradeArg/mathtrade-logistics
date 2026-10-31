@@ -1,4 +1,4 @@
-import { getBottomNavSlots, isSlotActive } from '../nav';
+import { getBottomNavSlots, getPageTitle, isSlotActive, shouldShowBack } from '../nav';
 import type { VolunteerRole } from '@/types/volunteer';
 
 const labels = (phase: number, role: VolunteerRole | null, isAdmin = false) =>
@@ -48,5 +48,13 @@ describe('isSlotActive on /lookup', () => {
     const lookup = slots.find((s) => s.id === 'lookup')!;
     expect(isSlotActive('/lookup', lookup, 1, slots)).toBe(true);
     expect(isSlotActive('/lookup', more, 1, slots)).toBe(false);
+  });
+});
+
+describe('Mi rol page chrome', () => {
+  it('is titled "Mi rol" with a back button', () => {
+    expect(getPageTitle('/more/role')).toBe('Mi rol');
+    expect(getPageTitle('/more/reports')).toBe('Reportes');
+    expect(shouldShowBack('/more/role')).toBe(true);
   });
 });

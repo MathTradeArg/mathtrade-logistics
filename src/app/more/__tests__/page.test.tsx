@@ -28,6 +28,13 @@ describe('MorePage', () => {
     expect(screen.queryByRole('link', { name: 'Usuarios' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Voluntarios' })).not.toBeInTheDocument();
     expect(screen.queryByText('Fase del evento')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Mi rol/)).not.toBeInTheDocument();
+  });
+
+  it('shows "Mi rol" to a volunteer with a role', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: false, isLoading: false, role: 'boxes' });
+    render(<MorePage />);
+    expect(screen.getByRole('link', { name: 'Mi rol: Cajas' })).toHaveAttribute('href', '/more/role');
   });
 
   it('shows admin links for math_admin', () => {
@@ -39,5 +46,6 @@ describe('MorePage', () => {
     expect(screen.getByRole('link', { name: 'Ventanillas' })).toHaveAttribute('href', '/admin/window-config');
     expect(screen.getByRole('link', { name: 'Voluntarios' })).toHaveAttribute('href', '/admin/volunteers');
     expect(screen.getByRole('button', { name: 'Tele' })).toBeInTheDocument();
+    expect(screen.queryByText(/Mi rol/)).not.toBeInTheDocument();
   });
 });

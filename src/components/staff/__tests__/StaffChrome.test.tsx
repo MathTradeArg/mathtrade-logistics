@@ -29,6 +29,7 @@ const auth = (overrides: Record<string, unknown>) => ({
   userName: 'Ana',
   isAdmin: false,
   role: null,
+  roleKnown: true,
   roleNotice: null,
   clearRoleNotice: jest.fn(),
   ...overrides,
@@ -55,6 +56,18 @@ describe('StaffChrome role guard', () => {
     mockUseAuth.mockReturnValue(auth({ role: null }));
     mockUsePathname.mockReturnValue('/select-role');
     render(<StaffChrome><p>page</p></StaffChrome>);
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('does not redirect while the role is not known yet (session from before roles)', () => {
+    mockUseAuth.mockReturnValue(auth({ role: null, roleKnown: false }));
+    mockUsePathname.mockReturnValue('/boxes/in');
+    const { rerender } = render(<StaffChrome><p>page</p></StaffChrome>);
+    expect(mockReplace).not.toHaveBeenCalled();
+
+    // /me answered: the volunteer had a role, and this page is theirs.
+    mockUseAuth.mockReturnValue(auth({ role: 'boxes', roleKnown: true }));
+    rerender(<StaffChrome><p>page</p></StaffChrome>);
     expect(mockReplace).not.toHaveBeenCalled();
   });
 

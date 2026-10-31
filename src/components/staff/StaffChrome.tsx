@@ -17,7 +17,7 @@ import { ReactNode, useEffect } from 'react';
 function useRoleGuard() {
   const pathname = usePathname() ?? '';
   const router = useRouter();
-  const { isAuthenticated, isLoading, isAdmin, role, roleNotice, clearRoleNotice } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin, role, roleKnown, roleNotice, clearRoleNotice } = useAuth();
   const { eventPhase, isLoadingEventPhase } = useEventPhase();
   const { setSuccess } = useActionStatus();
 
@@ -30,6 +30,8 @@ function useRoleGuard() {
 
   useEffect(() => {
     if (isLoading || !isAuthenticated || isAdmin || isLoadingEventPhase || isBarePath(pathname)) return;
+    // A session from before roles existed: wait for refreshMe (runs on mount) to say.
+    if (!roleKnown) return;
     if (role === null) {
       if (pathname !== '/select-role') router.replace('/select-role');
       return;
@@ -37,7 +39,7 @@ function useRoleGuard() {
     if (pathname === '/select-role' || !isPathAllowed(pathname, role, false)) {
       router.replace(roleHome(role, eventPhase));
     }
-  }, [pathname, role, isAdmin, isAuthenticated, isLoading, eventPhase, isLoadingEventPhase, router]);
+  }, [pathname, role, roleKnown, isAdmin, isAuthenticated, isLoading, eventPhase, isLoadingEventPhase, router]);
 }
 
 function StaffChromeInner({ children }: { children: ReactNode }) {

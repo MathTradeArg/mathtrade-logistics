@@ -36,7 +36,8 @@ export interface MeResponse {
   role: VolunteerRole | null;
 }
 
-// localStorage key for the volunteer's role; '' means "not chosen yet".
+// localStorage key for the volunteer's role; '' means "not chosen yet". A
+// missing key (a session from before roles existed) means "not known yet".
 const ROLE_KEY = 'logisticsRole';
 const REFRESH_ON_NAV_MS = 10_000;
 const REFRESH_INTERVAL_MS = 30_000;
@@ -55,6 +56,8 @@ interface AuthContextType {
   isDarkMode: boolean;
   /** The volunteer's role in the active edition (null: not chosen yet, or admin). */
   role: VolunteerRole | null;
+  /** False while `role` is only a guess: nothing stored yet and /me hasn't answered. */
+  roleKnown: boolean;
   /** Set when a refresh finds that someone else changed the role. */
   roleNotice: string | null;
   login: (token: string, userDetails: UserDetails) => void;
@@ -77,6 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAdmin, setisAdmin] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   const [role, setRole] = useState<VolunteerRole | null>(null);
+  const [roleKnown, setRoleKnown] = useState(false);
   const [roleNotice, setRoleNotice] = useState<string | null>(null);
   const roleRef = useRef<VolunteerRole | null>(null);
   const lastRefresh = useRef(0);
@@ -129,6 +133,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const storedRole = readStoredRole();
       roleRef.current = storedRole;
       setRole(storedRole);
+      setRoleKnown(localStorage.getItem(ROLE_KEY) !== null);
     } else {
       setIsAuthenticated(false);
       setUserName(null);
@@ -136,6 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setisAdmin(false);
       roleRef.current = null;
       setRole(null);
+      setRoleKnown(false);
       if (pathname !== '/login') {
         router.push('/login');
       }
@@ -180,6 +186,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUserId(idStr);
     roleRef.current = userRole;
     setRole(userRole);
+    setRoleKnown(true);
     setRoleNotice(null);
     // The login response already carries the role: no need to ask /me right away.
     lastRefresh.current = Date.now();
@@ -200,6 +207,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setisAdmin(false);
     roleRef.current = null;
     setRole(null);
+    setRoleKnown(false);
     setRoleNotice(null);
     router.push('/login');
   }, [router]);
@@ -209,6 +217,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const applyRole = useCallback((next: VolunteerRole | null) => {
     roleRef.current = next;
     setRole(next);
+    setRoleKnown(true);
     localStorage.setItem(ROLE_KEY, next ?? '');
   }, []);
 
@@ -230,8 +239,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         roleRef.current = next;
         setRole(next);
-        localStorage.setItem(ROLE_KEY, next ?? '');
       }
+      localStorage.setItem(ROLE_KEY, next ?? '');
+      setRoleKnown(true);
     } catch (err) {
       // Only an auth answer logs out; network errors and 5xx keep the session.
       const status = (err as { status?: number } | null)?.status;
@@ -274,6 +284,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoading,
     isDarkMode,
     role,
+    roleKnown,
     roleNotice,
     login,
     logout,
@@ -282,7 +293,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     applyRole,
     refreshMe,
   }), [
-    isAuthenticated, userName, userId, isAdmin, isLoading, isDarkMode, role, roleNotice,
+    isAuthenticated, userName, userId, isAdmin, isLoading, isDarkMode, role, roleKnown, roleNotice,
     login, logout, toggleDarkMode, clearRoleNotice, applyRole, refreshMe,
   ]);
 
