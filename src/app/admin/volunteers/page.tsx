@@ -5,15 +5,10 @@ import { GameRow, StaffDialog, StaffEmpty, StaffPage, StaffSearch } from '@/comp
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
+import { ROLE_ORDER, ROLES } from '@/config/roles';
 import type { EventVolunteer, VolunteerCandidate, VolunteerRole, VolunteerUser } from '@/types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-
-const ROLE_LABELS: Record<VolunteerRole, string> = {
-  window: 'Ventanilla',
-  boxes: 'Cajas',
-  runner: 'Runner',
-};
 
 const fullName = (user: VolunteerUser) => `${user.first_name} ${user.last_name}`.trim() || user.email;
 
@@ -44,11 +39,13 @@ export default function VolunteersPage() {
   const [addingId, setAddingId] = useState<number | null>(null);
   const [toRemove, setToRemove] = useState<EventVolunteer | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [updatingRoleId, setUpdatingRoleId] = useState<number | null>(null);
 
   const { execute: fetchVolunteers } = useApi<EventVolunteer[]>('logistics/volunteers/');
   const { execute: fetchCandidates } = useApi<VolunteerCandidate[]>('logistics/volunteers/candidates/');
   const { execute: createVolunteer } = useApi<EventVolunteer>('logistics/volunteers/', { method: 'POST' });
   const { execute: deleteVolunteer } = useApi<void>('logistics/volunteers/', { method: 'DELETE' });
+  const { execute: patchVolunteer } = useApi<EventVolunteer>('logistics/volunteers/', { method: 'PATCH' });
 
   useEffect(() => {
     if (!authIsLoading && (isAuthenticated === false || isAdmin === false)) {
@@ -116,6 +113,20 @@ export default function VolunteersPage() {
       setError(errorMessage(err, 'No se pudo agregar el voluntario.'));
     } finally {
       setAddingId(null);
+    }
+  };
+
+  const handleRoleChange = async (volunteer: EventVolunteer, value: string) => {
+    setUpdatingRoleId(volunteer.id);
+    try {
+      const updated = await patchVolunteer({ role: value || null }, `${volunteer.id}/`);
+      const role = updated ? updated.role : ((value || null) as VolunteerRole | null);
+      setVolunteers((prev) => prev.map((v) => (v.id === volunteer.id ? { ...v, role } : v)));
+      setSuccess('Rol actualizado. Se aplica en su app en menos de un minuto.');
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudo cambiar el rol.'));
+    } finally {
+      setUpdatingRoleId(null);
     }
   };
 
@@ -203,13 +214,20 @@ export default function VolunteersPage() {
                   subtitle={volunteer.user.email}
                   trailing={
                     <div className="flex shrink-0 items-center gap-2">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      <select
+                        value={volunteer.role ?? ''}
+                        onChange={(event) => handleRoleChange(volunteer, event.target.value)}
+                        disabled={updatingRoleId === volunteer.id}
+                        className={`min-h-10 rounded-full border-0 px-3 text-xs font-semibold ${
                           volunteer.role ? 'bg-primary/15 text-primary' : 'bg-gray-100 text-gray-500'
                         }`}
+                        aria-label={`Rol de ${fullName(volunteer.user)}`}
                       >
-                        {volunteer.role ? ROLE_LABELS[volunteer.role] : 'Sin rol'}
-                      </span>
+                        <option value="">Sin rol</option>
+                        {ROLE_ORDER.map((id) => (
+                          <option key={id} value={id}>{ROLES[id].label}</option>
+                        ))}
+                      </select>
                       <button
                         type="button"
                         onClick={() => setToRemove(volunteer)}

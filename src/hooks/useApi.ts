@@ -64,6 +64,7 @@ export const useApi = <T>(endpoint: string, options: UseApiOptions = { method: '
         const errorData = await response.json().catch(() => ({ detail: `Request failed with status ${response.status}` }));
         const error = new Error(errorData.message || errorData.detail || `Error: ${response.statusText}`);
         (error as any).body = errorData;
+        (error as any).status = response.status;
         throw error;
       }
 

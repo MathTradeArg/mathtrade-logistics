@@ -38,6 +38,7 @@ let listExecute: jest.Mock;
 let candidatesExecute: jest.Mock;
 let createExecute: jest.Mock;
 let deleteExecute: jest.Mock;
+let patchExecute: jest.Mock;
 
 const renderPage = () => render(
   <ActionStatusProvider>
@@ -52,11 +53,14 @@ describe('VolunteersPage', () => {
     candidatesExecute = jest.fn().mockResolvedValue(candidates);
     createExecute = jest.fn().mockResolvedValue(juan);
     deleteExecute = jest.fn().mockResolvedValue(undefined);
+    patchExecute = jest.fn().mockImplementation((body: { role: string | null }) =>
+      Promise.resolve({ ...ana, role: body.role }));
     mockUseApi.mockImplementation((endpoint: string, options?: { method?: string }) => {
       const method = options?.method ?? 'GET';
       if (endpoint === 'logistics/volunteers/candidates/') return { execute: candidatesExecute };
       if (method === 'POST') return { execute: createExecute };
       if (method === 'DELETE') return { execute: deleteExecute };
+      if (method === 'PATCH') return { execute: patchExecute };
       return { execute: listExecute };
     });
   });
@@ -76,7 +80,7 @@ describe('VolunteersPage', () => {
 
     expect(await screen.findByText('Ana Gomez')).toBeInTheDocument();
     expect(screen.getByText('Voluntarios (1)')).toBeInTheDocument();
-    expect(screen.getByText('Cajas')).toBeInTheDocument();
+    expect(screen.getByLabelText('Rol de Ana Gomez')).toHaveValue('boxes');
     expect(mockPush).not.toHaveBeenCalled();
 
     const search = screen.getByLabelText('Buscar usuario para agregar como voluntario');
@@ -102,8 +106,22 @@ describe('VolunteersPage', () => {
 
     await waitFor(() => expect(createExecute).toHaveBeenCalledWith({ user_id: 80 }));
     expect(await screen.findByText('Voluntarios (2)')).toBeInTheDocument();
-    expect(screen.getByText('Sin rol')).toBeInTheDocument();
+    expect(screen.getByLabelText('Rol de Juan Perez')).toHaveValue('');
     expect(screen.getByLabelText('Buscar usuario para agregar como voluntario')).toHaveValue('');
+  });
+
+  it('changes a role with PATCH {role} and clears it with null', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+    renderPage();
+    const select = await screen.findByLabelText('Rol de Ana Gomez');
+
+    fireEvent.change(select, { target: { value: 'runner' } });
+    await waitFor(() => expect(patchExecute).toHaveBeenCalledWith({ role: 'runner' }, '7/'));
+    await waitFor(() => expect(screen.getByLabelText('Rol de Ana Gomez')).toHaveValue('runner'));
+
+    fireEvent.change(screen.getByLabelText('Rol de Ana Gomez'), { target: { value: '' } });
+    await waitFor(() => expect(patchExecute).toHaveBeenLastCalledWith({ role: null }, '7/'));
+    await waitFor(() => expect(screen.getByLabelText('Rol de Ana Gomez')).toHaveValue(''));
   });
 
   it('removes a volunteer after confirming the dialog', async () => {
