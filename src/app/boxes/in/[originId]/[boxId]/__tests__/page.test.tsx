@@ -98,7 +98,7 @@ describe('IncomingBoxPage', () => {
     ]);
   });
 
-  it('lets volunteers inspect a transit box and rearmar it without marking received', async () => {
+  it('lets volunteers open a single-locality onward box and mark games received', async () => {
     mockGetBox.mockResolvedValue({
       id: 400,
       number: 16,
@@ -108,71 +108,55 @@ describe('IncomingBoxPage', () => {
       destination_name: 'Córdoba',
       closed_at: '2026-09-01T10:00:00Z',
       math_items: [
-        { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4 },
+        { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, location: 3, location_name: 'Córdoba' },
       ],
     });
 
     render(<IncomingBoxPage />, { wrapper });
 
-    expect(await screen.findByText(/Wingspan/)).toBeInTheDocument();
-    expect(screen.getByText(/sigue de largo/i)).toBeInTheDocument();
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Marcar recibidos/ })).not.toBeInTheDocument();
+    const row = await screen.findByRole('checkbox', { name: /Wingspan/ });
+    expect(row).toHaveTextContent('Sigue a Córdoba');
+    expect(screen.getByText(/Todos los juegos declarados van a Córdoba/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Rearmar caja' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Rearmar' }));
+    fireEvent.click(row);
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar recibidos (1)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar (1)' }));
 
-    await screen.findByText(/Wingspan/);
-    expect(boxApi.reopenBox).toHaveBeenCalledWith(400);
+    await waitFor(() => {
+      expect(boxApi.markItemsReceived).toHaveBeenCalledWith([20040], '1');
+    });
   });
 
-  it('offers games from other same-lane boxes so adding them pulls them over', async () => {
+  it('flags mixed-locality onward boxes and lets volunteers receive their games to separate by destination', async () => {
     mockGetBox.mockResolvedValue({
-      id: 400,
-      number: 16,
+      id: 401,
+      number: 17,
       origin: 8,
       origin_name: 'Salta',
-      destiny: 3,
-      destination_name: 'Córdoba',
-      closed_at: null,
+      destiny: 1,
+      destination_name: 'AMBA',
+      closed_at: '2026-09-01T10:00:00Z',
       math_items: [
-        { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, origin_location: 8, location: 3 },
+        { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, via_meeting: true, location: 3, location_name: 'Córdoba' },
+        { id: 10, item_id: 91, title: 'Azul', assigned_trade_code: 20041, status: 4, via_meeting: true, location: 4, location_name: 'Catamarca' },
       ],
     });
-    mockListBoxes.mockResolvedValue([
-      {
-        id: 400,
-        origin: 8,
-        destiny: 3,
-        closed_at: null,
-        math_items: [{ id: 9, title: 'Wingspan', assigned_trade_code: 20040, status: 4 }],
-      },
-      {
-        id: 401,
-        origin: 8,
-        destiny: 3,
-        number: 7,
-        closed_at: '2026-09-01T10:00:00Z',
-        math_items: [{ id: 99, title: 'Catan', assigned_trade_code: 20041, status: 4 }],
-      },
-    ]);
-    mockListItems.mockResolvedValue([
-      { id: 9, title: 'Wingspan', assigned_trade_code: 20040, status: 4, origin_location: 8, location: 3, box_number: null },
-      { id: 99, title: 'Catan', assigned_trade_code: 20041, status: 4, origin_location: 8, location: 3, box_number: 7 },
-      { id: 88, title: 'Azul', assigned_trade_code: 20042, status: 4, origin_location: 8, location: 3, box_number: null },
-      { id: 77, title: 'Root', assigned_trade_code: 20043, status: 5, origin_location: 1, location: 3, box_number: null },
-    ]);
 
     render(<IncomingBoxPage />, { wrapper });
 
-    const addButton = await screen.findByRole('button', { name: 'Agregar juegos' });
-    await waitFor(() => expect(addButton).toBeEnabled());
-    fireEvent.click(addButton);
+    expect(await screen.findByText(/Localidades mezcladas \(Catamarca, Córdoba\): hay que abrir esta caja/i)).toBeInTheDocument();
+    const wingspan = screen.getByRole('checkbox', { name: /Wingspan/ });
+    const azul = screen.getByRole('checkbox', { name: /Azul/ });
+    expect(wingspan).toHaveTextContent('Sigue a Córdoba');
+    expect(azul).toHaveTextContent('Sigue a Catamarca');
 
-    expect(await screen.findByText(/Azul/)).toBeInTheDocument();
-    expect(screen.getByText(/Catan/)).toBeInTheDocument();
-    expect(screen.getByText(/Caja #7/)).toBeInTheDocument();
-    expect(screen.queryByText(/Wingspan/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Root/)).not.toBeInTheDocument();
+    fireEvent.click(wingspan);
+    fireEvent.click(azul);
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar recibidos (2)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar (2)' }));
+
+    await waitFor(() => {
+      expect(boxApi.markItemsReceived).toHaveBeenCalledWith([20040, 20041], '1');
+    });
   });
 });

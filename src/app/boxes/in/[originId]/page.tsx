@@ -6,7 +6,7 @@ import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { listBoxes } from '@/hooks/boxes/boxApi';
-import { hasPendingIncomingItems, isTransitBox } from '@/hooks/boxes/boxGrouping';
+import { boxOnwardDestinations, hasMixedDestinations, hasPendingIncomingItems, isTransitBox } from '@/hooks/boxes/boxGrouping';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box } from '@/types';
 import { useParams, useSearchParams } from 'next/navigation';
@@ -16,6 +16,25 @@ type Segment = 'amba' | 'transit';
 
 function boxLabel(box: Box): string {
   return box.number == null ? 'Caja abierta' : `#${box.number}`;
+}
+
+function transitSubtitle(box: Box): string {
+  const destinations = boxOnwardDestinations(box);
+  const pendingCount = box.math_items.filter((item) => item.status !== 5 && item.status !== 6).length;
+  if (hasMixedDestinations(box)) {
+    const destList = destinations.join(', ');
+    return [
+      `${box.math_items.length} juegos`,
+      `Localidades mezcladas (${destList})`,
+      pendingCount > 0 ? `abrir (${pendingCount} pendientes)` : 'recibida',
+    ].join(' · ');
+  }
+  const destName = destinations[0] || box.destination_name || 'otra ciudad';
+  return [
+    `${box.math_items.length} juegos`,
+    `destino ${destName}`,
+    pendingCount > 0 ? `${pendingCount} pendientes` : 'recibida',
+  ].join(' · ');
 }
 
 export default function BoxesInOriginPage() {
@@ -62,7 +81,12 @@ function BoxesInOriginPageContent() {
   const ambaBoxes = useMemo(
     () =>
       boxes
-        .filter((box) => box.destiny === EVENT_LOCATION_ID && hasPendingIncomingItems(box))
+        .filter(
+          (box) =>
+            box.destiny === EVENT_LOCATION_ID &&
+            !isTransitBox(box) &&
+            hasPendingIncomingItems(box),
+        )
         .sort((a, b) => (a.number ?? 0) - (b.number ?? 0)),
     [boxes],
   );
@@ -71,7 +95,12 @@ function BoxesInOriginPageContent() {
     () =>
       boxes
         .filter((box) => isTransitBox(box))
-        .sort((a, b) => (a.number ?? 0) - (b.number ?? 0)),
+        .sort((a, b) => {
+          const aMixed = hasMixedDestinations(a) && hasPendingIncomingItems(a) ? 0 : 1;
+          const bMixed = hasMixedDestinations(b) && hasPendingIncomingItems(b) ? 0 : 1;
+          if (aMixed !== bMixed) return aMixed - bMixed;
+          return (a.number ?? 0) - (b.number ?? 0);
+        }),
     [boxes],
   );
 
@@ -113,7 +142,8 @@ function BoxesInOriginPageContent() {
                 <GameRow
                   href={`/boxes/in/${originId}/${box.id}`}
                   title={boxLabel(box)}
-                  subtitle={`${box.math_items.length} juegos · destino ${box.destination_name} · no abrir`}
+                  subtitle={transitSubtitle(box)}
+                  tone={hasMixedDestinations(box) && hasPendingIncomingItems(box) ? 'danger' : undefined}
                 />
               ) : (
                 <GameRow

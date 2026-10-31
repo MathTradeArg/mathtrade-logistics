@@ -6,22 +6,48 @@ import Link from 'next/link';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { listBoxes, listItems } from '@/hooks/boxes/boxApi';
-import { groupIncomingByOrigin, matchesSearch } from '@/hooks/boxes/boxGrouping';
+import { groupIncomingByOrigin, hasMixedDestinations, hasPendingIncomingItems, isTransitBox, matchesSearch } from '@/hooks/boxes/boxGrouping';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box, Item } from '@/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type Segment = 'amba' | 'transit';
 
-function transitOrigins(items: Item[]) {
-  const map = new Map<number, { originId: number; originName: string; itemCount: number }>();
+function transitOrigins(items: Item[], boxes: Box[]) {
+  const map = new Map<number, { originId: number; originName: string; itemCount: number; boxCount: number; mixedCount: number }>();
+  const countedItemIds = new Set<number>();
+
+  boxes.filter((box) => isTransitBox(box) && hasPendingIncomingItems(box)).forEach((box) => {
+    const current = map.get(box.origin) || {
+      originId: box.origin,
+      originName: box.origin_name || `Localidad ${box.origin}`,
+      itemCount: 0,
+      boxCount: 0,
+      mixedCount: 0,
+    };
+    current.boxCount += 1;
+    if (hasMixedDestinations(box)) current.mixedCount += 1;
+    box.math_items.forEach((item) => {
+      if (item.status !== 5 && item.status !== 6) {
+        current.itemCount += 1;
+        countedItemIds.add(item.id);
+      }
+    });
+    map.set(box.origin, current);
+  });
+
   items.forEach((item) => {
     if (!item.origin_location || item.origin_location === EVENT_LOCATION_ID) return;
     if (!item.location || item.location === EVENT_LOCATION_ID) return;
+    if (item.origin_location === item.location) return;
+    if (item.status === 5 || item.status === 6) return;
+    if (countedItemIds.has(item.id)) return;
     const current = map.get(item.origin_location) || {
       originId: item.origin_location,
       originName: item.origin_location_name || `Localidad ${item.origin_location}`,
       itemCount: 0,
+      boxCount: 0,
+      mixedCount: 0,
     };
     current.itemCount += 1;
     map.set(item.origin_location, current);
@@ -62,15 +88,15 @@ export default function BoxesInPage() {
   }, [isAuthenticated, eventPhase, load]);
 
   const ambaOrigins = useMemo(() => {
-    const pending = ambaBoxes.filter((box) =>
-      box.math_items.some((item) => item.status !== 5 && item.status !== 6),
+    const pending = ambaBoxes.filter(
+      (box) => !isTransitBox(box) && hasPendingIncomingItems(box),
     );
     return groupIncomingByOrigin(pending).filter((origin) => matchesSearch(origin.originName, query));
   }, [ambaBoxes, query]);
 
   const transit = useMemo(
-    () => transitOrigins(items).filter((origin) => matchesSearch(origin.originName, query)),
-    [items, query],
+    () => transitOrigins(items, ambaBoxes).filter((origin) => matchesSearch(origin.originName, query)),
+    [items, ambaBoxes, query],
   );
 
   if (authIsLoading || isAuthenticated === null || isLoadingEventPhase || eventPhase === null) {
@@ -139,7 +165,12 @@ export default function BoxesInPage() {
                 <GameRow
                   href={`/boxes/in/${origin.originId}?segment=transit`}
                   title={origin.originName}
-                  subtitle={`${origin.itemCount} juegos en tránsito`}
+                  subtitle={[
+                    origin.boxCount > 0 ? `${origin.boxCount} cajas` : null,
+                    `${origin.itemCount} juegos en tránsito`,
+                    origin.mixedCount > 0 ? `${origin.mixedCount} con localidades mezcladas` : null,
+                  ].filter(Boolean).join(' · ')}
+                  tone={origin.mixedCount > 0 ? 'danger' : undefined}
                 />
               </li>
             ))}

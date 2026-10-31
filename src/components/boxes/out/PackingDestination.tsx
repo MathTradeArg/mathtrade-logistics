@@ -3,9 +3,10 @@
 import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, PhaseBlocked, StaffDialog, StaffEmpty, StaffError, StaffPage, ThumbCta } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
+import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
-import { boxContentsSummary, destinationLabel, goesViaHub, isBoxOpen, openBoxTitle } from '@/hooks/boxes/boxGrouping';
+import { apiDestinationId, boxContentsSummary, boxMatchesLane, destinationLabel, goesViaHub, isBoxOpen, openBoxTitle, packingDestinationId, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box, Item } from '@/types';
@@ -47,29 +48,41 @@ export default function PackingDestination({
   const asLocation = viewParams?.as_location;
   const mathtrade = viewParams?.mathtrade;
 
-  const viaHub = goesViaHub(
-    origin,
-    destinationId,
-    [...items, ...boxes.flatMap((box) => box.math_items)]
-      .some((item) => item.location === destinationId && item.via_meeting),
-  );
-  const destinationName = destinationLabel(
-    boxes[0]?.destination_name ||
-      items.find((item) => item.location === destinationId)?.location_name ||
-      'Destino',
-    viaHub,
-  );
+  const physicalDestId = apiDestinationId(destinationId);
+  const viaHub =
+    destinationId === VIA_AMBA_DESTINATION_ID ||
+    goesViaHub(
+      origin,
+      destinationId,
+      [...items, ...boxes.flatMap((box) => box.math_items)]
+        .some((item) => packingDestinationId(item, origin) === destinationId && item.via_meeting),
+    );
+  const destinationName =
+    destinationId === VIA_AMBA_DESTINATION_ID
+      ? VIA_AMBA_DESTINATION_LABEL
+      : destinationLabel(
+          boxes[0]?.destination_name ||
+            (destinationId === EVENT_LOCATION_ID
+              ? 'AMBA'
+              : items.find((item) => item.location === destinationId)?.location_name) ||
+            'Destino',
+          viaHub,
+        );
   useStaffTitle(destinationName);
 
   const fetchData = useCallback(async (): Promise<Box[]> => {
     const [nextBoxes, nextItems] = await Promise.all([
-      listBoxes({ destination: destinationId, origin, as_location: asLocation, mathtrade }),
-      listItems({ destination: destinationId, origin: itemsOrigin, as_location: asLocation, mathtrade }),
+      listBoxes({ destination: physicalDestId, origin, as_location: asLocation, mathtrade }),
+      listItems({ destination: physicalDestId, origin: itemsOrigin, as_location: asLocation, mathtrade }),
     ]);
-    setBoxes(nextBoxes);
+    const laneBoxes =
+      origin !== EVENT_LOCATION_ID
+        ? nextBoxes.filter((box) => boxMatchesLane(box, destinationId))
+        : nextBoxes;
+    setBoxes(laneBoxes);
     setItems(nextItems);
-    return nextBoxes;
-  }, [destinationId, origin, itemsOrigin, asLocation, mathtrade]);
+    return laneBoxes;
+  }, [destinationId, physicalDestId, origin, itemsOrigin, asLocation, mathtrade]);
 
   const load = useCallback(async () => {
     if (!destinationId) return;
@@ -100,7 +113,7 @@ export default function PackingDestination({
 
   const createAndGo = async () => {
     try {
-      const created = await openBox(destinationId, origin);
+      const created = await openBox(physicalDestId, origin);
       if (created) {
         router.push(`${basePath}/${destinationId}/${created.id}`);
       }
