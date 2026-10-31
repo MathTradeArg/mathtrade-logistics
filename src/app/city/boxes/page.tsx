@@ -2,11 +2,11 @@
 
 import PackingDestinations from '@/components/boxes/out/PackingDestinations';
 import NoCity from '@/components/city/NoCity';
+import { useCityView } from '@/contexts/CityViewContext';
 import { listItems } from '@/hooks/boxes/boxApi';
-import { useCityId } from '@/hooks/city/useCity';
 
 export default function CityBoxesPage() {
-  const cityId = useCityId();
+  const { cityId, params } = useCityView();
   if (cityId === null) return <NoCity />;
 
   // Games that stay in the city (destination = the city) are delivered by
@@ -16,8 +16,9 @@ export default function CityBoxesPage() {
       origin={cityId}
       basePath="/city/boxes"
       phaseGated={false}
-      loadItems={() => listItems({ origin: cityId })}
+      loadItems={() => listItems({ origin: cityId, ...params })}
       excludeDestination={cityId}
+      viewParams={params}
     />
   );
 }

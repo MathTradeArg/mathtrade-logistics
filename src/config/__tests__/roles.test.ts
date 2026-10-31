@@ -95,14 +95,22 @@ describe('city users', () => {
     expect(isPathAllowed('/city/volunteers', null, false, referrer)).toBe(true);
   });
 
-  it('gives a local volunteer only boxes and the Instructivo under /city', () => {
+  it('lets a referrer visit Recibidas and Usuarios', () => {
+    expect(isPathAllowed('/city/received', null, false, referrer)).toBe(true);
+    expect(isPathAllowed('/city/users', null, false, referrer)).toBe(true);
+  });
+
+  it('gives a local volunteer boxes, Instructivo, Usuarios and the Ejemplares list under /city', () => {
     const local = { kind: 'local' as const, city: { id: 7, name: 'Mendoza' } };
     expect(isPathAllowed('/city', null, false, local)).toBe(true);
     expect(isPathAllowed('/city/boxes', null, false, local)).toBe(true);
     expect(isPathAllowed('/city/boxes/1/30', null, false, local)).toBe(true);
     expect(isPathAllowed('/city/instructivo', null, false, local)).toBe(true);
     expect(isPathAllowed('/more', null, false, local)).toBe(true);
-    expect(isPathAllowed('/city/shipments', null, false, local)).toBe(false);
+    expect(isPathAllowed('/city/shipments', null, false, local)).toBe(true);
+    expect(isPathAllowed('/city/users', null, false, local)).toBe(true);
+    expect(isPathAllowed('/city/received', null, false, local)).toBe(false);
+    expect(isPathAllowed('/city/shipments/4', null, false, local)).toBe(false);
     expect(isPathAllowed('/city/shipments/new', null, false, local)).toBe(false);
     expect(isPathAllowed('/city/volunteers', null, false, local)).toBe(false);
     expect(isPathAllowed('/boxes/out', null, false, local)).toBe(false);

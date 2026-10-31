@@ -14,14 +14,18 @@ describe('CityHomePage', () => {
     expect(screen.getByRole('link', { name: /Armar cajas/ })).toHaveAttribute('href', '/city/boxes');
     expect(screen.getByRole('link', { name: /Instructivo/ })).toHaveAttribute('href', '/city/instructivo');
     expect(screen.getByRole('link', { name: /Envíos/ })).toHaveAttribute('href', '/city/shipments');
+    expect(screen.getByRole('link', { name: /Recibidas/ })).toHaveAttribute('href', '/city/received');
+    expect(screen.getByRole('link', { name: /Usuarios/ })).toHaveAttribute('href', '/city/users');
     expect(screen.getByRole('link', { name: /Voluntarios/ })).toHaveAttribute('href', '/city/volunteers');
   });
 
-  it('hides Envíos from a local volunteer', () => {
+  it('gives a local volunteer Ejemplares and Usuarios, not Recibidas or Voluntarios', () => {
     mockUseAuth.mockReturnValue({ cityAccess: { kind: 'local', city: { id: 7, name: 'Mendoza' } } });
     render(<CityHomePage />);
     expect(screen.getByRole('link', { name: /Armar cajas/ })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /Envíos/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Envíos/ })).toHaveAttribute('href', '/city/shipments');
+    expect(screen.getByRole('link', { name: /Usuarios/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Recibidas/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Voluntarios/ })).not.toBeInTheDocument();
   });
 

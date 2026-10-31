@@ -1,10 +1,22 @@
-import { StaffEmpty, StaffPage } from '@/components/staff';
+"use client";
 
-/** City screens for a user without a city (e.g. an admin who isn't a referrer). */
+import { StaffEmpty, StaffPage } from '@/components/staff';
+import { useCityView } from '@/contexts/CityViewContext';
+import Link from 'next/link';
+
+/** City screens without a city: a user who isn't a referrer or local
+ *  volunteer, or an admin who hasn't picked one in "Ver como" yet. */
 export default function NoCity() {
+  const { isAdmin } = useCityView();
   return (
     <StaffPage>
-      <StaffEmpty>No tenés una ciudad asignada.</StaffEmpty>
+      {isAdmin ? (
+        <StaffEmpty>
+          Elegí una ciudad en <Link href="/city" className="font-semibold text-primary underline">Mi ciudad</Link>.
+        </StaffEmpty>
+      ) : (
+        <StaffEmpty>No tenés una ciudad asignada.</StaffEmpty>
+      )}
     </StaffPage>
   );
 }

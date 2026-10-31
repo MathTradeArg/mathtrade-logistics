@@ -65,16 +65,18 @@ describe('city nav', () => {
   const cityLabels = (phase: number | null, role: VolunteerRole | null, city: typeof referrer | typeof local) =>
     getBottomNavSlots(phase, { role, isAdmin: false, city }).map((s) => s.label);
 
-  it.each([0, 1, 2, null])('gives a referrer Armar, Envíos, Más in phase %p', (phase) => {
-    expect(cityLabels(phase, null, referrer)).toEqual(['Armar', 'Envíos', 'Más']);
+  it.each([0, 1, 2, null])('gives a referrer Armar, Envíos, Recibidas, Más in phase %p', (phase) => {
+    expect(cityLabels(phase, null, referrer)).toEqual(['Armar', 'Envíos', 'Recibidas', 'Más']);
   });
 
-  it('titles the city volunteers screen', () => {
+  it('titles the city volunteers, Recibidas and Usuarios screens', () => {
     expect(getPageTitle('/city/volunteers')).toBe('Voluntarios');
+    expect(getPageTitle('/city/received')).toBe('Recibidas');
+    expect(getPageTitle('/city/users')).toBe('Usuarios');
   });
 
-  it('gives a local volunteer Armar and Más', () => {
-    expect(cityLabels(1, null, local)).toEqual(['Armar', 'Más']);
+  it('gives a local volunteer Armar, Envíos and Más', () => {
+    expect(cityLabels(1, null, local)).toEqual(['Armar', 'Envíos', 'Más']);
   });
 
   it('keeps the role slots for a volunteer+referrer and the admin nav for admins', () => {
@@ -90,6 +92,9 @@ describe('city nav', () => {
     expect(isSlotActive('/city/boxes/1/30', boxes, 1, slots)).toBe(true);
     expect(isSlotActive('/city/shipments', boxes, 1, slots)).toBe(false);
     expect(isSlotActive('/city/shipments/4', shipments, 1, slots)).toBe(true);
+    const received = slots.find((s) => s.id === 'cityReceived')!;
+    expect(isSlotActive('/city/received', received, 1, slots)).toBe(true);
+    expect(isSlotActive('/city/received', shipments, 1, slots)).toBe(false);
   });
 
   it('titles and back buttons for /city/*', () => {

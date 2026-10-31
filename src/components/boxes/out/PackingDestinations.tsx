@@ -3,7 +3,7 @@
 import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, PhaseBlocked, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
-import { listBoxes, listItems } from '@/hooks/boxes/boxApi';
+import { listBoxes, type CityViewParams } from '@/hooks/boxes/boxApi';
 import {
   findBoxForTrade,
   groupPackingDestinations,
@@ -26,11 +26,13 @@ export type PackingDestinationsProps = {
   loadItems: () => Promise<Item[]>;
   /** Never offered as a destination (the hub itself, or the city's local games). */
   excludeDestination: number;
+  /** Admin "Ver como" params for the box list (city screens). */
+  viewParams?: CityViewParams;
 };
 
 /** Destinations to pack for, from `origin`. */
 export default function PackingDestinations({
-  origin, basePath, phaseGated, loadItems, excludeDestination,
+  origin, basePath, phaseGated, loadItems, excludeDestination, viewParams,
 }: PackingDestinationsProps) {
   const router = useRouter();
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
@@ -44,6 +46,9 @@ export default function PackingDestinations({
   const loadItemsRef = useRef(loadItems);
   loadItemsRef.current = loadItems;
   const blocked = phaseGated && eventPhase === 0;
+  // Primitive deps: callers pass a fresh params object each render.
+  const asLocation = viewParams?.as_location;
+  const mathtrade = viewParams?.mathtrade;
   const requirePackableStatus = phaseGated;
 
   const load = useCallback(async () => {
@@ -52,7 +57,7 @@ export default function PackingDestinations({
     try {
       const [nextItems, nextBoxes] = await Promise.all([
         loadItemsRef.current(),
-        listBoxes({ origin }),
+        listBoxes({ origin, as_location: asLocation, mathtrade }),
       ]);
       setItems(nextItems.filter((item) => item.location !== excludeDestination));
       setBoxes(nextBoxes);
@@ -61,7 +66,7 @@ export default function PackingDestinations({
     } finally {
       setIsLoading(false);
     }
-  }, [origin, excludeDestination]);
+  }, [origin, excludeDestination, asLocation, mathtrade]);
 
   useEffect(() => {
     if (!isAuthenticated || blocked) return;

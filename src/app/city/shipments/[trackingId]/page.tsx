@@ -10,7 +10,7 @@ import { apiErrorMessage } from '@/components/city/errors';
 import { StaffDialog, StaffEmpty, StaffError, StaffPage } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { deleteTracking, getTracking } from '@/hooks/city/cityApi';
-import { useAuth } from '@/hooks/useAuth';
+import { useCityView } from '@/contexts/CityViewContext';
 import type { Tracking } from '@/types';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -18,9 +18,11 @@ import { useEffect, useState } from 'react';
 export default function ShipmentPage() {
   const params = useParams<{ trackingId: string }>();
   const trackingId = Number(params.trackingId);
-  const { cityAccess } = useAuth();
+  const { cityId, kind, readOnly, params: viewParams } = useCityView();
+  const asLocation = viewParams.as_location;
+  const mathtrade = viewParams.mathtrade;
   const router = useRouter();
-  const isReferrer = cityAccess?.kind === 'referrer';
+  const isReferrer = kind === 'referrer';
   const [tracking, setTracking] = useState<Tracking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -33,7 +35,7 @@ export default function ShipmentPage() {
   useEffect(() => {
     if (!isReferrer || !trackingId) return;
     let cancelled = false;
-    getTracking(trackingId)
+    getTracking(trackingId, { as_location: asLocation, mathtrade })
       .then((row) => {
         if (!cancelled) setTracking(row);
       })
@@ -46,7 +48,7 @@ export default function ShipmentPage() {
     return () => {
       cancelled = true;
     };
-  }, [isReferrer, trackingId]);
+  }, [isReferrer, trackingId, asLocation, mathtrade]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -62,14 +64,14 @@ export default function ShipmentPage() {
     }
   };
 
-  if (!cityAccess) return <NoCity />;
+  if (cityId === null) return <NoCity />;
   if (!isReferrer) return <ReferrerOnly />;
 
-  if (editing && tracking) {
+  if (editing && tracking && !readOnly) {
     return (
       <StaffPage>
         <TrackingEditor
-          cityId={cityAccess.city.id}
+          cityId={cityId}
           tracking={tracking}
           onSaved={(saved) => {
             setTracking(saved);
@@ -91,18 +93,20 @@ export default function ShipmentPage() {
           <div className="staff-card p-4">
             <TrackingSummary tracking={tracking} onOpenImage={setImageUrl} />
           </div>
-          <div className="mt-6 flex flex-col gap-3">
-            <button type="button" className="staff-btn staff-btn-primary" onClick={() => setEditing(true)}>
-              Editar
-            </button>
-            <button
-              type="button"
-              className="staff-btn staff-btn-outline text-danger"
-              onClick={() => setConfirmDelete(true)}
-            >
-              Eliminar
-            </button>
-          </div>
+          {!readOnly && (
+            <div className="mt-6 flex flex-col gap-3">
+              <button type="button" className="staff-btn staff-btn-primary" onClick={() => setEditing(true)}>
+                Editar
+              </button>
+              <button
+                type="button"
+                className="staff-btn staff-btn-outline text-danger"
+                onClick={() => setConfirmDelete(true)}
+              >
+                Eliminar
+              </button>
+            </div>
+          )}
         </>
       )}
       <StaffDialog

@@ -6,7 +6,7 @@ import { apiErrorMessage } from '@/components/city/errors';
 import { GameRow, StaffDialog, StaffEmpty, StaffPage, StaffSearch } from '@/components/staff';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { useApi } from '@/hooks/useApi';
-import { useAuth } from '@/hooks/useAuth';
+import { useCityView } from '@/contexts/CityViewContext';
 import type { CityVolunteer, CityVolunteerCandidate, VolunteerUser } from '@/types';
 import { whatsappLink } from '@/utils/whatsapp';
 import { useCallback, useEffect, useState } from 'react';
@@ -22,9 +22,10 @@ const byName = (a: CityVolunteer, b: CityVolunteer) =>
 /** Más › Voluntarios for a referrer: the local volunteers of their city
  *  (active-edition members of the city who may build its boxes). */
 export default function CityVolunteersPage() {
-  const { cityAccess } = useAuth();
+  const { cityId, cityName, kind, readOnly, params } = useCityView();
   const { setSuccess, setError } = useActionStatus();
-  const isReferrer = cityAccess?.kind === 'referrer';
+  const isReferrer = kind === 'referrer';
+  const asLocation = params.as_location;
 
   const [volunteers, setVolunteers] = useState<CityVolunteer[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(true);
@@ -43,14 +44,14 @@ export default function CityVolunteersPage() {
   const loadVolunteers = useCallback(async () => {
     setIsLoadingList(true);
     try {
-      const data = await fetchVolunteers();
+      const data = await fetchVolunteers(undefined, asLocation ? `?as_location=${asLocation}` : undefined);
       setVolunteers(Array.isArray(data) ? [...data].sort(byName) : []);
     } catch (err) {
       setError(apiErrorMessage(err, 'No se pudieron cargar los voluntarios.'));
     } finally {
       setIsLoadingList(false);
     }
-  }, [fetchVolunteers, setError]);
+  }, [fetchVolunteers, setError, asLocation]);
 
   useEffect(() => {
     if (isReferrer) loadVolunteers();
@@ -58,7 +59,7 @@ export default function CityVolunteersPage() {
 
   useEffect(() => {
     const q = query.trim();
-    if (!isReferrer || q.length < 2) {
+    if (!isReferrer || readOnly || q.length < 2) {
       setCandidates([]);
       setIsSearching(false);
       return;
@@ -82,7 +83,7 @@ export default function CityVolunteersPage() {
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [query, isReferrer, fetchCandidates, setError]);
+  }, [query, isReferrer, readOnly, fetchCandidates, setError]);
 
   const handleAdd = async (candidate: CityVolunteerCandidate) => {
     setAddingId(candidate.id);
@@ -117,10 +118,9 @@ export default function CityVolunteersPage() {
     }
   };
 
-  if (!cityAccess) return <NoCity />;
+  if (cityId === null) return <NoCity />;
   if (!isReferrer) return <ReferrerOnly message="Solo el referente de la ciudad maneja sus voluntarios." />;
 
-  const cityName = cityAccess.city.name;
   const showNoResults = !isSearching && query.trim().length >= 2 && candidates.length === 0;
 
   return (
@@ -129,6 +129,7 @@ export default function CityVolunteersPage() {
         Pueden armar cajas de {cityName} y ver el teléfono y Telegram de sus participantes.
       </p>
 
+      {!readOnly && (
       <section className="mt-6">
         <h2 className="text-sm font-semibold text-gray-500">Agregar voluntario</h2>
         <StaffSearch
@@ -168,6 +169,7 @@ export default function CityVolunteersPage() {
           </ul>
         )}
       </section>
+      )}
 
       <section className="mt-10">
         <h2 className="text-sm font-semibold text-gray-500">Voluntarios ({volunteers.length})</h2>
@@ -195,14 +197,16 @@ export default function CityVolunteersPage() {
                           <a href={`https://t.me/${telegram}`} target="_blank" rel="noopener noreferrer"
                              className="text-sm font-semibold text-primary">Telegram</a>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => setToRemove(volunteer)}
-                          className="staff-btn staff-btn-outline !min-h-10 !w-auto !px-4 text-sm"
-                          aria-label={`Quitar a ${fullName(volunteer.user)}`}
-                        >
-                          Quitar
-                        </button>
+                        {!readOnly && (
+                          <button
+                            type="button"
+                            onClick={() => setToRemove(volunteer)}
+                            className="staff-btn staff-btn-outline !min-h-10 !w-auto !px-4 text-sm"
+                            aria-label={`Quitar a ${fullName(volunteer.user)}`}
+                          >
+                            Quitar
+                          </button>
+                        )}
                       </div>
                     }
                   />

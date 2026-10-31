@@ -27,13 +27,15 @@ const ALWAYS_ALLOWED = ['/more', '/lookup', '/select-role', '/reports', '/login'
 // A city user (referrer / local volunteer) without an event role.
 const CITY_ONLY_ALLOWED = ['/more', '/login', '/city'];
 
-// A local volunteer's part of /city: boxes and the Instructivo, no
-// shipments or volunteers (Phase 4 opens Ejemplares and Usuarios).
-const LOCAL_CITY_ALLOWED = ['/city/boxes', '/city/instructivo'];
+// A local volunteer's part of /city: boxes, the Instructivo and Usuarios, plus
+// the Ejemplares tab of /city/shipments (that exact path: the shipment form
+// and detail, Recibidas and volunteers stay referrer-only).
+const LOCAL_CITY_ALLOWED = ['/city/boxes', '/city/instructivo', '/city/users'];
+const LOCAL_CITY_EXACT = ['/city', '/city/shipments'];
 
 function cityPathAllowed(pathname: string, city: NonNullable<CityAccess>): boolean {
   if (city.kind === 'referrer') return true;
-  return pathname === '/city' || LOCAL_CITY_ALLOWED.some((p) => matches(pathname, p));
+  return LOCAL_CITY_EXACT.includes(pathname) || LOCAL_CITY_ALLOWED.some((p) => matches(pathname, p));
 }
 
 function matches(pathname: string, prefix: string): boolean {

@@ -4,7 +4,7 @@ import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, PhaseBlocked, StaffDialog, StaffEmpty, StaffError, StaffPage, ThumbCta } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
-import { listBoxes, listItems } from '@/hooks/boxes/boxApi';
+import { listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
 import { boxContentsSummary, isBoxOpen, openBoxTitle } from '@/hooks/boxes/boxGrouping';
 import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,11 +22,15 @@ export type PackingDestinationProps = {
   phaseGated: boolean;
   /** Restricts the item list to this origin (city screens). */
   itemsOrigin?: number;
+  /** Admin "Ver como": hides every write control. */
+  readOnly?: boolean;
+  /** Admin "Ver como" params for the lists (city screens). */
+  viewParams?: CityViewParams;
 };
 
 /** Open and closed boxes from `origin` to one destination, and "Nueva caja". */
 export default function PackingDestination({
-  origin, destinationId, basePath, phaseGated, itemsOrigin,
+  origin, destinationId, basePath, phaseGated, itemsOrigin, readOnly = false, viewParams,
 }: PackingDestinationProps) {
   const router = useRouter();
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
@@ -39,6 +43,9 @@ export default function PackingDestination({
   const [confirmAnother, setConfirmAnother] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const blocked = phaseGated && eventPhase === 0;
+  // Primitive deps: callers pass a fresh params object each render.
+  const asLocation = viewParams?.as_location;
+  const mathtrade = viewParams?.mathtrade;
 
   const destinationName =
     boxes[0]?.destination_name ||
@@ -48,13 +55,13 @@ export default function PackingDestination({
 
   const fetchData = useCallback(async (): Promise<Box[]> => {
     const [nextBoxes, nextItems] = await Promise.all([
-      listBoxes({ destination: destinationId, origin }),
-      listItems({ destination: destinationId, origin: itemsOrigin }),
+      listBoxes({ destination: destinationId, origin, as_location: asLocation, mathtrade }),
+      listItems({ destination: destinationId, origin: itemsOrigin, as_location: asLocation, mathtrade }),
     ]);
     setBoxes(nextBoxes);
     setItems(nextItems);
     return nextBoxes;
-  }, [destinationId, origin, itemsOrigin]);
+  }, [destinationId, origin, itemsOrigin, asLocation, mathtrade]);
 
   const load = useCallback(async () => {
     if (!destinationId) return;
@@ -138,7 +145,7 @@ export default function PackingDestination({
         <>
           <h2 className="text-sm font-semibold text-gray-500">Cajas abiertas</h2>
           {openBoxes.length === 0 ? (
-            <StaffEmpty>No hay cajas abiertas. Creá una para empezar.</StaffEmpty>
+            <StaffEmpty>{readOnly ? 'No hay cajas abiertas.' : 'No hay cajas abiertas. Creá una para empezar.'}</StaffEmpty>
           ) : (
             <ul className="mt-3 flex flex-col gap-3">
               {openBoxes.map((box) => (
@@ -172,9 +179,11 @@ export default function PackingDestination({
         </>
       )}
 
-      <ThumbCta onClick={handleNewBox} disabled={inFlight || isLoading || checking}>
-        Nueva caja
-      </ThumbCta>
+      {!readOnly && (
+        <ThumbCta onClick={handleNewBox} disabled={inFlight || isLoading || checking}>
+          Nueva caja
+        </ThumbCta>
+      )}
 
       <StaffDialog
         open={confirmAnother}

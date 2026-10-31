@@ -4,7 +4,7 @@ import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, PhaseBlocked, StaffDialog, StaffEmpty, StaffError, StaffPage, ThumbCta } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
-import { getBox, listBoxes, listItems } from '@/hooks/boxes/boxApi';
+import { getBox, listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
 import { boxedTradeIds, boxContentsSummary, isBoxOpen, isPackable, openBoxTitle, packerName, receptorName } from '@/hooks/boxes/boxGrouping';
 import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
@@ -26,11 +26,15 @@ export type PackingBoxProps = {
   phaseGated: boolean;
   /** Restricts the item list to this origin (city screens). */
   itemsOrigin?: number;
+  /** Admin "Ver como": hides every write control. */
+  readOnly?: boolean;
+  /** Admin "Ver como" params for the lists (city screens). */
+  viewParams?: CityViewParams;
 };
 
 /** One open box: add, remove and move games, close or delete it. */
 export default function PackingBox({
-  origin, destinationId, boxId, basePath, phaseGated, itemsOrigin,
+  origin, destinationId, boxId, basePath, phaseGated, itemsOrigin, readOnly = false, viewParams,
 }: PackingBoxProps) {
   const router = useRouter();
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
@@ -50,6 +54,9 @@ export default function PackingBox({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const blocked = phaseGated && eventPhase === 0;
+  // Primitive deps: callers pass a fresh params object each render.
+  const asLocation = viewParams?.as_location;
+  const mathtrade = viewParams?.mathtrade;
 
   useStaffTitle(box?.number != null ? `#${box.number}` : 'Caja abierta');
 
@@ -60,8 +67,8 @@ export default function PackingBox({
     try {
       const [nextBox, nextBoxes, nextItems] = await Promise.all([
         getBox(boxId),
-        listBoxes({ destination: destinationId, origin, status: 'open' }),
-        listItems({ destination: destinationId, origin: itemsOrigin }),
+        listBoxes({ destination: destinationId, origin, status: 'open', as_location: asLocation, mathtrade }),
+        listItems({ destination: destinationId, origin: itemsOrigin, as_location: asLocation, mathtrade }),
       ]);
       setBox(nextBox);
       setOpenBoxes(nextBoxes.filter((candidate) => candidate.id !== boxId));
@@ -71,7 +78,7 @@ export default function PackingBox({
     } finally {
       setIsLoading(false);
     }
-  }, [boxId, destinationId, origin, itemsOrigin]);
+  }, [boxId, destinationId, origin, itemsOrigin, asLocation, mathtrade]);
 
   useEffect(() => {
     if (!isAuthenticated || blocked) return;
@@ -185,7 +192,7 @@ export default function PackingBox({
   }
 
   const empty = (box?.math_items.length || 0) === 0;
-  const canMutate = box ? isBoxOpen(box) : false;
+  const canMutate = !readOnly && (box ? isBoxOpen(box) : false);
 
   return (
     <StaffPage className="pb-28">

@@ -16,7 +16,7 @@ export class BoxApiError extends Error {
 
 type QueryValue = string | number | undefined | null;
 
-function queryString(params: Record<string, QueryValue>): string {
+export function queryString(params: Record<string, QueryValue>): string {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') return;
@@ -93,7 +93,15 @@ export function concurrentAddTitles(err: unknown): string[] | null {
   return null;
 }
 
-export type BoxListParams = {
+/** Admin "Ver como" on the city screens (reads only): see the area as that
+ *  city's referrer, or in another edition. The backend ignores both for
+ *  everyone else. */
+export type CityViewParams = {
+  as_location?: number;
+  mathtrade?: number;
+};
+
+export type BoxListParams = CityViewParams & {
   destination?: number;
   origin?: number;
   status?: 'open' | 'closed';
@@ -112,7 +120,7 @@ export async function getBox(boxId: number): Promise<Box> {
   return data;
 }
 
-export type ItemListParams = {
+export type ItemListParams = CityViewParams & {
   destination?: number;
   origin?: number;
   excludeAmba?: number;
@@ -124,6 +132,8 @@ export async function listItems(params: ItemListParams = {}): Promise<Item[]> {
       destination: params.destination,
       origin: params.origin,
       exclude_amba: params.excludeAmba,
+      as_location: params.as_location,
+      mathtrade: params.mathtrade,
     })}`,
   );
   return Array.isArray(data) ? data : [];

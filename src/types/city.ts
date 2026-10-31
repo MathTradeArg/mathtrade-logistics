@@ -18,3 +18,24 @@ export interface Tracking {
   image: string | null;
   item_count: number;
 }
+
+/** api/mathtrades/ row, only what the city screens need. */
+export type MathtradeRef = { id: number; name: string; active: boolean };
+
+/** mathtrades/<id>/users/ row. Contact keys depend on who asks: the city's
+ *  referrer gets all of them, an admin no phone/paid, a local volunteer
+ *  only phone and telegram. */
+export interface CityMember {
+  id: number;
+  first_name: string;
+  last_name: string;
+  avatar?: string | null;
+  commitment?: boolean;
+  trades?: number | null;
+  items?: number | null;
+  phone?: string | null;
+  telegram?: string | null;
+  email?: string | null;
+  bgg_user?: string | null;
+  paid?: boolean;
+}

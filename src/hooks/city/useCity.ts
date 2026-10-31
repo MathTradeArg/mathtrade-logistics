@@ -1,10 +1,9 @@
 "use client";
 
-import { useAuth } from '@/hooks/useAuth';
+import { useCityView } from '@/contexts/CityViewContext';
 
-/** The city the user builds and ships for (referrer first, else local
- *  volunteer), or null. */
+/** The city the /city screens show: the user's own (referrer first, else
+ *  local volunteer), or the one an admin picked in "Ver como"; or null. */
 export function useCityId(): number | null {
-  const { cityAccess } = useAuth();
-  return cityAccess?.city.id ?? null;
+  return useCityView().cityId;
 }

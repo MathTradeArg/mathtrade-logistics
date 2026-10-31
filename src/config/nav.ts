@@ -56,12 +56,15 @@ export type NavAccess = { role: VolunteerRole | null; isAdmin: boolean; city?: C
 const MORE_SLOT: NavSlot = { id: 'more', href: '/more', label: 'Más' };
 const CITY_BOXES_SLOT: NavSlot = { id: 'cityBoxes', href: '/city/boxes', label: 'Armar' };
 const CITY_SHIPMENTS_SLOT: NavSlot = { id: 'cityShipments', href: '/city/shipments', label: 'Envíos' };
+const CITY_RECEIVED_SLOT: NavSlot = { id: 'cityReceived', href: '/city/received', label: 'Recibidas' };
 
 /** Nav of a city user without an event role; it doesn't depend on the phase.
- *  Recibidas stays hidden until it exists (design D5/D6). */
+ *  A local volunteer's Envíos only has the Ejemplares tab. */
 function citySlots(city: NonNullable<CityAccess>): NavSlot[] {
-  if (city.kind === 'referrer') return [CITY_BOXES_SLOT, CITY_SHIPMENTS_SLOT, MORE_SLOT];
-  return [CITY_BOXES_SLOT, MORE_SLOT];
+  if (city.kind === 'referrer') {
+    return [CITY_BOXES_SLOT, CITY_SHIPMENTS_SLOT, CITY_RECEIVED_SLOT, MORE_SLOT];
+  }
+  return [CITY_BOXES_SLOT, CITY_SHIPMENTS_SLOT, MORE_SLOT];
 }
 
 /** Slots by phase, narrowed to the volunteer's role (design decision 6).
@@ -83,6 +86,8 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/city/boxes')) return 'Armar cajas';
   if (pathname.startsWith('/city/instructivo')) return 'Instructivo';
   if (pathname.startsWith('/city/shipments')) return 'Envíos';
+  if (pathname.startsWith('/city/received')) return 'Recibidas';
+  if (pathname.startsWith('/city/users')) return 'Usuarios';
   if (pathname.startsWith('/city/volunteers')) return 'Voluntarios';
   if (pathname === '/city' || pathname.startsWith('/city/')) return 'Mi ciudad';
   if (pathname.startsWith('/select-role')) return 'Tu rol';
