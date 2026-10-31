@@ -54,6 +54,7 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/more/report') && !pathname.startsWith('/more/reports')) return 'Nuevo reporte';
   if (pathname.startsWith('/more/reports')) return 'Reportes';
   if (pathname.startsWith('/more')) return 'Más';
+  if (pathname.startsWith('/admin/volunteers')) return 'Voluntarios';
   if (pathname.startsWith('/admin/window-config')) return 'Ventanillas';
   if (pathname.startsWith('/admin/ready-to-pickup')) return 'Usuarios';
   return '';

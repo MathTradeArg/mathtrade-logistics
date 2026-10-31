@@ -25,6 +25,7 @@ describe('MorePage', () => {
     expect(screen.getByRole('link', { name: 'Faltantes AMBA' })).toHaveAttribute('href', '/more/reports/amba-missing');
     expect(screen.getByRole('link', { name: 'Herramientas' })).toHaveAttribute('href', '/more/tools');
     expect(screen.queryByRole('link', { name: 'Usuarios' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Voluntarios' })).not.toBeInTheDocument();
     expect(screen.queryByText('Fase del evento')).not.toBeInTheDocument();
   });
 
@@ -35,6 +36,7 @@ describe('MorePage', () => {
     expect(screen.getByText('Fase del evento')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Usuarios' })).toHaveAttribute('href', '/admin/ready-to-pickup');
     expect(screen.getByRole('link', { name: 'Ventanillas' })).toHaveAttribute('href', '/admin/window-config');
+    expect(screen.getByRole('link', { name: 'Voluntarios' })).toHaveAttribute('href', '/admin/volunteers');
     expect(screen.getByRole('button', { name: 'Tele' })).toBeInTheDocument();
   });
 });

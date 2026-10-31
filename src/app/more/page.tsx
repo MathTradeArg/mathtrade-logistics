@@ -79,6 +79,9 @@ export default function MorePage() {
               <GameRow title="Ventanillas" href="/admin/window-config" />
             </li>
             <li>
+              <GameRow title="Voluntarios" href="/admin/volunteers" />
+            </li>
+            <li>
               <button
                 type="button"
                 className={rowClass}
