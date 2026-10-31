@@ -3,17 +3,20 @@
 import clsx from 'clsx';
 import { ReactNode } from 'react';
 
-interface StaffDialogProps {
+type ConfirmProps =
+  | { hideConfirm?: false; confirmLabel: string; onConfirm: () => void }
+  /** No confirm button: the children carry their own (e.g. HoldToConfirm). */
+  | { hideConfirm: true; confirmLabel?: string; onConfirm?: () => void };
+
+type StaffDialogProps = ConfirmProps & {
   open: boolean;
   title: string;
   children?: ReactNode;
-  confirmLabel: string;
   cancelLabel?: string;
   variant?: 'primary' | 'danger';
   confirmDisabled?: boolean;
-  onConfirm: () => void;
   onCancel?: () => void;
-}
+};
 
 export default function StaffDialog({
   open,
@@ -23,6 +26,7 @@ export default function StaffDialog({
   cancelLabel = 'Cancelar',
   variant = 'primary',
   confirmDisabled = false,
+  hideConfirm = false,
   onConfirm,
   onCancel,
 }: StaffDialogProps) {
@@ -34,17 +38,19 @@ export default function StaffDialog({
         <h2 className="text-lg font-bold">{title}</h2>
         {children && <div className="mt-3 text-sm text-gray-600">{children}</div>}
         <div className="mt-6 flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={confirmDisabled}
-            className={clsx(
-              'staff-btn',
-              variant === 'danger' ? 'staff-btn-danger' : 'staff-btn-primary',
-            )}
-          >
-            {confirmLabel}
-          </button>
+          {!hideConfirm && (
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={confirmDisabled}
+              className={clsx(
+                'staff-btn',
+                variant === 'danger' ? 'staff-btn-danger' : 'staff-btn-primary',
+              )}
+            >
+              {confirmLabel}
+            </button>
+          )}
           {onCancel && (
             <button
               type="button"

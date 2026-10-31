@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from "react-google-recaptcha-v3";
 import { triggerHaptic } from '@/utils/haptics';
+import type { VolunteerRole } from '@/types/volunteer';
 
 interface LoginResponse {
   token: string;
@@ -14,6 +15,8 @@ interface LoginResponse {
     first_name: string;
     last_name: string;
     math_admin: boolean;
+    is_volunteer?: boolean;
+    role?: VolunteerRole | null;
   };
 }
 

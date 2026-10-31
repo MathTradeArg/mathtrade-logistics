@@ -1,6 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
+import { roleHome } from '@/config/roles';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
@@ -8,23 +9,33 @@ import { useRouter } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 
 function LandingPageContent() {
-  const { isAuthenticated, isLoading: authIsLoading } = useAuth();
+  const { isAuthenticated, isLoading: authIsLoading, isAdmin, role } = useAuth();
   const { eventPhase, isLoadingEventPhase } = useEventPhase();
   const router = useRouter();
+
+  // Where this user goes from the landing, or null to stay on it. A volunteer
+  // without a role is sent to /select-role by StaffChrome's guard.
+  let redirectTo: string | null = null;
+  if (isAdmin) {
+    if (eventPhase === 1) redirectTo = '/boxes/in';
+    if (eventPhase === 2) redirectTo = '/deliver';
+  } else if (role) {
+    const home = roleHome(role, eventPhase);
+    if (home !== '/') redirectTo = home;
+  }
+  const waitingForGuard = !isAdmin && role === null;
 
   useEffect(() => {
     if (authIsLoading || isAuthenticated === null || isLoadingEventPhase) return;
     if (!isAuthenticated) return;
-    if (eventPhase === 1) router.replace('/boxes/in');
-    if (eventPhase === 2) router.replace('/deliver');
-  }, [authIsLoading, isAuthenticated, isLoadingEventPhase, eventPhase, router]);
+    if (redirectTo) router.replace(redirectTo);
+  }, [authIsLoading, isAuthenticated, isLoadingEventPhase, redirectTo, router]);
 
   if (
     authIsLoading ||
     isAuthenticated === null ||
     isLoadingEventPhase ||
-    eventPhase === 1 ||
-    eventPhase === 2
+    (isAuthenticated && (redirectTo !== null || waitingForGuard))
   ) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-page">

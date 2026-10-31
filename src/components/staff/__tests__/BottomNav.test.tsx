@@ -1,21 +1,25 @@
 import { useEventPhase } from '@/contexts/EventPhaseContext';
+import { useAuth } from '@/hooks/useAuth';
 import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 import { usePathname } from 'next/navigation';
 import BottomNav from '../BottomNav';
 
 jest.mock('@/contexts/EventPhaseContext');
+jest.mock('@/hooks/useAuth');
 jest.mock('next/navigation', () => ({
   usePathname: jest.fn(),
 }));
 
 const mockUseEventPhase = useEventPhase as jest.Mock;
 const mockUsePathname = usePathname as jest.Mock;
+const mockUseAuth = useAuth as jest.Mock;
 
 describe('BottomNav', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUsePathname.mockReturnValue('/');
+    mockUseAuth.mockReturnValue({ role: null, isAdmin: true });
   });
 
   it('shows receive / arrive / pack / more in phase 1', () => {
@@ -58,5 +62,34 @@ describe('BottomNav', () => {
 
     expect(screen.getByRole('link', { name: 'Recibir' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Llegan' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('shows only the role slots to a volunteer, in as many columns', () => {
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1 });
+    mockUseAuth.mockReturnValue({ role: 'boxes', isAdmin: false });
+    render(<BottomNav />);
+
+    const links = screen.getAllByRole('link').map((link) => link.textContent);
+    expect(links).toEqual(['Llegan', 'Empacar', 'Más']);
+    expect(screen.getByRole('list')).toHaveStyle({ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' });
+  });
+
+  it('gives a runner Consultar, current on /lookup', () => {
+    mockUseEventPhase.mockReturnValue({ eventPhase: 2 });
+    mockUseAuth.mockReturnValue({ role: 'runner', isAdmin: false });
+    mockUsePathname.mockReturnValue('/lookup');
+    render(<BottomNav />);
+
+    expect(screen.getByRole('link', { name: 'Consultar' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Más' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('marks Más as current on /lookup when there is no Consultar slot', () => {
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1 });
+    mockUsePathname.mockReturnValue('/lookup');
+    render(<BottomNav />);
+
+    expect(screen.queryByRole('link', { name: 'Consultar' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Más' })).toHaveAttribute('aria-current', 'page');
   });
 });
