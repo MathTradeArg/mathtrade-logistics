@@ -3,13 +3,13 @@
 import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, PhaseBlocked, StaffDialog, StaffEmpty, StaffError, StaffPage, ThumbCta } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
+import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { getBox, markItemsReceived } from '@/hooks/boxes/boxApi';
-import { isTransitBox, receptorName } from '@/hooks/boxes/boxGrouping';
+import { boxOnwardDestinations, hasMixedDestinations, isTransitBox, receptorName } from '@/hooks/boxes/boxGrouping';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box } from '@/types';
 import { missingReportHref } from '@/app/more/report/missingReport';
-import TransitBoxView from './TransitBoxView';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -86,13 +86,18 @@ export default function IncomingBoxPage() {
     return <div className="flex min-h-[50dvh] items-center justify-center"><LoadingSpinner message="Cargando..." /></div>;
   }
 
-  if (eventPhase === 0) {
+  if ( eventPhase === 0) {
     return <PhaseBlocked />;
   }
 
-  if (box && isTransitBox(box)) {
-    return <TransitBoxView box={box} onReload={load} />;
-  }
+  const transit = box ? isTransitBox(box) : false;
+  const mixed = box ? hasMixedDestinations(box) : false;
+  const onwardNames = box ? boxOnwardDestinations(box) : [];
+  const destLabel = box
+    ? mixed
+      ? `Localidades mezcladas (${onwardNames.join(', ')})`
+      : onwardNames[0] || box.destination_name
+    : '';
 
   return (
     <StaffPage className="pb-28">
@@ -102,7 +107,17 @@ export default function IncomingBoxPage() {
 
       {box && (
         <>
-          <p className="text-sm text-gray-500">{box.origin_name} → {box.destination_name}</p>
+          <p className="text-sm text-gray-500">{box.origin_name} → {destLabel}</p>
+          {mixed && (
+            <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+              Localidades mezcladas ({onwardNames.join(', ')}): hay que abrir esta caja y marcar los juegos como recibidos para separarlos por destino.
+            </p>
+          )}
+          {transit && !mixed && (
+            <p className="mt-2 text-sm text-gray-600">
+              Todos los juegos declarados van a {destLabel}. Si abrís la caja, marcá los juegos como recibidos para sumarlos al armado del evento.
+            </p>
+          )}
 
           {pending.length === 0 ? (
             <StaffEmpty>Todos los juegos de esta caja ya están en evento.</StaffEmpty>
@@ -111,7 +126,15 @@ export default function IncomingBoxPage() {
               {pending.map((item) => {
                 const checked = selected.has(item.assigned_trade_code);
                 const receptor = receptorName(item);
+                const forwardCityName =
+                  item.location && item.location !== EVENT_LOCATION_ID
+                    ? item.location_name
+                    : box.destiny !== EVENT_LOCATION_ID
+                      ? box.destination_name
+                      : undefined;
+                const forwardCity = forwardCityName ? `Sigue a ${forwardCityName}` : null;
                 const subtitle = [
+                  forwardCity,
                   receptor ? `Retira ${receptor}` : null,
                   item.reported_missing ? 'Faltante reportado' : null,
                 ].filter(Boolean).join(' · ') || undefined;

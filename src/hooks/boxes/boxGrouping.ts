@@ -22,7 +22,36 @@ export function hasPendingIncomingItems(box: Box): boolean {
 }
 
 export function isTransitBox(box: Box, eventLocationId = EVENT_LOCATION_ID): boolean {
-  return box.origin !== eventLocationId && box.destiny !== eventLocationId;
+  if (box.origin === eventLocationId) return false;
+  if (box.destiny !== eventLocationId) return true;
+  return box.math_items.some((item) => isViaAmbaItem(item, eventLocationId));
+}
+
+/** Distinct non-AMBA destination names declared on the games inside `box`
+ *  (falling back to `box.destination_name` when `box.destiny` is another city). */
+export function boxOnwardDestinations(box: Box, eventLocationId = EVENT_LOCATION_ID): string[] {
+  const names = new Set<string>();
+  box.math_items.forEach((item) => {
+    if (item.location != null && item.location !== eventLocationId && item.location_name) {
+      names.add(item.location_name);
+    }
+  });
+  if (names.size === 0 && box.destiny !== eventLocationId && box.destination_name) {
+    names.add(box.destination_name);
+  }
+  return Array.from(names).sort((a, b) => a.localeCompare(b));
+}
+
+/** Whether `box` holds games bound for more than one onward locality. */
+export function hasMixedDestinations(box: Box, eventLocationId = EVENT_LOCATION_ID): boolean {
+  const ids = new Set<number>();
+  box.math_items.forEach((item) => {
+    if (item.location != null && item.location !== eventLocationId) {
+      ids.add(item.location);
+    }
+  });
+  if (ids.size > 1) return true;
+  return boxOnwardDestinations(box, eventLocationId).length > 1;
 }
 
 export function boxedTradeIds(boxes: Box[]): Set<number> {
@@ -47,19 +76,25 @@ export function goesViaHub(
 
 /** "Catamarca · Vía AMBA" for a destination reached through the event. */
 export function destinationLabel(name: string, viaHub: boolean): string {
-  return viaHub ? `${name} · Vía AMBA` : name;
+  if (!viaHub || name === VIA_AMBA_DESTINATION_LABEL) return name;
+  return `${name} · Vía AMBA`;
 }
 
 /** Whether a box from a city to `box.destiny` travels through the event,
  *  from its games (or `extraItems` to the same destination when it's empty). */
 export function boxGoesViaHub(box: Box, extraItems: Item[] = []): boolean {
-  const viaMeeting = [...box.math_items, ...extraItems.filter((item) => item.location === box.destiny)]
-    .some((item) => item.via_meeting);
-  return goesViaHub(box.origin, box.destiny, viaMeeting);
+  const viaMeeting = [
+    ...box.math_items,
+    ...extraItems.filter((item) => item.location === box.destiny),
+  ].some((item) => isViaAmbaItem(item));
+  return Boolean(viaMeeting) && box.origin != null && box.origin !== EVENT_LOCATION_ID;
 }
 
 /** The box destination name, marked when it travels through the event. */
 export function boxDestinationLabel(box: Box, extraItems: Item[] = []): string {
+  if (box.destiny === EVENT_LOCATION_ID && boxGoesViaHub(box, extraItems)) {
+    return VIA_AMBA_DESTINATION_LABEL;
+  }
   return destinationLabel(box.destination_name || `Destino ${box.destiny}`, boxGoesViaHub(box, extraItems));
 }
 
@@ -90,6 +125,68 @@ export function splitByRoute<T>(
     { key: 'hub', title: 'Van a AMBA', entries: hub },
   ];
   return sections.filter((section) => section.entries.length > 0);
+}
+
+/** Route param for a city's combined "Otras ciudades · Vía AMBA" lane: all
+ *  `via_meeting` copies bound for other cities are packed into AMBA boxes
+ *  (physical destination = EVENT_LOCATION_ID) that stay separate from the
+ *  boxes holding copies whose final destination is AMBA itself. */
+export const VIA_AMBA_DESTINATION_ID = -1;
+export const VIA_AMBA_DESTINATION_LABEL = 'Otras ciudades · Vía AMBA';
+
+/** The API destination_id of a box for `destinationId` (1 for both direct AMBA
+ *  and the via-AMBA lane). */
+export function apiDestinationId(destinationId: number, eventLocationId = EVENT_LOCATION_ID): number {
+  return destinationId === VIA_AMBA_DESTINATION_ID ? eventLocationId : destinationId;
+}
+
+/** Whether a copy from a city travels through AMBA to another city. */
+export function isViaAmbaItem(item: Item, eventLocationId = EVENT_LOCATION_ID): boolean {
+  return Boolean(item.via_meeting) && item.location != null && item.location !== eventLocationId;
+}
+
+/** Whether a city box to AMBA belongs to the `destinationId` lane (`1` = direct
+ *  AMBA, `-1` = via AMBA). An empty open box matches the lane it was opened in,
+ *  or either lane if not tagged. */
+export function boxMatchesLane(box: Box, destinationId: number, eventLocationId = EVENT_LOCATION_ID): boolean {
+  if (destinationId !== eventLocationId && destinationId !== VIA_AMBA_DESTINATION_ID) {
+    return box.destiny === destinationId;
+  }
+  if (box.destiny !== eventLocationId) return false;
+  if (box.math_items.length === 0) return true;
+  const hasVia = box.math_items.some((item) => isViaAmbaItem(item, eventLocationId));
+  return destinationId === VIA_AMBA_DESTINATION_ID ? hasVia : !hasVia;
+}
+
+/** The destination lane a copy is packed into from `origin`: from a city (not
+ *  the event), `via_meeting` copies to other cities go to VIA_AMBA_DESTINATION_ID
+ *  (`-1`), separate from direct AMBA (`1`); at the event they go to their final city. */
+export function packingDestinationId(
+  item: Item,
+  origin?: number | null,
+  eventLocationId = EVENT_LOCATION_ID,
+): number | undefined {
+  if (!item.location) return undefined;
+  if (origin != null && origin !== eventLocationId && isViaAmbaItem(item, eventLocationId)) {
+    return VIA_AMBA_DESTINATION_ID;
+  }
+  return item.location;
+}
+
+/** Subtitle for a copy inside a packing box: when a city box to AMBA holds a
+ *  `via_meeting` copy bound for another city, prepend its final destination. */
+export function packingItemSubtitle(
+  item: Item,
+  origin?: number | null,
+  eventLocationId = EVENT_LOCATION_ID,
+): string | undefined {
+  const receptor = receptorName(item);
+  const viaHop = goesViaHub(origin, item.location, item.via_meeting, eventLocationId);
+  const parts = [
+    viaHop && item.location_name ? `Sigue a ${item.location_name}` : null,
+    receptor || null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
 export function receptorName(item: Item): string {
@@ -167,50 +264,72 @@ export function groupPackingDestinations(
   items: Item[],
   boxes: Box[],
   requirePackableStatus = true,
-  /** Where the boxes leave from; marks the destinations reached via the event. */
+  /** Where the boxes leave from; from a city, `via_meeting` copies to other
+   *  cities group under VIA_AMBA_DESTINATION_ID (-1), apart from direct AMBA (1). */
   origin?: number,
 ): DestinationGroup[] {
   const boxed = boxedTradeIds(boxes);
   const openBoxed = boxedTradeIds(boxes.filter(isBoxOpen));
+  const boxLaneId = (box: Box): number => {
+    if (
+      origin != null &&
+      origin !== EVENT_LOCATION_ID &&
+      box.destiny === EVENT_LOCATION_ID &&
+      box.math_items.some((item) => isViaAmbaItem(item))
+    ) {
+      return VIA_AMBA_DESTINATION_ID;
+    }
+    return box.destiny;
+  };
   const closedBoxesByDest = new Map<number, number>();
   boxes.filter((box) => !isBoxOpen(box)).forEach((box) => {
-    closedBoxesByDest.set(box.destiny, (closedBoxesByDest.get(box.destiny) || 0) + 1);
+    const laneId = boxLaneId(box);
+    closedBoxesByDest.set(laneId, (closedBoxesByDest.get(laneId) || 0) + 1);
   });
 
   const map = new Map<number, DestinationGroup>();
 
   items.forEach((item) => {
-    if (!item.location || !item.location_name) return;
-    const current = map.get(item.location) || {
-      destinationId: item.location,
-      destinationName: item.location_name,
+    const destId = packingDestinationId(item, origin);
+    if (!destId) return;
+    const destName = destId === VIA_AMBA_DESTINATION_ID
+      ? VIA_AMBA_DESTINATION_LABEL
+      : item.location_name;
+    if (!destName) return;
+    const current = map.get(destId) || {
+      destinationId: destId,
+      destinationName: destName,
       readyCount: 0,
       inOpenCount: 0,
-      closedBoxCount: closedBoxesByDest.get(item.location) || 0,
-      viaHub: false,
+      closedBoxCount: closedBoxesByDest.get(destId) || 0,
+      viaHub: destId === VIA_AMBA_DESTINATION_ID,
     };
-    if (goesViaHub(origin, item.location, item.via_meeting)) current.viaHub = true;
+    if (destId === VIA_AMBA_DESTINATION_ID) current.viaHub = true;
     if (isPackable(item, requirePackableStatus) && !boxed.has(item.id)) {
       current.readyCount += 1;
     } else if (openBoxed.has(item.id)) {
       current.inOpenCount += 1;
     }
-    map.set(item.location, current);
+    map.set(destId, current);
   });
 
   boxes.forEach((box) => {
-    const existing = map.get(box.destiny);
+    const laneId = boxLaneId(box);
+    const existing = map.get(laneId);
     if (existing) {
-      if (origin != null && boxGoesViaHub(box)) existing.viaHub = true;
+      if (laneId === VIA_AMBA_DESTINATION_ID) existing.viaHub = true;
       return;
     }
-    map.set(box.destiny, {
-      destinationId: box.destiny,
-      destinationName: box.destination_name || `Destino ${box.destiny}`,
+    map.set(laneId, {
+      destinationId: laneId,
+      destinationName:
+        laneId === VIA_AMBA_DESTINATION_ID
+          ? VIA_AMBA_DESTINATION_LABEL
+          : box.destination_name || `Destino ${box.destiny}`,
       readyCount: 0,
       inOpenCount: isBoxOpen(box) ? box.math_items.length : 0,
       closedBoxCount: isBoxOpen(box) ? 0 : 1,
-      viaHub: origin != null && boxGoesViaHub(box),
+      viaHub: laneId === VIA_AMBA_DESTINATION_ID,
     });
   });
 

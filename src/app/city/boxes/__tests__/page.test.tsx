@@ -55,10 +55,11 @@ describe('CityBoxesPage', () => {
     expect(screen.queryByText('El evento no empezó')).not.toBeInTheDocument();
   });
 
-  it('marks the destinations that travel through AMBA', async () => {
+  it('separates direct AMBA from via-AMBA destinations and direct cities', async () => {
     mockListItems.mockResolvedValue([
       { id: 1, title: 'Catan', assigned_trade_code: 101, status: 2, location: 1, location_name: 'AMBA', via_meeting: true },
       { id: 2, title: 'Azul', assigned_trade_code: 102, status: 2, location: 12, location_name: 'Catamarca', via_meeting: true },
+      { id: 4, title: 'Dune', assigned_trade_code: 104, status: 2, location: 15, location_name: 'Salta', via_meeting: true },
       { id: 3, title: 'Root', assigned_trade_code: 103, status: 2, location: 9, location_name: 'Rosario', via_meeting: false },
     ]);
     render(<CityBoxesPage />, { wrapper });
@@ -66,8 +67,10 @@ describe('CityBoxesPage', () => {
     const hub = await screen.findByRole('region', { name: 'Van a AMBA' });
     const direct = screen.getByRole('region', { name: 'Directo a otra ciudad' });
     expect(within(hub).getAllByRole('link').map((link) => link.getAttribute('href')))
-      .toEqual(['/city/boxes/1', '/city/boxes/12']);
-    expect(within(hub).getByText('Catamarca · Vía AMBA')).toBeInTheDocument();
+      .toEqual(['/city/boxes/1', '/city/boxes/-1']);
+    expect(within(hub).getByText('AMBA')).toBeInTheDocument();
+    expect(within(hub).getByText('Otras ciudades · Vía AMBA')).toBeInTheDocument();
+    expect(within(hub).getByText(/2 listos/)).toBeInTheDocument();
     expect(within(direct).getByText('Rosario')).toBeInTheDocument();
     expect(within(direct).queryByText(/AMBA/)).not.toBeInTheDocument();
   });
