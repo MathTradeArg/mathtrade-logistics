@@ -1,4 +1,6 @@
-export type NavSlotId = 'receive' | 'arrive' | 'pack' | 'deliver' | 'more';
+import type { VolunteerRole } from '@/types/volunteer';
+
+export type NavSlotId = 'receive' | 'arrive' | 'pack' | 'deliver' | 'lookup' | 'more';
 
 export type NavSlot = {
   id: NavSlotId;
@@ -12,7 +14,7 @@ export function isBarePath(pathname: string | null): boolean {
   return pathname === '/login' || pathname.startsWith('/display');
 }
 
-export function getBottomNavSlots(eventPhase: number | null): NavSlot[] {
+function phaseSlots(eventPhase: number | null): NavSlot[] {
   if (eventPhase === 2) {
     return [
       { id: 'deliver', href: '/deliver', label: 'Entregar' },
@@ -39,7 +41,32 @@ export function getBottomNavSlots(eventPhase: number | null): NavSlot[] {
   ];
 }
 
+const ROLE_SLOTS: Record<VolunteerRole, NavSlotId[]> = {
+  window: ['receive', 'deliver'],
+  boxes: ['arrive', 'pack'],
+  runner: [],
+};
+const LOOKUP_SLOT: NavSlot = { id: 'lookup', href: '/lookup', label: 'Consultar' };
+
+export type NavAccess = { role: VolunteerRole | null; isAdmin: boolean };
+
+/** Slots by phase, narrowed to the volunteer's role (design decision 6).
+ *  Admins keep the full phase nav; the default keeps that behaviour. */
+export function getBottomNavSlots(
+  eventPhase: number | null,
+  access: NavAccess = { role: null, isAdmin: true },
+): NavSlot[] {
+  const slots = phaseSlots(eventPhase);
+  if (access.isAdmin) return slots;
+  const allowed = access.role ? ROLE_SLOTS[access.role] : [];
+  const filtered = slots.filter((s) => s.id === 'more' || allowed.includes(s.id));
+  if (access.role === 'runner') filtered.splice(filtered.length - 1, 0, LOOKUP_SLOT);
+  return filtered;
+}
+
 export function getPageTitle(pathname: string): string {
+  if (pathname.startsWith('/select-role')) return 'Tu rol';
+  if (pathname.startsWith('/lookup')) return 'Consultar';
   if (pathname.startsWith('/receive')) return 'Recibir';
   if (pathname.startsWith('/deliver')) return 'Entregar';
   if (pathname.startsWith('/boxes/out')) return 'Empacar';
@@ -48,12 +75,14 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/boxes')) return 'Cajas';
   if (pathname === '/reports/all' || pathname.startsWith('/reports/all/')) return 'Reportes';
   if (pathname.startsWith('/reports')) return 'Reportar';
+  if (pathname === '/more/role' || pathname.startsWith('/more/role/')) return 'Mi rol';
   if (pathname.startsWith('/more/tools/amba-pending')) return 'Pendientes AMBA';
   if (pathname.startsWith('/more/reports/amba-missing')) return 'Faltantes AMBA';
   if (pathname.startsWith('/more/tools')) return 'Herramientas';
   if (pathname.startsWith('/more/report') && !pathname.startsWith('/more/reports')) return 'Nuevo reporte';
   if (pathname.startsWith('/more/reports')) return 'Reportes';
   if (pathname.startsWith('/more')) return 'Más';
+  if (pathname.startsWith('/admin/volunteers')) return 'Voluntarios';
   if (pathname.startsWith('/admin/window-config')) return 'Ventanillas';
   if (pathname.startsWith('/admin/ready-to-pickup')) return 'Usuarios';
   return '';
@@ -72,9 +101,17 @@ function pathMatches(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
-export function isSlotActive(pathname: string, slot: NavSlot, eventPhase: number | null): boolean {
+export function isSlotActive(
+  pathname: string,
+  slot: NavSlot,
+  eventPhase: number | null,
+  slots?: NavSlot[],
+): boolean {
   if (slot.disabled) return false;
 
+  if (slot.id === 'lookup') {
+    return pathMatches(pathname, '/lookup');
+  }
   if (slot.id === 'receive') {
     return pathMatches(pathname, '/receive') || pathMatches(pathname, '/receive-games');
   }
@@ -91,7 +128,9 @@ export function isSlotActive(pathname: string, slot: NavSlot, eventPhase: number
     return (
       pathMatches(pathname, '/more') ||
       pathMatches(pathname, '/reports') ||
-      pathMatches(pathname, '/admin')
+      pathMatches(pathname, '/admin') ||
+      // Consultar is reached from Más unless the nav has its own slot (runners).
+      (pathMatches(pathname, '/lookup') && !(slots ?? []).some((s) => s.id === 'lookup'))
     );
   }
   return pathname === slot.href;

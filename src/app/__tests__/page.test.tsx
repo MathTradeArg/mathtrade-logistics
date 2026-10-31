@@ -26,7 +26,7 @@ describe('HomePage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseRouter.mockReturnValue({ replace: mockReplace, push: jest.fn() });
-    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, isAdmin: true, role: null });
   });
 
   it('redirects to /boxes/in in phase 1', async () => {
@@ -53,6 +53,40 @@ describe('HomePage', () => {
 
     expect(screen.getByText('El evento no empezó')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ir a Más' })).toHaveAttribute('href', '/more');
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('sends a volunteer to their role home', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, isAdmin: false, role: 'window' });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    render(<HomePage />);
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/receive'));
+  });
+
+  it('sends a runner to /lookup even in phase 0', async () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, isAdmin: false, role: 'runner' });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 0, isLoadingEventPhase: false });
+    render(<HomePage />);
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/lookup'));
+  });
+
+  it('shows the blocked screen to a window volunteer in phase 0', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, isAdmin: false, role: 'window' });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 0, isLoadingEventPhase: false });
+    render(<HomePage />);
+
+    expect(screen.getByText('El evento no empezó')).toBeInTheDocument();
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('leaves a volunteer without a role to the guard (spinner, no redirect)', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, isAdmin: false, role: null });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    render(<HomePage />);
+
+    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
     expect(mockReplace).not.toHaveBeenCalled();
   });
 });

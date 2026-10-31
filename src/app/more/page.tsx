@@ -2,6 +2,7 @@
 
 import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, StaffPage } from '@/components/staff';
+import { ROLES } from '@/config/roles';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
@@ -10,7 +11,7 @@ import { useState } from 'react';
 const rowClass = 'staff-card flex min-h-14 w-full items-center px-4 text-left font-medium text-gray-900';
 
 export default function MorePage() {
-  const { isAuthenticated, isAdmin, isLoading: authIsLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isLoading: authIsLoading, role } = useAuth();
   const { eventPhase, isLoadingEventPhase, updateEventPhase } = useEventPhase();
   const [isUpdatingPhase, setIsUpdatingPhase] = useState(false);
 
@@ -29,6 +30,14 @@ export default function MorePage() {
   return (
     <StaffPage>
       <ul className="flex flex-col gap-3">
+        {!isAdmin && role && (
+          <li>
+            <GameRow title={`Mi rol: ${ROLES[role].label}`} href="/more/role" />
+          </li>
+        )}
+        <li>
+          <Link href="/lookup" className={rowClass}>Consultar</Link>
+        </li>
         <li>
           <Link href="/more/report" className={rowClass}>Nuevo reporte</Link>
         </li>
@@ -77,6 +86,9 @@ export default function MorePage() {
             </li>
             <li>
               <GameRow title="Ventanillas" href="/admin/window-config" />
+            </li>
+            <li>
+              <GameRow title="Voluntarios" href="/admin/volunteers" />
             </li>
             <li>
               <button
