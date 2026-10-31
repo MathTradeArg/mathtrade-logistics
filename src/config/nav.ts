@@ -40,6 +40,7 @@ export function getBottomNavSlots(eventPhase: number | null): NavSlot[] {
 }
 
 export function getPageTitle(pathname: string): string {
+  if (pathname.startsWith('/lookup')) return 'Consultar';
   if (pathname.startsWith('/receive')) return 'Recibir';
   if (pathname.startsWith('/deliver')) return 'Entregar';
   if (pathname.startsWith('/boxes/out')) return 'Empacar';

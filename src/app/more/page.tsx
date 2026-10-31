@@ -30,6 +30,9 @@ export default function MorePage() {
     <StaffPage>
       <ul className="flex flex-col gap-3">
         <li>
+          <Link href="/lookup" className={rowClass}>Consultar</Link>
+        </li>
+        <li>
           <Link href="/more/report" className={rowClass}>Nuevo reporte</Link>
         </li>
         <li>

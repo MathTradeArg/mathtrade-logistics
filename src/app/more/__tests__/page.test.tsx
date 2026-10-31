@@ -20,6 +20,7 @@ describe('MorePage', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: false, isLoading: false });
     render(<MorePage />);
 
+    expect(screen.getByRole('link', { name: 'Consultar' })).toHaveAttribute('href', '/lookup');
     expect(screen.getByRole('link', { name: 'Nuevo reporte' })).toHaveAttribute('href', '/more/report');
     expect(screen.getByRole('link', { name: 'Ver reportes' })).toHaveAttribute('href', '/more/reports');
     expect(screen.getByRole('link', { name: 'Faltantes AMBA' })).toHaveAttribute('href', '/more/reports/amba-missing');
