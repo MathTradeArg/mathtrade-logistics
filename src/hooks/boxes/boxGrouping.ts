@@ -33,6 +33,65 @@ export function boxedTradeIds(boxes: Box[]): Set<number> {
   return ids;
 }
 
+/** A copy packed in a city (not at the event) for another city that travels
+ *  through the event (AMBA) first: `via_meeting` on the origin-destination
+ *  pair. At the event, or when the event is the destination, there is no hop. */
+export function goesViaHub(
+  origin: number | null | undefined,
+  destinationId: number | null | undefined,
+  viaMeeting: boolean | null | undefined,
+  eventLocationId = EVENT_LOCATION_ID,
+): boolean {
+  return Boolean(viaMeeting) && origin != null && origin !== eventLocationId && destinationId !== eventLocationId;
+}
+
+/** "Catamarca · Vía AMBA" for a destination reached through the event. */
+export function destinationLabel(name: string, viaHub: boolean): string {
+  return viaHub ? `${name} · Vía AMBA` : name;
+}
+
+/** Whether a box from a city to `box.destiny` travels through the event,
+ *  from its games (or `extraItems` to the same destination when it's empty). */
+export function boxGoesViaHub(box: Box, extraItems: Item[] = []): boolean {
+  const viaMeeting = [...box.math_items, ...extraItems.filter((item) => item.location === box.destiny)]
+    .some((item) => item.via_meeting);
+  return goesViaHub(box.origin, box.destiny, viaMeeting);
+}
+
+/** The box destination name, marked when it travels through the event. */
+export function boxDestinationLabel(box: Box, extraItems: Item[] = []): string {
+  return destinationLabel(box.destination_name || `Destino ${box.destiny}`, boxGoesViaHub(box, extraItems));
+}
+
+export type RouteSection<T> = {
+  key: 'direct' | 'hub';
+  title: string;
+  entries: T[];
+};
+
+/** Splits a city's destinations by where the box physically goes: straight to
+ *  another city, or to AMBA (to stay there or travel on to another city).
+ *  AMBA itself leads the second section. Empty sections are dropped. */
+export function splitByRoute<T>(
+  entries: T[],
+  destinationId: (entry: T) => number,
+  viaHub: (entry: T) => boolean,
+  eventLocationId = EVENT_LOCATION_ID,
+): RouteSection<T>[] {
+  const direct: T[] = [];
+  const hub: T[] = [];
+  entries.forEach((entry) => {
+    if (destinationId(entry) === eventLocationId) hub.unshift(entry);
+    else if (viaHub(entry)) hub.push(entry);
+    else direct.push(entry);
+  });
+  const sections: RouteSection<T>[] = [
+    { key: 'direct', title: 'Directo a otra ciudad', entries: direct },
+    { key: 'hub', title: 'Van a AMBA', entries: hub },
+  ];
+  return sections.filter((section) => section.entries.length > 0);
+}
+
 export function receptorName(item: Item): string {
   return [item.receptor_first_name, item.receptor_last_name].filter(Boolean).join(' ').trim();
 }
@@ -94,6 +153,8 @@ export type DestinationGroup = {
   readyCount: number;
   inOpenCount: number;
   closedBoxCount: number;
+  /** Packed from a city, the games travel through the event (AMBA). */
+  viaHub: boolean;
 };
 
 /** The event scan flow marks a game packable (status 5) at the hub; boxes
@@ -106,6 +167,8 @@ export function groupPackingDestinations(
   items: Item[],
   boxes: Box[],
   requirePackableStatus = true,
+  /** Where the boxes leave from; marks the destinations reached via the event. */
+  origin?: number,
 ): DestinationGroup[] {
   const boxed = boxedTradeIds(boxes);
   const openBoxed = boxedTradeIds(boxes.filter(isBoxOpen));
@@ -124,7 +187,9 @@ export function groupPackingDestinations(
       readyCount: 0,
       inOpenCount: 0,
       closedBoxCount: closedBoxesByDest.get(item.location) || 0,
+      viaHub: false,
     };
+    if (goesViaHub(origin, item.location, item.via_meeting)) current.viaHub = true;
     if (isPackable(item, requirePackableStatus) && !boxed.has(item.id)) {
       current.readyCount += 1;
     } else if (openBoxed.has(item.id)) {
@@ -134,13 +199,18 @@ export function groupPackingDestinations(
   });
 
   boxes.forEach((box) => {
-    if (map.has(box.destiny)) return;
+    const existing = map.get(box.destiny);
+    if (existing) {
+      if (origin != null && boxGoesViaHub(box)) existing.viaHub = true;
+      return;
+    }
     map.set(box.destiny, {
       destinationId: box.destiny,
       destinationName: box.destination_name || `Destino ${box.destiny}`,
       readyCount: 0,
       inOpenCount: isBoxOpen(box) ? box.math_items.length : 0,
       closedBoxCount: isBoxOpen(box) ? 0 : 1,
+      viaHub: origin != null && boxGoesViaHub(box),
     });
   });
 

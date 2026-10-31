@@ -2,14 +2,19 @@
 
 import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, PhaseBlocked, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
+import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { listBoxes, type CityViewParams } from '@/hooks/boxes/boxApi';
 import {
+  boxDestinationLabel,
+  destinationLabel,
   findBoxForTrade,
+  goesViaHub,
   groupPackingDestinations,
   isBoxOpen,
   matchesSearch,
   receptorName,
+  splitByRoute,
 } from '@/hooks/boxes/boxGrouping';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box, Item } from '@/types';
@@ -74,14 +79,15 @@ export default function PackingDestinations({
   }, [isAuthenticated, blocked, load]);
 
   const destinations = useMemo(
-    () => groupPackingDestinations(items, boxes, requirePackableStatus)
-      .filter((dest) => dest.destinationId !== excludeDestination),
-    [items, boxes, requirePackableStatus, excludeDestination],
+    () => groupPackingDestinations(items, boxes, requirePackableStatus, origin)
+      .filter((dest) => dest.destinationId !== excludeDestination)
+      .map((dest) => ({ ...dest, label: destinationLabel(dest.destinationName, dest.viaHub) })),
+    [items, boxes, requirePackableStatus, excludeDestination, origin],
   );
 
   const filteredDestinations = useMemo(() => {
     return destinations.filter((dest) => {
-      if (matchesSearch(dest.destinationName, query)) return true;
+      if (matchesSearch(dest.label, query)) return true;
       return items.some((item) => {
         if (item.location !== dest.destinationId) return false;
         return matchesSearch(
@@ -91,6 +97,15 @@ export default function PackingDestinations({
       });
     });
   }, [destinations, items, query]);
+
+  // From a city, the boxes to AMBA (staying there or travelling on) are listed
+  // apart from the ones that go straight to another city.
+  const sections = useMemo(() => {
+    if (origin === EVENT_LOCATION_ID) {
+      return [{ key: 'all', title: null as string | null, entries: filteredDestinations }];
+    }
+    return splitByRoute(filteredDestinations, (dest) => dest.destinationId, (dest) => dest.viaHub);
+  }, [origin, filteredDestinations]);
 
   const itemHits = useMemo(() => {
     if (query.trim().length < 2) return [];
@@ -145,9 +160,11 @@ export default function PackingDestinations({
               const box = findBoxForTrade(boxes, item.id);
               const subtitle = box
                 ? isBoxOpen(box)
-                  ? `En caja abierta a ${box.destination_name}`
+                  ? `En caja abierta a ${boxDestinationLabel(box)}`
                   : `En caja #${box.number} (cerrada)`
-                : `Listo para ${item.location_name || 'empacar'}`;
+                : item.location_name
+                  ? `Listo para ${destinationLabel(item.location_name, goesViaHub(origin, item.location, item.via_meeting))}`
+                  : 'Listo para empacar';
               return (
                 <li key={item.id}>
                   <GameRow
@@ -165,17 +182,24 @@ export default function PackingDestinations({
       {!isLoading && !error && filteredDestinations.length === 0 ? (
         <StaffEmpty>No hay destinos para empacar.</StaffEmpty>
       ) : (
-        <ul className="mt-4 flex flex-col gap-3">
-          {filteredDestinations.map((dest) => (
-            <li key={dest.destinationId}>
-              <GameRow
-                href={`${basePath}/${dest.destinationId}`}
-                title={dest.destinationName}
-                subtitle={`${dest.readyCount} listos · ${dest.inOpenCount} en cajas abiertas · ${dest.closedBoxCount} cerradas`}
-              />
-            </li>
-          ))}
-        </ul>
+        sections.map((section) => (
+          <section key={section.key} aria-label={section.title ?? undefined}>
+            {section.title && (
+              <h2 className="mt-6 text-sm font-semibold text-gray-500">{section.title}</h2>
+            )}
+            <ul className={`${section.title ? 'mt-3' : 'mt-4'} flex flex-col gap-3`}>
+              {section.entries.map((dest) => (
+                <li key={dest.destinationId}>
+                  <GameRow
+                    href={`${basePath}/${dest.destinationId}`}
+                    title={dest.label}
+                    subtitle={`${dest.readyCount} listos · ${dest.inOpenCount} en cajas abiertas · ${dest.closedBoxCount} cerradas`}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
       )}
     </StaffPage>
   );

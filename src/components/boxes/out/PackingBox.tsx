@@ -5,7 +5,7 @@ import { GameRow, PhaseBlocked, StaffDialog, StaffEmpty, StaffError, StaffPage, 
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { getBox, listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
-import { boxedTradeIds, boxContentsSummary, isBoxOpen, isPackable, openBoxTitle, packerName, receptorName } from '@/hooks/boxes/boxGrouping';
+import { boxDestinationLabel, boxedTradeIds, boxContentsSummary, isBoxOpen, isPackable, openBoxTitle, packerName, receptorName } from '@/hooks/boxes/boxGrouping';
 import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box, Item } from '@/types';
@@ -203,7 +203,7 @@ export default function PackingBox({
       {box && mode === 'view' && (
         <>
           <p className="text-sm text-gray-500">
-            {box.destination_name} · la abrió {packerName(box)} · {box.math_items.length} juegos
+            {boxDestinationLabel(box, items)} · la abrió {packerName(box)} · {box.math_items.length} juegos
           </p>
 
           {box.math_items.length === 0 ? (
@@ -383,7 +383,7 @@ export default function PackingBox({
           <div className="text-center">
             <p className="text-5xl font-bold text-gray-900">#{closedNumber}</p>
             <p className="mt-3">
-              Escribí el #{closedNumber} en la caja física a {box?.destination_name}. {box?.math_items.length} juegos.
+              Escribí el #{closedNumber} en la caja física a {box ? boxDestinationLabel(box, items) : ''}. {box?.math_items.length} juegos.
             </p>
           </div>
         )}
