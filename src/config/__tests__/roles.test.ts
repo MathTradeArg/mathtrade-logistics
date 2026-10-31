@@ -91,6 +91,23 @@ describe('city users', () => {
     expect(isPathAllowed('/receive', 'boxes', false, referrer)).toBe(false);
   });
 
+  it('lets a pure referrer manage their volunteers', () => {
+    expect(isPathAllowed('/city/volunteers', null, false, referrer)).toBe(true);
+  });
+
+  it('gives a local volunteer only boxes and the Instructivo under /city', () => {
+    const local = { kind: 'local' as const, city: { id: 7, name: 'Mendoza' } };
+    expect(isPathAllowed('/city', null, false, local)).toBe(true);
+    expect(isPathAllowed('/city/boxes', null, false, local)).toBe(true);
+    expect(isPathAllowed('/city/boxes/1/30', null, false, local)).toBe(true);
+    expect(isPathAllowed('/city/instructivo', null, false, local)).toBe(true);
+    expect(isPathAllowed('/more', null, false, local)).toBe(true);
+    expect(isPathAllowed('/city/shipments', null, false, local)).toBe(false);
+    expect(isPathAllowed('/city/shipments/new', null, false, local)).toBe(false);
+    expect(isPathAllowed('/city/volunteers', null, false, local)).toBe(false);
+    expect(isPathAllowed('/boxes/out', null, false, local)).toBe(false);
+  });
+
   it('keeps /city closed to users without a city', () => {
     expect(isPathAllowed('/city', 'boxes', false)).toBe(false);
   });

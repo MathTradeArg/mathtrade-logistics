@@ -27,6 +27,15 @@ export default function CityHomePage() {
             <GameRow title="Envíos" subtitle="Tus envíos y sus comprobantes" href="/city/shipments" />
           </li>
         )}
+        {cityAccess.kind === 'referrer' && (
+          <li>
+            <GameRow
+              title="Voluntarios"
+              subtitle="Quiénes te ayudan a armar las cajas"
+              href="/city/volunteers"
+            />
+          </li>
+        )}
       </ul>
     </StaffPage>
   );

@@ -69,6 +69,10 @@ describe('city nav', () => {
     expect(cityLabels(phase, null, referrer)).toEqual(['Armar', 'Envíos', 'Más']);
   });
 
+  it('titles the city volunteers screen', () => {
+    expect(getPageTitle('/city/volunteers')).toBe('Voluntarios');
+  });
+
   it('gives a local volunteer Armar and Más', () => {
     expect(cityLabels(1, null, local)).toEqual(['Armar', 'Más']);
   });

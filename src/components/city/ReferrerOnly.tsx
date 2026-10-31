@@ -1,9 +1,11 @@
 import { StaffEmpty, StaffPage } from '@/components/staff';
 
-export default function ReferrerOnly() {
+export default function ReferrerOnly({
+  message = 'Solo el referente de la ciudad maneja los envíos.',
+}: { message?: string }) {
   return (
     <StaffPage>
-      <StaffEmpty>Solo el referente de la ciudad maneja los envíos.</StaffEmpty>
+      <StaffEmpty>{message}</StaffEmpty>
     </StaffPage>
   );
 }

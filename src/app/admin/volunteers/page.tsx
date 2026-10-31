@@ -8,7 +8,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { ROLE_ORDER, ROLES } from '@/config/roles';
 import type { EventVolunteer, VolunteerCandidate, VolunteerRole, VolunteerUser } from '@/types';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+/** api/locations/ row: only what "Agregar local" needs. */
+type LocationRow = { id: number; name: string; referral: { id: number } | null };
+
+const EVENT_FILTER = 'event';
+const ALL_FILTER = '';
 
 const fullName = (user: VolunteerUser) => `${user.first_name} ${user.last_name}`.trim() || user.email;
 
@@ -40,12 +46,18 @@ export default function VolunteersPage() {
   const [toRemove, setToRemove] = useState<EventVolunteer | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
   const [updatingRoleId, setUpdatingRoleId] = useState<number | null>(null);
+  const [cityFilter, setCityFilter] = useState<string>(ALL_FILTER);
+  const [locations, setLocations] = useState<LocationRow[]>([]);
+  // '' = add as an event volunteer; a location id = as that city's local
+  // volunteer (added_by = its referrer).
+  const [addTarget, setAddTarget] = useState<string>('');
 
   const { execute: fetchVolunteers } = useApi<EventVolunteer[]>('logistics/volunteers/');
   const { execute: fetchCandidates } = useApi<VolunteerCandidate[]>('logistics/volunteers/candidates/');
   const { execute: createVolunteer } = useApi<EventVolunteer>('logistics/volunteers/', { method: 'POST' });
   const { execute: deleteVolunteer } = useApi<void>('logistics/volunteers/', { method: 'DELETE' });
   const { execute: patchVolunteer } = useApi<EventVolunteer>('logistics/volunteers/', { method: 'PATCH' });
+  const { execute: fetchLocations } = useApi<LocationRow[] | { results: LocationRow[] }>('locations/');
 
   useEffect(() => {
     if (!authIsLoading && (isAuthenticated === false || isAdmin === false)) {
@@ -70,6 +82,39 @@ export default function VolunteersPage() {
       loadVolunteers();
     }
   }, [isAuthenticated, isAdmin, loadVolunteers]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isAdmin) return;
+    let cancelled = false;
+    fetchLocations()
+      .then((data) => {
+        if (cancelled) return;
+        const rows = Array.isArray(data) ? data : data?.results ?? [];
+        setLocations(rows.filter((l) => l.referral));
+      })
+      .catch(() => {
+        // Without locations the admin can still add event volunteers.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, isAdmin, fetchLocations]);
+
+  const cityOptions = useMemo(() => {
+    const byId = new Map<number, string>();
+    volunteers.forEach((v) => {
+      if (v.city) byId.set(v.city.id, v.city.name);
+    });
+    return [...byId.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  }, [volunteers]);
+
+  const shown = volunteers.filter((v) => {
+    if (cityFilter === ALL_FILTER) return true;
+    if (cityFilter === EVENT_FILTER) return !v.added_by;
+    return v.city?.id === Number(cityFilter);
+  });
 
   useEffect(() => {
     const q = query.trim();
@@ -102,7 +147,11 @@ export default function VolunteersPage() {
   const handleAdd = async (candidate: VolunteerCandidate) => {
     setAddingId(candidate.id);
     try {
-      const created = await createVolunteer({ user_id: candidate.id });
+      const target = locations.find((l) => String(l.id) === addTarget);
+      const body = target?.referral
+        ? { user_id: candidate.id, added_by_id: target.referral.id }
+        : { user_id: candidate.id };
+      const created = await createVolunteer(body);
       if (created) {
         setVolunteers((prev) => [...prev.filter((v) => v.id !== created.id), created].sort(byName));
       }
@@ -161,6 +210,19 @@ export default function VolunteersPage() {
     <StaffPage>
       <section>
         <h2 className="text-sm font-semibold text-gray-500">Agregar voluntario</h2>
+        <select
+          value={addTarget}
+          onChange={(event) => setAddTarget(event.target.value)}
+          className="mt-3 min-h-10 w-full rounded-full border border-gray-200 bg-white px-3 text-sm"
+          aria-label="Agregar como"
+        >
+          <option value="">Del evento</option>
+          {locations.map((location) => (
+            <option key={location.id} value={String(location.id)}>
+              Local de {location.name}
+            </option>
+          ))}
+        </select>
         <StaffSearch
           className="mt-3"
           value={query}
@@ -200,34 +262,52 @@ export default function VolunteersPage() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-sm font-semibold text-gray-500">Voluntarios ({volunteers.length})</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold text-gray-500">Voluntarios ({shown.length})</h2>
+          <select
+            value={cityFilter}
+            onChange={(event) => setCityFilter(event.target.value)}
+            className="min-h-10 rounded-full border border-gray-200 bg-white px-3 text-xs"
+            aria-label="Filtrar por ciudad"
+          >
+            <option value={ALL_FILTER}>Todos</option>
+            <option value={EVENT_FILTER}>Evento</option>
+            {cityOptions.map((city) => (
+              <option key={city.id} value={String(city.id)}>{city.name}</option>
+            ))}
+          </select>
+        </div>
         {isLoadingList ? (
           <p className="py-8 text-center text-gray-500">Cargando voluntarios...</p>
-        ) : volunteers.length === 0 ? (
+        ) : shown.length === 0 ? (
           <StaffEmpty>Todavía no hay voluntarios en esta edición.</StaffEmpty>
         ) : (
           <ul className="mt-3 flex flex-col gap-3">
-            {volunteers.map((volunteer) => (
+            {shown.map((volunteer) => (
               <li key={volunteer.id}>
                 <GameRow
                   title={fullName(volunteer.user)}
-                  subtitle={volunteer.user.email}
+                  subtitle={`${volunteer.city?.name ?? 'Evento'} · ${volunteer.user.email}`}
                   trailing={
                     <div className="flex shrink-0 items-center gap-2">
-                      <select
-                        value={volunteer.role ?? ''}
-                        onChange={(event) => handleRoleChange(volunteer, event.target.value)}
-                        disabled={updatingRoleId === volunteer.id}
-                        className={`min-h-10 rounded-full border-0 px-3 text-xs font-semibold ${
-                          volunteer.role ? 'bg-primary/15 text-primary' : 'bg-gray-100 text-gray-500'
-                        }`}
-                        aria-label={`Rol de ${fullName(volunteer.user)}`}
-                      >
-                        <option value="">Sin rol</option>
-                        {ROLE_ORDER.map((id) => (
-                          <option key={id} value={id}>{ROLES[id].label}</option>
-                        ))}
-                      </select>
+                      {volunteer.added_by ? (
+                        <span className="px-3 text-xs text-gray-500">—</span>
+                      ) : (
+                        <select
+                          value={volunteer.role ?? ''}
+                          onChange={(event) => handleRoleChange(volunteer, event.target.value)}
+                          disabled={updatingRoleId === volunteer.id}
+                          className={`min-h-10 rounded-full border-0 px-3 text-xs font-semibold ${
+                            volunteer.role ? 'bg-primary/15 text-primary' : 'bg-gray-100 text-gray-500'
+                          }`}
+                          aria-label={`Rol de ${fullName(volunteer.user)}`}
+                        >
+                          <option value="">Sin rol</option>
+                          {ROLE_ORDER.map((id) => (
+                            <option key={id} value={id}>{ROLES[id].label}</option>
+                          ))}
+                        </select>
+                      )}
                       <button
                         type="button"
                         onClick={() => setToRemove(volunteer)}

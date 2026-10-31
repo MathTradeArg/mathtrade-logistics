@@ -83,6 +83,7 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/city/boxes')) return 'Armar cajas';
   if (pathname.startsWith('/city/instructivo')) return 'Instructivo';
   if (pathname.startsWith('/city/shipments')) return 'Envíos';
+  if (pathname.startsWith('/city/volunteers')) return 'Voluntarios';
   if (pathname === '/city' || pathname.startsWith('/city/')) return 'Mi ciudad';
   if (pathname.startsWith('/select-role')) return 'Tu rol';
   if (pathname.startsWith('/lookup')) return 'Consultar';

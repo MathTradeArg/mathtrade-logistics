@@ -14,6 +14,7 @@ describe('CityHomePage', () => {
     expect(screen.getByRole('link', { name: /Armar cajas/ })).toHaveAttribute('href', '/city/boxes');
     expect(screen.getByRole('link', { name: /Instructivo/ })).toHaveAttribute('href', '/city/instructivo');
     expect(screen.getByRole('link', { name: /Envíos/ })).toHaveAttribute('href', '/city/shipments');
+    expect(screen.getByRole('link', { name: /Voluntarios/ })).toHaveAttribute('href', '/city/volunteers');
   });
 
   it('hides Envíos from a local volunteer', () => {
@@ -21,6 +22,7 @@ describe('CityHomePage', () => {
     render(<CityHomePage />);
     expect(screen.getByRole('link', { name: /Armar cajas/ })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Envíos/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Voluntarios/ })).not.toBeInTheDocument();
   });
 
   it('says so when the user has no city', () => {

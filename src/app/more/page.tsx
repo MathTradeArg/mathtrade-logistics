@@ -40,6 +40,11 @@ export default function MorePage() {
           <li>
             <GameRow title="Instructivo" href="/city/instructivo" />
           </li>
+          {cityAccess.kind === 'referrer' && (
+            <li>
+              <GameRow title="Voluntarios" href="/city/volunteers" />
+            </li>
+          )}
         </ul>
       </StaffPage>
     );
@@ -51,6 +56,11 @@ export default function MorePage() {
         {cityAccess && (
           <li>
             <GameRow title={`Mi ciudad: ${cityAccess.city.name}`} href="/city" />
+          </li>
+        )}
+        {cityAccess?.kind === 'referrer' && (
+          <li>
+            <GameRow title={`Voluntarios de ${cityAccess.city.name}`} href="/city/volunteers" />
           </li>
         )}
         {!isAdmin && role && (
