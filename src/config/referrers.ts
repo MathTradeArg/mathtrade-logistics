@@ -20,8 +20,8 @@ export type LocationReferrerInfo = {
 
 export const AMBA_REFERRER_INFO: LocationReferrerInfo = {
   locationId: EVENT_LOCATION_ID,
-  city: 'AMBA',
-  code: 'AMBA',
+  city: 'CABA',
+  code: 'CABA',
   address: 'Vía Cargo Villa Devoto: Nueva York 4311, C1419 Cdad. Autónoma de Buenos Aires',
   payOnDelivery: true,
   referrers: [

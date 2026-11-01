@@ -85,6 +85,9 @@ export default function MorePage() {
           </li>
         )}
         <li>
+          <Link href="/tables" className={rowClass}>Mesas</Link>
+        </li>
+        <li>
           <Link href="/lookup" className={rowClass}>Consultar</Link>
         </li>
         <li>

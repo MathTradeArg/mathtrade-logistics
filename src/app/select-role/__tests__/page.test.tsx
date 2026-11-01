@@ -37,10 +37,10 @@ describe('SelectRolePage', () => {
     });
   });
 
-  it('offers the three roles and saves the tapped one with PATCH', async () => {
+  it('offers the four roles and saves the tapped one with PATCH', async () => {
     render(<SelectRolePage />);
     expect(screen.getByText('¿Qué vas a hacer hoy?')).toBeInTheDocument();
-    expect(screen.getAllByRole('button')).toHaveLength(3);
+    expect(screen.getAllByRole('button')).toHaveLength(4);
     expect(mockReplace).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: /Cajas/ }));

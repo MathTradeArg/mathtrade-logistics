@@ -11,6 +11,8 @@ describe('getBottomNavSlots', () => {
     ['window', 2, ['Entregar', 'Recibir', 'Más']],
     ['boxes', 1, ['Llegan', 'Empacar', 'Más']],
     ['boxes', 2, ['Empacar', 'Más']],
+    ['tables', 1, ['Mesas', 'Más']],
+    ['tables', 2, ['Mesas', 'Más']],
     ['runner', 1, ['Consultar', 'Más']],
     ['runner', 2, ['Consultar', 'Más']],
   ] as const)('%s in phase %i', (role, phase, expected) => {
