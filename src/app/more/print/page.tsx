@@ -18,6 +18,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 type PrintTab = 'labels' | 'sectors' | 'windows' | 'tables';
 type BoxRouteKind = 'amba_direct' | 'amba_via' | 'interior';
 type SectorKind = 'both' | 'unpack' | 'pack';
+type CircleFill = 'filled' | 'empty';
 
 type WindowConfigItem = {
   id?: number;
@@ -25,46 +26,35 @@ type WindowConfigItem = {
   tables: string[];
 };
 
-/** Giant visual symbol: Diamond (◆) for boxes ending in AMBA, Circle (●) for
- *  boxes continuing to another locality. */
-function BoxShapeSymbol({ shape, label }: { shape: 'diamond' | 'circle'; label: string }) {
+/** Giant visual circle symbol for boxes travelling to CABA:
+ *  - Filled circle (●) when CABA is the final destination
+ *  - Empty circle (○) when CABA is an intermediate stop (Leg 1 = CABA) */
+function BoxCircleSymbol({ fill }: { fill: CircleFill }) {
+  const isFilled = fill === 'filled';
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border-4 border-black bg-white p-3 text-center">
-      {shape === 'diamond' ? (
-        <svg
-          viewBox="0 0 120 120"
-          className="h-28 w-28 text-black"
-          role="img"
-          aria-label="Rombo: Termina en AMBA"
-        >
-          <polygon
-            points="60,6 114,60 60,114 6,60"
-            fill="currentColor"
-            stroke="#000"
-            strokeWidth="6"
-          />
-        </svg>
-      ) : (
-        <svg
-          viewBox="0 0 120 120"
-          className="h-28 w-28 text-black"
-          role="img"
-          aria-label="Círculo: Sigue a otra localidad"
-        >
-          <circle
-            cx="60"
-            cy="60"
-            r="52"
-            fill="currentColor"
-            stroke="#000"
-            strokeWidth="6"
-          />
-        </svg>
-      )}
-      <span className="mt-1 text-xs font-black tracking-wider text-black uppercase">
-        {shape === 'diamond' ? 'ROMBO' : 'CÍRCULO'}
+    <div className="flex h-full w-full flex-col items-center justify-center rounded-xl border-4 border-black bg-white p-4 text-center">
+      <svg
+        viewBox="0 0 200 200"
+        className="h-52 w-52 sm:h-60 sm:w-60 print:h-56 print:w-56 text-black"
+        role="img"
+        aria-label={
+          isFilled
+            ? 'Círculo lleno: Destino final CABA'
+            : 'Círculo vacío: Paso intermedio por CABA'
+        }
+      >
+        <circle
+          cx="100"
+          cy="100"
+          r="86"
+          fill={isFilled ? '#000' : 'none'}
+          stroke="#000"
+          strokeWidth="16"
+        />
+      </svg>
+      <span className="mt-2 text-sm font-black tracking-wider text-black uppercase">
+        {isFilled ? 'CÍRCULO LLENO · FINAL CABA' : 'CÍRCULO VACÍO · VÍA CABA'}
       </span>
-      <span className="text-sm font-extrabold text-black uppercase">{label}</span>
     </div>
   );
 }
@@ -102,7 +92,6 @@ function PrintPageContent() {
   const [senderName, setSenderName] = useState<string>('');
   const [senderDni, setSenderDni] = useState<string>('');
   const [senderPhone, setSenderPhone] = useState<string>('');
-  const [interiorPayOnDelivery, setInteriorPayOnDelivery] = useState<boolean>(true);
   const [labelDestQuery, setLabelDestQuery] = useState<string>('');
   const [selectedLabelDests, setSelectedLabelDests] = useState<Set<number>>(
     () => new Set([INTERIOR_REFERRER_DIRECTORY[0]?.locationId ?? 3]),
@@ -218,24 +207,22 @@ function PrintPageContent() {
     const count = Math.max(1, Math.min(20, copiesPerDest || 1));
     if (routeKind === 'amba_direct') {
       return Array.from({ length: count }, (_, idx) => ({
-        key: `amba-direct-${idx}`,
-        shape: 'diamond' as const,
-        shapeLabel: 'TERMINA EN AMBA',
+        key: `caba-direct-${idx}`,
+        circleFill: 'filled' as CircleFill | null,
         destInfo: AMBA_REFERRER_INFO,
         addressOverride: customAddresses[AMBA_REFERRER_INFO.locationId],
         payOnDelivery: true,
-        isViaAmbaOnward: false,
+        isViaCabaOnward: false,
       }));
     }
     if (routeKind === 'amba_via') {
       return Array.from({ length: count }, (_, idx) => ({
-        key: `amba-via-${idx}`,
-        shape: 'circle' as const,
-        shapeLabel: 'SIGUE A OTRA LOCALIDAD',
+        key: `caba-via-${idx}`,
+        circleFill: 'empty' as CircleFill | null,
         destInfo: AMBA_REFERRER_INFO,
         addressOverride: customAddresses[AMBA_REFERRER_INFO.locationId],
         payOnDelivery: true,
-        isViaAmbaOnward: true,
+        isViaCabaOnward: true,
       }));
     }
     const chosen = INTERIOR_REFERRER_DIRECTORY.filter((loc) =>
@@ -243,28 +230,26 @@ function PrintPageContent() {
     );
     const list: {
       key: string;
-      shape: 'diamond' | 'circle';
-      shapeLabel: string;
+      circleFill: CircleFill | null;
       destInfo: LocationReferrerInfo;
       addressOverride?: string;
       payOnDelivery: boolean;
-      isViaAmbaOnward: boolean;
+      isViaCabaOnward: boolean;
     }[] = [];
     chosen.forEach((loc) => {
       for (let idx = 0; idx < count; idx += 1) {
         list.push({
           key: `interior-${loc.locationId}-${idx}`,
-          shape: 'circle',
-          shapeLabel: 'SIGUE A OTRA LOCALIDAD',
+          circleFill: null,
           destInfo: loc,
           addressOverride: customAddresses[loc.locationId],
-          payOnDelivery: interiorPayOnDelivery,
-          isViaAmbaOnward: false,
+          payOnDelivery: false,
+          isViaCabaOnward: false,
         });
       }
     });
     return list;
-  }, [routeKind, copiesPerDest, selectedLabelDests, customAddresses, interiorPayOnDelivery]);
+  }, [routeKind, copiesPerDest, selectedLabelDests, customAddresses]);
 
   const sectorSigns = useMemo(() => {
     const chosen = INTERIOR_REFERRER_DIRECTORY.filter((loc) =>
@@ -291,14 +276,6 @@ function PrintPageContent() {
     }
     return list;
   }, [tableStart, tableEnd]);
-
-  const windowForTable = useMemo(() => {
-    const map = new Map<string, string>();
-    windows.forEach((w) => {
-      w.tables.forEach((t) => map.set(String(t), w.name));
-    });
-    return map;
-  }, [windows]);
 
   const applyWindowCount = (count: number) => {
     const clamped = Math.max(1, Math.min(30, count));
@@ -368,7 +345,7 @@ function PrintPageContent() {
                       : 'border-gray-200 bg-white text-gray-800'
                   }`}
                 >
-                  <span>◆ Viaja a AMBA y TERMINA EN AMBA (Rombo grande)</span>
+                  <span>● Viaja a CABA y TERMINA EN CABA (Círculo lleno)</span>
                   <span className="text-xs font-semibold uppercase">Pago en destino</span>
                 </button>
                 <button
@@ -380,7 +357,7 @@ function PrintPageContent() {
                       : 'border-gray-200 bg-white text-gray-800'
                   }`}
                 >
-                  <span>● Viaja a AMBA y SIGUE A OTRA LOCALIDAD · Vía AMBA (Círculo grande)</span>
+                  <span>○ Viaja a CABA y SIGUE A OTRA LOCALIDAD · Vía CABA (Círculo vacío)</span>
                   <span className="text-xs font-semibold uppercase">Pago en destino</span>
                 </button>
                 <button
@@ -392,7 +369,7 @@ function PrintPageContent() {
                       : 'border-gray-200 bg-white text-gray-800'
                   }`}
                 >
-                  <span>● Viaja a localidad del interior (desde el evento o directo · Círculo grande)</span>
+                  <span>Viaja a localidad del interior (desde el evento o directo)</span>
                   <span className="text-xs font-semibold uppercase">Por localidad</span>
                 </button>
               </div>
@@ -485,15 +462,6 @@ function PrintPageContent() {
                     );
                   })}
                 </div>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={interiorPayOnDelivery}
-                    onChange={(e) => setInteriorPayOnDelivery(e.target.checked)}
-                    className="h-4 w-4"
-                  />
-                  Incluir cartel &ldquo;PAGO EN DESTINO&rdquo;
-                </label>
               </div>
             )}
 
@@ -537,7 +505,7 @@ function PrintPageContent() {
                   className="min-h-10 rounded border border-gray-300 px-2 text-xs"
                 >
                   <option value="">Pre-cargar desde una localidad o dejar vacío...</option>
-                  <option value={String(AMBA_REFERRER_INFO.locationId)}>AMBA (Germán Kijel)</option>
+                  <option value={String(AMBA_REFERRER_INFO.locationId)}>CABA (Germán Kijel)</option>
                   {INTERIOR_REFERRER_DIRECTORY.map((loc) => (
                     <option key={loc.locationId} value={String(loc.locationId)}>
                       {loc.city} ({loc.referrers.map((r) => r.name).join(' / ')})
@@ -674,42 +642,20 @@ function PrintPageContent() {
                 className="min-h-10 w-24 rounded border border-gray-300 px-3 text-sm"
               />
             </div>
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {windows.map((win, idx) => (
-                <div key={idx} className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <input
-                    type="text"
-                    value={win.name}
-                    onChange={(e) =>
-                      setWindows((prev) =>
-                        prev.map((row, i) => (i === idx ? { ...row, name: e.target.value } : row)),
-                      )
-                    }
-                    placeholder={`Ventanilla ${idx + 1}`}
-                    className="min-h-10 rounded border border-gray-300 px-3 text-sm"
-                  />
-                  <input
-                    type="text"
-                    value={win.tables.join(', ')}
-                    onChange={(e) =>
-                      setWindows((prev) =>
-                        prev.map((row, i) =>
-                          i === idx
-                            ? {
-                                ...row,
-                                tables: e.target.value
-                                  .split(',')
-                                  .map((s) => s.trim())
-                                  .filter(Boolean),
-                              }
-                            : row,
-                        ),
-                      )
-                    }
-                    placeholder="Mesas (ej: 1, 2, 3)"
-                    className="min-h-10 rounded border border-gray-300 px-3 text-sm"
-                  />
-                </div>
+                <input
+                  key={idx}
+                  type="text"
+                  value={win.name}
+                  onChange={(e) =>
+                    setWindows((prev) =>
+                      prev.map((row, i) => (i === idx ? { ...row, name: e.target.value } : row)),
+                    )
+                  }
+                  placeholder={`Ventanilla ${idx + 1}`}
+                  className="min-h-10 rounded border border-gray-300 px-3 text-sm"
+                />
               ))}
             </div>
           </div>
@@ -777,20 +723,24 @@ function PrintPageContent() {
                 key={item.key}
                 className="print-sheet rounded-xl border-4 border-black bg-white p-6 text-black"
               >
-                {/* Top Header: Destination + Giant Shape Symbol + Box Number */}
+                {/* Top Header: Destination + Giant Circle Symbol (for CABA) + Box Number */}
                 <div className="grid grid-cols-1 gap-4 border-b-4 border-black pb-4 sm:grid-cols-12 sm:items-stretch">
-                  <div className="flex flex-col justify-between sm:col-span-6">
+                  <div
+                    className={`flex flex-col justify-between ${
+                      item.circleFill ? 'sm:col-span-4' : 'sm:col-span-8'
+                    }`}
+                  >
                     <div>
                       <p className="text-xs font-bold tracking-widest uppercase">
                         DESTINO DEL ENVÍO
                       </p>
-                      <h2 className="mt-1 text-4xl font-black uppercase leading-none">
+                      <h2 className="mt-1 text-5xl font-black uppercase leading-none">
                         {item.destInfo.city}
                       </h2>
-                      {item.isViaAmbaOnward && (
+                      {item.isViaCabaOnward && (
                         <div className="mt-3 rounded-lg border-2 border-black bg-gray-100 p-2">
                           <p className="text-xs font-bold uppercase">
-                            PASA POR AMBA · SIGUE A LOCALIDAD(ES):
+                            PASA POR CABA · SIGUE A LOCALIDAD(ES):
                           </p>
                           {onwardCityText.trim() ? (
                             <p className="mt-1 text-xl font-black uppercase">
@@ -804,17 +754,23 @@ function PrintPageContent() {
                     </div>
 
                     {item.payOnDelivery && (
-                      <div className="mt-3 inline-block rounded-lg border-4 border-black bg-black px-4 py-2 text-center text-xl font-black tracking-wider text-white uppercase print:border-black print:text-black print:bg-white">
+                      <div className="mt-4 inline-block rounded-lg border-4 border-black bg-black px-4 py-2 text-center text-2xl font-black tracking-wider text-white uppercase print:border-black print:text-black print:bg-white">
                         PAGO EN DESTINO
                       </div>
                     )}
                   </div>
 
-                  <div className="sm:col-span-3 flex items-center justify-center">
-                    <BoxShapeSymbol shape={item.shape} label={item.shapeLabel} />
-                  </div>
+                  {item.circleFill && (
+                    <div className="sm:col-span-5 flex items-center justify-center">
+                      <BoxCircleSymbol fill={item.circleFill} />
+                    </div>
+                  )}
 
-                  <div className="sm:col-span-3 flex flex-col justify-between rounded-xl border-4 border-black p-3 text-center">
+                  <div
+                    className={`${
+                      item.circleFill ? 'sm:col-span-3' : 'sm:col-span-4'
+                    } flex flex-col justify-between rounded-xl border-4 border-black p-3 text-center`}
+                  >
                     <span className="text-xs font-black tracking-wider uppercase">
                       CAJA Nº
                     </span>
@@ -936,25 +892,22 @@ function PrintPageContent() {
           sectorSigns.map((sign) => (
             <section
               key={sign.key}
-              className="print-sheet flex min-h-[75vh] flex-col justify-between rounded-xl border-4 border-black bg-white p-8 text-center text-black"
+              className="print-sheet-a4 flex min-h-[85vh] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 text-center text-black"
             >
-              <div className="border-b-4 border-black pb-4">
-                <p className="text-2xl font-black tracking-widest uppercase">
+              <div className="border-b-4 border-black pb-6">
+                <p className="text-3xl font-black tracking-widest uppercase">
                   {sign.mode === 'unpack'
                     ? 'SECTOR DESARMADO DE CAJAS (LLEGAN)'
                     : 'SECTOR ARMADO DE CAJAS (SALEN)'}
                 </p>
               </div>
-              <div className="my-auto py-8">
-                <p className="text-8xl font-black uppercase tracking-tight">
+              <div className="my-auto flex flex-1 flex-col items-center justify-center py-8">
+                <p className="text-9xl font-black uppercase tracking-tight leading-none">
                   {sign.loc.code}
                 </p>
-                <h2 className="mt-4 text-6xl font-black uppercase leading-tight">
+                <h2 className="mt-6 text-7xl font-black uppercase leading-tight">
                   {sign.loc.city}
                 </h2>
-              </div>
-              <div className="border-t-4 border-black pt-4 text-lg font-bold">
-                Referente: {sign.loc.referrers.map((r) => r.name).join(' / ')}
               </div>
             </section>
           ))}
@@ -963,52 +916,46 @@ function PrintPageContent() {
           windows.map((win, idx) => (
             <section
               key={idx}
-              className="print-sheet flex min-h-[75vh] flex-col justify-between rounded-xl border-4 border-black bg-white p-8 text-center text-black"
+              className="print-sheet-a4 flex min-h-[85vh] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 text-center text-black"
             >
-              <div className="border-b-4 border-black pb-4">
-                <p className="text-2xl font-black tracking-widest uppercase">
+              <div className="border-b-4 border-black pb-6">
+                <p className="text-3xl font-black tracking-widest uppercase">
                   MATH TRADE ARGENTINA · ENTREGA Y RECEPCIÓN
                 </p>
               </div>
-              <div className="my-auto py-8">
-                <h2 className="text-7xl font-black uppercase leading-none">
+              <div className="my-auto flex flex-1 items-center justify-center py-8">
+                <h2 className="text-8xl font-black uppercase leading-none">
                   {win.name}
                 </h2>
-                {win.tables.length > 0 && (
-                  <p className="mt-8 text-5xl font-extrabold uppercase">
-                    MESAS: {win.tables.join(' · ')}
-                  </p>
-                )}
               </div>
-              <div className="border-t-4 border-black pt-4 text-xl font-bold uppercase">
-                Acercate con tu QR cuando aparezcas en pantalla
+              <div className="border-t-4 border-black pt-6">
+                <p className="text-3xl font-black uppercase">
+                  Acercate con tu QR
+                </p>
+                <p className="mt-2 text-2xl font-bold uppercase">
+                  Para retirar: cuando hagamos las entregas, esperá a aparecer en pantalla
+                </p>
               </div>
             </section>
           ))}
 
         {tab === 'tables' &&
-          tableNumbers.map((num) => {
-            const assignedWindow = windowForTable.get(String(num));
-            return (
-              <section
-                key={num}
-                className="print-sheet flex min-h-[75vh] flex-col justify-between rounded-xl border-4 border-black bg-white p-8 text-center text-black"
-              >
-                <div className="border-b-4 border-black pb-4">
-                  <p className="text-2xl font-black tracking-widest uppercase">
-                    MATH TRADE ARGENTINA · SECTOR DE MESAS
-                  </p>
-                </div>
-                <div className="my-auto py-8">
-                  <p className="text-4xl font-bold uppercase">MESA</p>
-                  <h2 className="mt-2 text-9xl font-black leading-none">{num}</h2>
-                </div>
-                <div className="border-t-4 border-black pt-4 text-3xl font-extrabold uppercase">
-                  {assignedWindow ? assignedWindow : 'MESA DE JUEGOS'}
-                </div>
-              </section>
-            );
-          })}
+          tableNumbers.map((num) => (
+            <section
+              key={num}
+              className="print-sheet-a4 flex min-h-[85vh] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 text-center text-black"
+            >
+              <div className="border-b-4 border-black pb-6">
+                <p className="text-3xl font-black tracking-widest uppercase">
+                  MATH TRADE ARGENTINA · SECTOR DE MESAS
+                </p>
+              </div>
+              <div className="my-auto flex flex-1 flex-col items-center justify-center py-8">
+                <p className="text-6xl font-bold uppercase">MESA</p>
+                <h2 className="mt-4 text-[11rem] font-black leading-none">{num}</h2>
+              </div>
+            </section>
+          ))}
       </div>
     </StaffPage>
   );
