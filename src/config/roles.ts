@@ -1,7 +1,7 @@
 import type { CityAccess } from '@/types/city';
 import type { VolunteerRole } from '@/types/volunteer';
 
-export const ROLE_ORDER: VolunteerRole[] = ['window', 'boxes', 'runner'];
+export const ROLE_ORDER: VolunteerRole[] = ['window', 'boxes', 'tables', 'runner'];
 
 export const ROLES: Record<VolunteerRole, { label: string; description: string; prefixes: string[] }> = {
   window: {
@@ -13,6 +13,11 @@ export const ROLES: Record<VolunteerRole, { label: string; description: string; 
     label: 'Cajas',
     description: 'Armás y desarmás las cajas que viajan desde y hacia otras ciudades.',
     prefixes: ['/boxes'],
+  },
+  tables: {
+    label: 'Mesas',
+    description: 'Ordenás los juegos de tus mesas por receptor y controlás quiénes están listos y qué juegos faltan.',
+    prefixes: ['/tables'],
   },
   runner: {
     label: 'Runner',
@@ -63,6 +68,7 @@ export function isPathAllowed(
 
 export function roleHome(role: VolunteerRole, eventPhase: number | null): string {
   if (role === 'runner') return '/lookup';
+  if (role === 'tables') return '/tables';
   if (eventPhase === 1) return role === 'window' ? '/receive' : '/boxes/in';
   if (eventPhase === 2) return role === 'window' ? '/deliver' : '/boxes/out';
   return '/';

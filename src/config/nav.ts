@@ -2,7 +2,7 @@ import type { CityAccess } from '@/types/city';
 import type { VolunteerRole } from '@/types/volunteer';
 
 export type NavSlotId =
-  | 'receive' | 'arrive' | 'pack' | 'deliver' | 'lookup' | 'more'
+  | 'receive' | 'arrive' | 'pack' | 'deliver' | 'tables' | 'lookup' | 'more'
   | 'cityBoxes' | 'cityShipments' | 'cityReceived';
 
 export type NavSlot = {
@@ -47,8 +47,10 @@ function phaseSlots(eventPhase: number | null): NavSlot[] {
 const ROLE_SLOTS: Record<VolunteerRole, NavSlotId[]> = {
   window: ['receive', 'deliver'],
   boxes: ['arrive', 'pack'],
+  tables: [],
   runner: [],
 };
+const TABLES_SLOT: NavSlot = { id: 'tables', href: '/tables', label: 'Mesas' };
 const LOOKUP_SLOT: NavSlot = { id: 'lookup', href: '/lookup', label: 'Consultar' };
 
 export type NavAccess = { role: VolunteerRole | null; isAdmin: boolean; city?: CityAccess };
@@ -78,6 +80,7 @@ export function getBottomNavSlots(
   if (access.isAdmin) return slots;
   const allowed = access.role ? ROLE_SLOTS[access.role] : [];
   const filtered = slots.filter((s) => s.id === 'more' || allowed.includes(s.id));
+  if (access.role === 'tables') filtered.splice(filtered.length - 1, 0, TABLES_SLOT);
   if (access.role === 'runner') filtered.splice(filtered.length - 1, 0, LOOKUP_SLOT);
   return filtered;
 }
@@ -91,6 +94,7 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/city/volunteers')) return 'Voluntarios';
   if (pathname === '/city' || pathname.startsWith('/city/')) return 'Mi ciudad';
   if (pathname.startsWith('/select-role')) return 'Tu rol';
+  if (pathname.startsWith('/tables')) return 'Mesas';
   if (pathname.startsWith('/lookup')) return 'Consultar';
   if (pathname.startsWith('/receive')) return 'Recibir';
   if (pathname.startsWith('/deliver')) return 'Entregar';
@@ -139,6 +143,9 @@ export function isSlotActive(
   if (slot.id === 'cityBoxes' || slot.id === 'cityShipments' || slot.id === 'cityReceived') {
     return pathMatches(pathname, slot.href);
   }
+  if (slot.id === 'tables') {
+    return pathMatches(pathname, '/tables');
+  }
   if (slot.id === 'lookup') {
     return pathMatches(pathname, '/lookup');
   }
@@ -159,6 +166,7 @@ export function isSlotActive(
       pathMatches(pathname, '/more') ||
       pathMatches(pathname, '/reports') ||
       pathMatches(pathname, '/admin') ||
+      (pathMatches(pathname, '/tables') && !(slots ?? []).some((s) => s.id === 'tables')) ||
       // Consultar is reached from Más unless the nav has its own slot (runners).
       (pathMatches(pathname, '/lookup') && !(slots ?? []).some((s) => s.id === 'lookup'))
     );

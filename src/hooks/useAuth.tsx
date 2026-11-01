@@ -25,6 +25,7 @@ interface UserDetails {
   math_admin: boolean;
   is_volunteer?: boolean;
   role?: VolunteerRole | null;
+  tables?: string[];
   referrer?: CityRef | null;
   local_city?: CityRef | null;
 }
@@ -37,6 +38,7 @@ export interface MeResponse {
   math_admin: boolean;
   is_volunteer: boolean;
   role: VolunteerRole | null;
+  tables?: string[];
   referrer?: CityRef | null;
   local_city?: CityRef | null;
 }
@@ -44,6 +46,7 @@ export interface MeResponse {
 // localStorage key for the volunteer's role; '' means "not chosen yet". A
 // missing key (a session from before roles existed) means "not known yet".
 const ROLE_KEY = 'logisticsRole';
+const TABLES_KEY = 'logisticsTables';
 const REFRESH_ON_NAV_MS = 10_000;
 const REFRESH_INTERVAL_MS = 30_000;
 
@@ -78,6 +81,22 @@ function readStoredRole(): VolunteerRole | null {
   return stored && stored in ROLES ? (stored as VolunteerRole) : null;
 }
 
+function readStoredTables(): string[] {
+  try {
+    const raw = localStorage.getItem(TABLES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((t): t is string => typeof t === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function storeTables(tables: string[] | null | undefined) {
+  if (tables && tables.length > 0) localStorage.setItem(TABLES_KEY, JSON.stringify(tables));
+  else localStorage.removeItem(TABLES_KEY);
+}
+
 interface AuthContextType {
   isAuthenticated: boolean | null;
   userName: string | null;
@@ -87,6 +106,8 @@ interface AuthContextType {
   isDarkMode: boolean;
   /** The volunteer's role in the active edition (null: not chosen yet, or admin). */
   role: VolunteerRole | null;
+  /** Tables assigned to this volunteer in the active edition. */
+  tables?: string[];
   /** False while `role` is only a guess: nothing stored yet and /me hasn't answered. */
   roleKnown: boolean;
   /** Set when a refresh finds that someone else changed the role. */
@@ -103,6 +124,8 @@ interface AuthContextType {
   clearRoleNotice: () => void;
   /** The user picked a role themselves: store it without a notice. */
   applyRole: (role: VolunteerRole | null) => void;
+  /** The user updated their assigned tables: store them immediately. */
+  applyTables?: (tables: string[]) => void;
   /** Re-read logistics/me/ (role, admin flag); 401/403 logs out. */
   refreshMe: () => Promise<void>;
 }
@@ -117,6 +140,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAdmin, setisAdmin] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState(true);
   const [role, setRole] = useState<VolunteerRole | null>(null);
+  const [tables, setTables] = useState<string[]>([]);
   const [roleKnown, setRoleKnown] = useState(false);
   const [roleNotice, setRoleNotice] = useState<string | null>(null);
   const [referrer, setReferrer] = useState<CityRef | null>(null);
@@ -172,6 +196,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const storedRole = readStoredRole();
       roleRef.current = storedRole;
       setRole(storedRole);
+      setTables(readStoredTables());
       setRoleKnown(localStorage.getItem(ROLE_KEY) !== null);
       setReferrer(readStoredCity(REFERRER_KEY));
       setLocalCity(readStoredCity(LOCAL_CITY_KEY));
@@ -182,6 +207,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setisAdmin(false);
       roleRef.current = null;
       setRole(null);
+      setTables([]);
       setRoleKnown(false);
       setReferrer(null);
       setLocalCity(null);
@@ -216,7 +242,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     localStorage.setItem('isAdmin', userIsAdmin.toString());
     const userRole = userDetails.role ?? null;
+    const userTables = Array.isArray(userDetails.tables) ? userDetails.tables : [];
     localStorage.setItem(ROLE_KEY, userRole ?? '');
+    storeTables(userTables);
     const userReferrer = userDetails.referrer ?? null;
     const userLocalCity = userDetails.local_city ?? null;
     storeCity(REFERRER_KEY, userReferrer);
@@ -233,6 +261,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUserId(idStr);
     roleRef.current = userRole;
     setRole(userRole);
+    setTables(userTables);
     setRoleKnown(true);
     setRoleNotice(null);
     setReferrer(userReferrer);
@@ -249,6 +278,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('isAdmin');
     localStorage.removeItem('userUsername');
     localStorage.removeItem(ROLE_KEY);
+    localStorage.removeItem(TABLES_KEY);
     localStorage.removeItem(REFERRER_KEY);
     localStorage.removeItem(LOCAL_CITY_KEY);
     Sentry.setUser(null);
@@ -258,6 +288,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setisAdmin(false);
     roleRef.current = null;
     setRole(null);
+    setTables([]);
     setRoleKnown(false);
     setRoleNotice(null);
     setReferrer(null);
@@ -272,6 +303,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRole(next);
     setRoleKnown(true);
     localStorage.setItem(ROLE_KEY, next ?? '');
+  }, []);
+
+  const applyTables = useCallback((next: string[]) => {
+    setTables(next);
+    storeTables(next);
   }, []);
 
   const refreshMe = useCallback(async () => {
@@ -295,6 +331,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       localStorage.setItem(ROLE_KEY, next ?? '');
       setRoleKnown(true);
+      const nextTables = Array.isArray(me.tables) ? me.tables : [];
+      storeTables(nextTables);
+      setTables((prev) => (prev.join(',') === nextTables.join(',') ? prev : nextTables));
       const nextReferrer = me.referrer ?? null;
       const nextLocal = me.local_city ?? null;
       storeCity(REFERRER_KEY, nextReferrer);
@@ -350,6 +389,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoading,
     isDarkMode,
     role,
+    tables,
     roleKnown,
     roleNotice,
     referrer,
@@ -360,11 +400,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     toggleDarkMode,
     clearRoleNotice,
     applyRole,
+    applyTables,
     refreshMe,
   }), [
-    isAuthenticated, userName, userId, isAdmin, isLoading, isDarkMode, role, roleKnown, roleNotice,
+    isAuthenticated, userName, userId, isAdmin, isLoading, isDarkMode, role, tables, roleKnown, roleNotice,
     referrer, localCity, cityAccess,
-    login, logout, toggleDarkMode, clearRoleNotice, applyRole, refreshMe,
+    login, logout, toggleDarkMode, clearRoleNotice, applyRole, applyTables, refreshMe,
   ]);
 
   return (

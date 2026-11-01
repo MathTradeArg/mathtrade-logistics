@@ -51,6 +51,11 @@ export default function VolunteersPage() {
   // '' = add as an event volunteer; a location id = as that city's local
   // volunteer (added_by = its referrer).
   const [addTarget, setAddTarget] = useState<string>('');
+  const [allTables, setAllTables] = useState<string[]>([]);
+  const [editingTablesVolunteer, setEditingTablesVolunteer] = useState<EventVolunteer | null>(null);
+  const [draftTables, setDraftTables] = useState<string[]>([]);
+  const [customTableInput, setCustomTableInput] = useState('');
+  const [savingTables, setSavingTables] = useState(false);
 
   const { execute: fetchVolunteers } = useApi<EventVolunteer[]>('logistics/volunteers/');
   const { execute: fetchCandidates } = useApi<VolunteerCandidate[]>('logistics/volunteers/candidates/');
@@ -58,6 +63,7 @@ export default function VolunteersPage() {
   const { execute: deleteVolunteer } = useApi<void>('logistics/volunteers/', { method: 'DELETE' });
   const { execute: patchVolunteer } = useApi<EventVolunteer>('logistics/volunteers/', { method: 'PATCH' });
   const { execute: fetchLocations } = useApi<LocationRow[] | { results: LocationRow[] }>('locations/');
+  const { execute: fetchEventTables } = useApi<{ all_tables?: string[] }>('logistics/tables/');
 
   useEffect(() => {
     if (!authIsLoading && (isAuthenticated === false || isAdmin === false)) {
@@ -95,10 +101,20 @@ export default function VolunteersPage() {
       .catch(() => {
         // Without locations the admin can still add event volunteers.
       });
+    fetchEventTables()
+      .then((data) => {
+        if (cancelled) return;
+        if (Array.isArray(data?.all_tables)) {
+          setAllTables(data.all_tables);
+        }
+      })
+      .catch(() => {
+        // Without tables list, admin can still enter table numbers manually.
+      });
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, isAdmin, fetchLocations]);
+  }, [isAuthenticated, isAdmin, fetchLocations, fetchEventTables]);
 
   const cityOptions = useMemo(() => {
     const byId = new Map<number, string>();
@@ -178,6 +194,57 @@ export default function VolunteersPage() {
       setUpdatingRoleId(null);
     }
   };
+
+  const openTablesModal = (volunteer: EventVolunteer) => {
+    setEditingTablesVolunteer(volunteer);
+    setDraftTables(volunteer.tables ? [...volunteer.tables] : []);
+    setCustomTableInput('');
+  };
+
+  const toggleDraftTable = (tableNumber: string) => {
+    setDraftTables((prev) =>
+      prev.includes(tableNumber) ? prev.filter((t) => t !== tableNumber) : [...prev, tableNumber],
+    );
+  };
+
+  const addCustomTable = () => {
+    const trimmed = customTableInput.trim();
+    if (!trimmed) return;
+    if (!draftTables.includes(trimmed)) {
+      setDraftTables((prev) => [...prev, trimmed]);
+    }
+    setCustomTableInput('');
+  };
+
+  const handleSaveVolunteerTables = async () => {
+    if (!editingTablesVolunteer) return;
+    setSavingTables(true);
+    try {
+      const updated = await patchVolunteer(
+        { tables: draftTables },
+        `${editingTablesVolunteer.id}/`,
+      );
+      const nextTables = updated?.tables ?? draftTables;
+      setVolunteers((prev) =>
+        prev.map((v) =>
+          v.id === editingTablesVolunteer.id ? { ...v, tables: nextTables } : v,
+        ),
+      );
+      setEditingTablesVolunteer(null);
+      setSuccess('Mesas asignadas actualizadas.');
+    } catch (err) {
+      setError(errorMessage(err, 'No se pudieron actualizar las mesas.'));
+    } finally {
+      setSavingTables(false);
+    }
+  };
+
+  const selectableTables = useMemo(() => {
+    const set = new Set<string>(allTables);
+    volunteers.forEach((v) => (v.tables ?? []).forEach((t) => set.add(t)));
+    draftTables.forEach((t) => set.add(t));
+    return [...set].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
+  }, [allTables, volunteers, draftTables]);
 
   const handleConfirmRemove = async () => {
     if (!toRemove) return;
@@ -287,26 +354,44 @@ export default function VolunteersPage() {
               <li key={volunteer.id}>
                 <GameRow
                   title={fullName(volunteer.user)}
-                  subtitle={`${volunteer.city?.name ?? 'Evento'} · ${volunteer.user.email}`}
+                  subtitle={`${volunteer.city?.name ?? 'Evento'}${
+                    volunteer.tables && volunteer.tables.length > 0
+                      ? ` · Mesas: ${volunteer.tables.join(', ')}`
+                      : ''
+                  } · ${volunteer.user.email}`}
                   trailing={
                     <div className="flex shrink-0 items-center gap-2">
                       {volunteer.added_by ? (
                         <span className="px-3 text-xs text-gray-500">—</span>
                       ) : (
-                        <select
-                          value={volunteer.role ?? ''}
-                          onChange={(event) => handleRoleChange(volunteer, event.target.value)}
-                          disabled={updatingRoleId === volunteer.id}
-                          className={`min-h-10 rounded-full border-0 px-3 text-xs font-semibold ${
-                            volunteer.role ? 'bg-primary/15 text-primary' : 'bg-gray-100 text-gray-500'
-                          }`}
-                          aria-label={`Rol de ${fullName(volunteer.user)}`}
-                        >
-                          <option value="">Sin rol</option>
-                          {ROLE_ORDER.map((id) => (
-                            <option key={id} value={id}>{ROLES[id].label}</option>
-                          ))}
-                        </select>
+                        <>
+                          {(volunteer.role === 'tables' || (volunteer.tables?.length ?? 0) > 0) && (
+                            <button
+                              type="button"
+                              onClick={() => openTablesModal(volunteer)}
+                              className="min-h-10 rounded-full border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700"
+                              aria-label={`Mesas de ${fullName(volunteer.user)}`}
+                            >
+                              {volunteer.tables && volunteer.tables.length > 0
+                                ? `Mesas (${volunteer.tables.length})`
+                                : 'Asignar mesas'}
+                            </button>
+                          )}
+                          <select
+                            value={volunteer.role ?? ''}
+                            onChange={(event) => handleRoleChange(volunteer, event.target.value)}
+                            disabled={updatingRoleId === volunteer.id}
+                            className={`min-h-10 rounded-full border-0 px-3 text-xs font-semibold ${
+                              volunteer.role ? 'bg-primary/15 text-primary' : 'bg-gray-100 text-gray-500'
+                            }`}
+                            aria-label={`Rol de ${fullName(volunteer.user)}`}
+                          >
+                            <option value="">Sin rol</option>
+                            {ROLE_ORDER.map((id) => (
+                              <option key={id} value={id}>{ROLES[id].label}</option>
+                            ))}
+                          </select>
+                        </>
                       )}
                       <button
                         type="button"
@@ -335,6 +420,59 @@ export default function VolunteersPage() {
         onCancel={() => setToRemove(null)}
       >
         Va a dejar de poder entrar a la app de logística en esta edición.
+      </StaffDialog>
+
+      <StaffDialog
+        open={editingTablesVolunteer !== null}
+        title={editingTablesVolunteer ? `Mesas de ${fullName(editingTablesVolunteer.user)}` : ''}
+        confirmLabel={savingTables ? 'Guardando...' : 'Guardar mesas'}
+        confirmDisabled={savingTables}
+        onConfirm={handleSaveVolunteerTables}
+        onCancel={() => {
+          if (!savingTables) setEditingTablesVolunteer(null);
+        }}
+      >
+        <p className="text-sm text-gray-600">
+          Seleccioná las mesas asignadas a este voluntario:
+        </p>
+        {selectableTables.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {selectableTables.map((tbl) => {
+              const selected = draftTables.includes(tbl);
+              return (
+                <button
+                  key={tbl}
+                  type="button"
+                  onClick={() => toggleDraftTable(tbl)}
+                  className={`rounded-full px-3.5 py-2 text-sm font-semibold ${
+                    selected
+                      ? 'bg-primary text-white'
+                      : 'border border-gray-200 bg-white text-gray-800'
+                  }`}
+                >
+                  Mesa {tbl}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <div className="mt-4 flex gap-2">
+          <input
+            type="text"
+            value={customTableInput}
+            onChange={(e) => setCustomTableInput(e.target.value)}
+            placeholder="Ej: 01"
+            aria-label="Agregar número de mesa"
+            className="min-h-10 flex-1 rounded-full border border-gray-200 bg-white px-3 text-sm"
+          />
+          <button
+            type="button"
+            onClick={addCustomTable}
+            className="staff-btn staff-btn-outline !min-h-10 !w-auto !px-4 text-sm"
+          >
+            Agregar
+          </button>
+        </div>
       </StaffDialog>
     </StaffPage>
   );
