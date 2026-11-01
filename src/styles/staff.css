@@ -72,6 +72,11 @@
 }
 
 @media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
   header,
   nav[aria-label="Navegación principal"],
   .no-print {
@@ -91,13 +96,31 @@
   }
 
   .print-sheet {
-    page-break-after: always;
-    break-after: page;
     break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 10mm;
     box-shadow: none !important;
   }
 
   .print-sheet:last-child {
+    margin-bottom: 0;
+  }
+
+  .print-sheet-a4 {
+    width: 100% !important;
+    height: 276mm !important;
+    min-height: 276mm !important;
+    max-height: 276mm !important;
+    box-sizing: border-box !important;
+    page-break-after: always;
+    break-after: page;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .print-sheet-a4:last-child {
     page-break-after: auto;
     break-after: auto;
   }

@@ -1,6 +1,6 @@
 import type { CityRef } from './city';
 
-export type VolunteerRole = 'window' | 'boxes' | 'runner';
+export type VolunteerRole = 'window' | 'boxes' | 'tables' | 'runner';
 
 export interface VolunteerUser {
   id: number;
@@ -22,6 +22,7 @@ export interface EventVolunteer {
   id: number;
   user: VolunteerUser;
   role: VolunteerRole | null;
+  tables?: string[];
   city?: CityRef | null;
   added_by?: VolunteerAddedBy | null;
 }

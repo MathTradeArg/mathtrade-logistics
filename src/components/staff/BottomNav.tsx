@@ -6,13 +6,14 @@ import { useAuth } from '@/hooks/useAuth';
 import clsx from 'clsx';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ArrowCircleRight, DotsThreeOutline, MagnifyingGlass, Package, QrCode, Tray, Truck } from 'phosphor-react';
+import { ArrowCircleRight, DotsThreeOutline, MagnifyingGlass, Package, QrCode, SquaresFour, Tray, Truck } from 'phosphor-react';
 
 const ICONS: Record<NavSlotId, typeof QrCode> = {
   receive: QrCode,
   arrive: Tray,
   pack: Package,
   deliver: ArrowCircleRight,
+  tables: SquaresFour,
   lookup: MagnifyingGlass,
   more: DotsThreeOutline,
   cityBoxes: Package,
