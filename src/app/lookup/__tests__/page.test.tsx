@@ -105,12 +105,12 @@ describe('LookupPage', () => {
 
     expect(screen.getByText('Trae / entrega (1)')).toBeInTheDocument();
     expect(screen.getByText('Catan')).toBeInTheDocument();
-    expect(screen.getByText('#101 · Mesa 4 · En evento')).toBeInTheDocument();
+    expect(screen.getByText('00101 · Mesa 4 · En evento')).toBeInTheDocument();
     expect(screen.getByText('Para: Luis Diaz')).toBeInTheDocument();
 
     expect(screen.getByText('Recibe (1)')).toBeInTheDocument();
     expect(screen.getByText('Carcassonne')).toBeInTheDocument();
-    expect(screen.getByText('#202 · Mesa B · Entregado a Usuario')).toBeInTheDocument();
+    expect(screen.getByText('00202 · Mesa B · Entregado a Usuario')).toBeInTheDocument();
     expect(screen.getByText('De: Juan Perez')).toBeInTheDocument();
   });
 
@@ -147,7 +147,7 @@ describe('LookupPage', () => {
 
     expect(await screen.findByText('Azul')).toBeInTheDocument();
     expect(gameExecute).toHaveBeenCalledWith(undefined, '303/detail/');
-    expect(screen.getByText('#303 · Mesa 7 · En evento')).toBeInTheDocument();
+    expect(screen.getByText('00303 · Mesa 7 · En evento')).toBeInTheDocument();
     expect(screen.getByText('Entrega: Juan Perez')).toBeInTheDocument();
     expect(screen.getByText('Recibe: Ana Gomez')).toBeInTheDocument();
   });

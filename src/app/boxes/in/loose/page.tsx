@@ -7,6 +7,7 @@ import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { listItems, markItemsReceived } from '@/hooks/boxes/boxApi';
 import { matchesSearch, receptorName } from '@/hooks/boxes/boxGrouping';
+import { formatTradeCode, tradeCodeSearchText } from '@/utils/tradeCode';
 import { useAuth } from '@/hooks/useAuth';
 import type { Item } from '@/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -45,7 +46,7 @@ export default function LooseIncomingPage() {
   const visible = useMemo(() => {
     return items.filter((item) => {
       const haystack = [
-        String(item.assigned_trade_code),
+        tradeCodeSearchText(item.assigned_trade_code),
         item.title,
         receptorName(item),
         item.origin_location_name || '',
@@ -115,7 +116,7 @@ export default function LooseIncomingPage() {
             return (
               <li key={item.id}>
                 <GameRow
-                  title={`${item.assigned_trade_code} · ${item.title}`}
+                  title={`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}
                   subtitle={[
                     receptorName(item) && `Retira ${receptorName(item)}`,
                     item.origin_location_name,

@@ -18,7 +18,7 @@ describe('GameRowItem', () => {
   it('renders the title and ID', () => {
     render(<GameRowItem {...defaultProps} />);
     expect(screen.getByText('Catan')).toBeInTheDocument();
-    expect(screen.getByText('123')).toBeInTheDocument();
+    expect(screen.getByText('00123')).toBeInTheDocument();
   });
 
   it('renders a checkbox when showCheckbox is true', () => {

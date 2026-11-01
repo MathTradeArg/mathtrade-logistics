@@ -6,6 +6,7 @@ import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { listAmbaPending, markItemsReceived, type AmbaPendingOrigin } from '@/hooks/boxes/boxApi';
 import { useAuth } from '@/hooks/useAuth';
 import { useParams } from 'next/navigation';
+import { formatTradeCode } from '@/utils/tradeCode';
 import { useCallback, useEffect, useState } from 'react';
 
 export default function AmbaPendingOriginPage() {
@@ -84,7 +85,7 @@ export default function AmbaPendingOriginPage() {
               {origin.trades.map((trade) => (
                 <li key={trade.assigned_trade_code}>
                   <GameRow
-                    title={`#${trade.assigned_trade_code} ${trade.title}`}
+                    title={`${formatTradeCode(trade.assigned_trade_code)} ${trade.title}`}
                     subtitle={[
                       `${trade.recipient_first_name} ${trade.recipient_last_name}`.trim(),
                       trade.box

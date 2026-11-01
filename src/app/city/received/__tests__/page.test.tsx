@@ -51,24 +51,24 @@ describe('city received', () => {
     expect(screen.getByText(/— en total · — por juego/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Salta · AR123'));
-    expect(screen.getByText('0012 · Catan → Ana Paz')).toBeInTheDocument();
+    expect(screen.getByText('00012 · Catan → Ana Paz')).toBeInTheDocument();
   });
 
   it('filters the Ejemplares by origin and by via meeting', async () => {
     render(<CityReceivedPage />);
     fireEvent.click(await screen.findByRole('button', { name: 'Ejemplares' }));
-    expect(await screen.findByText('0012 · Catan')).toBeInTheDocument();
+    expect(await screen.findByText('00012 · Catan')).toBeInTheDocument();
     expect(boxApi.listItems).toHaveBeenCalledWith({ destination: 7 });
-    expect(screen.getByText('0006 · Azul')).toBeInTheDocument();
+    expect(screen.getByText('00006 · Azul')).toBeInTheDocument();
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Origen' }), { target: { value: '3' } });
-    expect(screen.queryByText('0012 · Catan')).not.toBeInTheDocument();
-    expect(screen.getByText('0006 · Azul')).toBeInTheDocument();
+    expect(screen.queryByText('00012 · Catan')).not.toBeInTheDocument();
+    expect(screen.getByText('00006 · Azul')).toBeInTheDocument();
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Origen' }), { target: { value: '' } });
     fireEvent.click(screen.getByRole('checkbox'));
-    expect(screen.getByText('0012 · Catan')).toBeInTheDocument();
-    expect(screen.queryByText('0006 · Azul')).not.toBeInTheDocument();
+    expect(screen.getByText('00012 · Catan')).toBeInTheDocument();
+    expect(screen.queryByText('00006 · Azul')).not.toBeInTheDocument();
   });
 
   it('is for the referrer only', () => {

@@ -12,6 +12,7 @@ import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { useApi } from '@/hooks/useApi';
 import { useAuth, type MeResponse } from '@/hooks/useAuth';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { formatTradeCode, tradeCodeSearchText } from '@/utils/tradeCode';
 
 export interface TableVolunteerRef {
   id: number;
@@ -178,7 +179,7 @@ export default function TablesPage() {
       const tableMatch = `mesa ${rec.table_number}`.toLowerCase().includes(q) || rec.table_number.toLowerCase() === q;
       const gameMatch = rec.games.some(
         (g) =>
-          String(g.assigned_trade_code).includes(q) ||
+          tradeCodeSearchText(g.assigned_trade_code).includes(q) ||
           g.title.toLowerCase().includes(q) ||
           `${g.from_first_name} ${g.from_last_name}`.toLowerCase().includes(q) ||
           g.from_location.toLowerCase().includes(q),
@@ -200,7 +201,7 @@ export default function TablesPage() {
         if (game.status >= 5) continue;
         if (q) {
           const matches =
-            String(game.assigned_trade_code).includes(q) ||
+            tradeCodeSearchText(game.assigned_trade_code).includes(q) ||
             game.title.toLowerCase().includes(q) ||
             `${rec.first_name} ${rec.last_name} ${rec.username}`.toLowerCase().includes(q) ||
             `${game.from_first_name} ${game.from_last_name}`.toLowerCase().includes(q) ||
@@ -429,7 +430,7 @@ export default function TablesPage() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-bold text-gray-900">
-                    #{game.assigned_trade_code} · {game.title}
+                    {formatTradeCode(game.assigned_trade_code)} · {game.title}
                   </p>
                   <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
                     Mesa {recipient.table_number}
@@ -514,7 +515,7 @@ export default function TablesPage() {
                           >
                             <div className="min-w-0">
                               <p className="truncate font-semibold text-gray-900">
-                                #{g.assigned_trade_code} · {g.title}
+                                {formatTradeCode(g.assigned_trade_code)} · {g.title}
                               </p>
                               <p className="truncate text-xs text-gray-500">
                                 De {senderFullName(g)}

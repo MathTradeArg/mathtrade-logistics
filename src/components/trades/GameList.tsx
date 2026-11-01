@@ -1,6 +1,7 @@
 "use client";
 
 import { GameRowItem } from "@/components/common";
+import { formatTradeCode } from '@/utils/tradeCode';
 import { ConfirmationModal } from '@/components/trades';
 import { useHapticClick } from '@/hooks/useHapticClick';
 import type { Trade, User } from "@/types";
@@ -181,8 +182,8 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
                   }`}
                   onClick={() => setExpandedIndex(isExpanded ? null : idx)}
                 >
-                  <span className="mr-3 w-10 shrink-0 text-center text-lg font-bold text-primary">
-                    {trade.result.assigned_trade_code}
+                  <span className="mr-3 min-w-20 shrink-0 text-center text-lg font-bold tabular-nums text-primary">
+                    {formatTradeCode(trade.result.assigned_trade_code)}
                   </span>
                   <span className={`flex-1 text-gray-800 ${isExpanded ? 'whitespace-normal break-words' : 'truncate'}`}>
                     {trade.math_item_exchanged.title}
