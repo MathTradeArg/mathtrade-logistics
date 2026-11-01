@@ -76,10 +76,10 @@ describe('city shipments', () => {
   it('shows the Ejemplares tab without the local items and downloads them as Excel', async () => {
     render(<CityShipmentsPage />);
     fireEvent.click(await screen.findByRole('button', { name: 'Ejemplares' }));
-    expect(await screen.findByText('0012 · Catan')).toBeInTheDocument();
+    expect(await screen.findByText('00012 · Catan')).toBeInTheDocument();
     expect(boxApi.listItems).toHaveBeenCalledWith({ origin: 7 });
     expect(screen.getByText('Ana Paz · Caja 1-2 · AMBA')).toBeInTheDocument();
-    expect(screen.getByText('0006 · Azul')).toBeInTheDocument();
+    expect(screen.getByText('00006 · Azul')).toBeInTheDocument();
     expect(screen.queryByText(/Carcassonne/)).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar ejemplares' }), { target: { value: 'catan' } });
@@ -89,7 +89,7 @@ describe('city shipments', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Descargar Excel' }));
     });
     expect(downloadSheet).toHaveBeenCalledWith(
-      [expect.objectContaining({ 'Código': '0012', 'Juego': 'Catan', 'Caja': '1-2', 'Destino': 'AMBA' })],
+      [expect.objectContaining({ 'Código': '00012', 'Juego': 'Catan', 'Caja': '1-2', 'Destino': 'AMBA' })],
       'ejemplares_mendoza.xlsx',
       'Ejemplares',
     );
@@ -98,7 +98,7 @@ describe('city shipments', () => {
   it('shows a local volunteer only the Ejemplares', async () => {
     mockUseAuth.mockReturnValue({ cityAccess: { kind: 'local', city: { id: 7, name: 'Mendoza' } } });
     render(<CityShipmentsPage />);
-    expect(await screen.findByText('0012 · Catan')).toBeInTheDocument();
+    expect(await screen.findByText('00012 · Catan')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Envíos' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Nuevo envío' })).not.toBeInTheDocument();
     expect(cityApi.listTrackings).not.toHaveBeenCalled();

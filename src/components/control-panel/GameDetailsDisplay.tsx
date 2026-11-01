@@ -3,7 +3,8 @@
 import { GameDetail, GameStatusCode, GameStatusMap } from '@/types';
 import { WarningCircle, CheckCircle, Info, MapPin, Package, Tag, User } from 'phosphor-react';
 import { LoadingSpinner } from '@/components/common/ui'; 
-import { useHapticClick } from '@/hooks/useHapticClick'; 
+import { useHapticClick } from '@/hooks/useHapticClick';
+import { formatTradeCode } from '@/utils/tradeCode'; 
 
 interface GameDetailsDisplayProps {
   gameDetail: GameDetail;
@@ -55,7 +56,7 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
     <div className="space-y-4 pt-4">
       <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">{title}</h3>
       <div className="space-y-2">
-        <DetailItem icon={Tag} label="ID" value={assigned_trade_code} />        
+        <DetailItem icon={Tag} label="ID" value={formatTradeCode(assigned_trade_code)} />        
         <DetailItem icon={User} label="De" value={`${owner.first_name} ${owner.last_name}`} />
         <DetailItem icon={User} label="A" value={`${member_to.first_name} ${member_to.last_name}`} />
         <DetailItem icon={Package} label="Estado" value={GameStatusMap[status] || 'Desconocido'} />

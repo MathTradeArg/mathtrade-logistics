@@ -10,6 +10,7 @@ import { apiDestinationId, boxDestinationLabel, boxedTradeIds, boxContentsSummar
 import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box, Item } from '@/types';
+import { formatTradeCode, tradeCodeSearchText } from '@/utils/tradeCode';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -120,7 +121,7 @@ export default function PackingBox({
       matchesSearch(
         [
           item.title,
-          String(item.assigned_trade_code),
+          tradeCodeSearchText(item.assigned_trade_code),
           receptorName(item),
           item.location_name ?? '',
         ].join(' '),
@@ -255,7 +256,7 @@ export default function PackingBox({
               {box.math_items.map((item) => (
                 <li key={item.id} className="rounded-lg bg-white">
                   <GameRow
-                    title={`${item.assigned_trade_code} · ${item.title}`}
+                    title={`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}
                     subtitle={packingItemSubtitle(item, origin)}
                   />
                   {canMutate && (
@@ -348,7 +349,7 @@ export default function PackingBox({
                 return (
                   <li key={item.id}>
                     <GameRow
-                      title={`${item.assigned_trade_code} · ${item.title}`}
+                      title={`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}
                       subtitle={packingItemSubtitle(item, origin)}
                       onClick={() => toggleAdd(item.id)}
                       selected={checked}

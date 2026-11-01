@@ -1,9 +1,24 @@
-/** A copy's label number (assigned_trade_code) as people write it: padded to
- *  at least 4 digits and never cut, so 12 -> "0012" and 12345 stays "12345".
- *  (The web area's old codeNumToString kept only the last 4 digits.) */
+/** A copy's label number (assigned_trade_code) as printed on the sticker:
+ *  at least 5 digits and never cut, so 12 -> "00012" and 16120 stays "16120". */
 export function formatTradeCode(code: number | string | null | undefined): string {
   if (code === null || code === undefined || `${code}`.trim() === '') return '—';
-  return `${code}`.trim().padStart(4, '0');
+  return `${code}`.trim().padStart(5, '0');
+}
+
+/** Padded label plus the number without zeros, so "10", "010" and "00010" all match. */
+export function tradeCodeSearchText(code: number | string | null | undefined): string {
+  const padded = formatTradeCode(code);
+  if (padded === '—') return '';
+  const bare = padded.replace(/^0+/, '') || '0';
+  return bare === padded ? padded : `${padded} ${bare}`;
+}
+
+/** A typed label: drops a leading # and leading zeros. " #0010 " -> "10".
+ *  Anything that isn't a number comes back null. */
+export function parseTradeCodeQuery(raw: string): string | null {
+  const digits = raw.trim().replace(/^#/, '');
+  if (!/^\d+$/.test(digits)) return null;
+  return String(Number(digits));
 }
 
 /** Box label of a copy from the items list: `<origin_number>-<number>`, the

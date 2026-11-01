@@ -74,7 +74,7 @@ describe('missingReportComment', () => {
     });
     expect(comment).toContain('Item id 88');
     expect(comment).toContain('Item id 89');
-    expect(comment).toContain('Catan (#501)');
-    expect(comment).toContain('Earth (#502)');
+    expect(comment).toContain('Catan (00501)');
+    expect(comment).toContain('Earth (00502)');
   });
 });

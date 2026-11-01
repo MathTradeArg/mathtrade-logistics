@@ -7,7 +7,14 @@ import { useHapticClick } from '@/hooks/useHapticClick';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { triggerHaptic } from '@/utils/haptics';
 import { whatsappLink } from '@/utils/whatsapp';
+import { formatTradeCode } from '@/utils/tradeCode';
 import ConfirmationModal from '@/components/ConfirmationModal';
+
+function itemCodeLabel(report: EnrichedReport): string {
+  const code = report.itemData?.assigned_trade_code || report.assigned_trade_code;
+  if (code) return formatTradeCode(code);
+  return report.item ? String(report.item) : '';
+}
 
 interface ReportCardProps {
   report: EnrichedReport;
@@ -118,10 +125,10 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
             <div className="flex items-center mt-1">
               <h3 className="font-normal text-lg" title={
                 report.reportedUserData ? `${report.reportedUserData.first_name} ${report.reportedUserData.last_name} ${report.reportedUserData.bgg_user ? `(${report.reportedUserData.bgg_user})` : ''}` :
-                  report.itemData ? `${report.itemData.title} (#${report.itemData.assigned_trade_code})` : ''
+                  report.itemData ? `${report.itemData.title} (${itemCodeLabel(report)})` : ''
               }>
                 {report.reportedUserData ? `${report.reportedUserData.first_name} ${report.reportedUserData.last_name} ${report.reportedUserData.bgg_user && `(${report.reportedUserData.bgg_user})`}` :
-                  report.itemData ? `${report.itemData.title} (#${report.itemData.assigned_trade_code || report.assigned_trade_code || report.item})` : ''}
+                  report.itemData ? `${report.itemData.title} (${itemCodeLabel(report)})` : ''}
               </h3>
             </div>
           )}

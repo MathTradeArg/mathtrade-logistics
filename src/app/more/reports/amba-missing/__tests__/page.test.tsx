@@ -38,6 +38,6 @@ describe('AmbaMissingPage', () => {
 
     expect(await screen.findByText('Dario Caballito')).toBeInTheDocument();
     expect(screen.getByText(/Mesa 12/)).toBeInTheDocument();
-    expect(screen.getByText(/#20040 · Salta caja 1 · caja #16/)).toBeInTheDocument();
+    expect(screen.getByText(/20040 · Salta caja 1 · caja #16/)).toBeInTheDocument();
   });
 });

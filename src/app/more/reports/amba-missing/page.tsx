@@ -5,6 +5,7 @@ import { StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/sta
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useMemo, useState } from 'react';
+import { formatTradeCode, tradeCodeSearchText } from '@/utils/tradeCode';
 
 type MissingAmbaItem = {
   report_id: number;
@@ -40,7 +41,7 @@ export default function AmbaMissingPage() {
     const term = query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     return rows.filter((row) => {
       const name = `${row.first_name} ${row.last_name}`.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const codes = row.items.map((item) => String(item.assigned_trade_code)).join(' ');
+      const codes = row.items.map((item) => tradeCodeSearchText(item.assigned_trade_code)).join(' ');
       const titles = row.items.map((item) => item.title.toLowerCase()).join(' ');
       return name.includes(term) || codes.includes(term) || titles.includes(term) || (row.table_number || '').includes(term);
     });
@@ -76,7 +77,7 @@ export default function AmbaMissingPage() {
               <ul className="mt-3 flex flex-col gap-2">
                 {row.items.map((item) => (
                   <li key={item.report_id} className="text-sm text-gray-700">
-                    #{item.assigned_trade_code} · {item.title}
+                    {formatTradeCode(item.assigned_trade_code)} · {item.title}
                     {item.box_number != null ? ` · caja #${item.box_number}` : ''}
                     {item.origin_name ? ` ${item.origin_name}` : ''}
                   </li>

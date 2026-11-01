@@ -5,6 +5,7 @@ import { listBoxes, listItems } from '@/hooks/boxes/boxApi';
 import { findBoxForTrade, isBoxOpen, receptorName } from '@/hooks/boxes/boxGrouping';
 import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import type { Box, Item } from '@/types';
+import { formatTradeCode } from '@/utils/tradeCode';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type Mode = 'view' | 'add' | 'move';
@@ -156,7 +157,7 @@ export default function TransitBoxView({
               {box.math_items.map((item) => (
                 <li key={item.id} className="rounded-lg bg-white">
                   <GameRow
-                    title={`${item.assigned_trade_code} · ${item.title}`}
+                    title={`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}
                     subtitle={receptorName(item) || undefined}
                   />
                   {canMutate && (
@@ -220,7 +221,7 @@ export default function TransitBoxView({
                 return (
                   <li key={item.id}>
                     <GameRow
-                      title={`${item.assigned_trade_code} · ${item.title}`}
+                      title={`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}
                       subtitle={[receptorName(item) || null, sourceLabel(item)].filter(Boolean).join(' · ') || undefined}
                       onClick={() => toggleAdd(item.id)}
                       selected={checked}

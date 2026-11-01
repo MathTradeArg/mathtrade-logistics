@@ -136,12 +136,12 @@ describe('TablesPage', () => {
     });
     expect(screen.getByText('Listo para retirar')).toBeInTheDocument();
     expect(screen.getByText('Faltan 1 de 2')).toBeInTheDocument();
-    expect(screen.getByText('#101 · Catan')).toBeInTheDocument();
-    expect(screen.getByText('#104 · Root')).toBeInTheDocument();
+    expect(screen.getByText('00101 · Catan')).toBeInTheDocument();
+    expect(screen.getByText('00104 · Root')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Faltan/i }));
-    expect(screen.getByText('#104 · Root')).toBeInTheDocument();
-    expect(screen.queryByText('#101 · Catan')).not.toBeInTheDocument();
+    expect(screen.getByText('00104 · Root')).toBeInTheDocument();
+    expect(screen.queryByText('00101 · Catan')).not.toBeInTheDocument();
 
     mockPatchMe.mockResolvedValue({ tables: ['01', '02'] });
     fireEvent.click(screen.getByRole('button', { name: 'Cambiar mis mesas' }));

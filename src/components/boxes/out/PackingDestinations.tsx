@@ -18,6 +18,7 @@ import {
   splitByRoute,
 } from '@/hooks/boxes/boxGrouping';
 import { useAuth } from '@/hooks/useAuth';
+import { formatTradeCode, tradeCodeSearchText } from '@/utils/tradeCode';
 import type { Box, Item } from '@/types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -92,7 +93,7 @@ export default function PackingDestinations({
       return items.some((item) => {
         if (packingDestinationId(item, origin) !== dest.destinationId) return false;
         return matchesSearch(
-          [item.title, String(item.assigned_trade_code), receptorName(item), item.location_name ?? ''].join(' '),
+          [item.title, tradeCodeSearchText(item.assigned_trade_code), receptorName(item), item.location_name ?? ''].join(' '),
           query,
         );
       });
@@ -112,7 +113,7 @@ export default function PackingDestinations({
     if (query.trim().length < 2) return [];
     return items.filter((item) =>
       matchesSearch(
-        [item.title, String(item.assigned_trade_code), receptorName(item), item.location_name ?? ''].join(' '),
+        [item.title, tradeCodeSearchText(item.assigned_trade_code), receptorName(item), item.location_name ?? ''].join(' '),
         query,
       ),
     ).slice(0, 8);
@@ -171,7 +172,7 @@ export default function PackingDestinations({
               return (
                 <li key={item.id}>
                   <GameRow
-                    title={`${item.assigned_trade_code} · ${item.title}`}
+                    title={`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}
                     subtitle={subtitle}
                     onClick={() => handleItemHit(item)}
                   />
