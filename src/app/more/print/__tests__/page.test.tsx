@@ -20,22 +20,46 @@ jest.mock('@/components/common/ui', () => ({
 const mockUseAuth = useAuth as jest.Mock;
 const mockBoxFetch = boxApi.boxFetch as jest.Mock;
 
+// Fictitious data: the real directory lives in the database.
+const DIRECTORY = [
+  {
+    location_id: 1,
+    city: 'AMBA',
+    code: 'AMBA',
+    address: 'Vía Cargo Villa Devoto New: Calle Falsa 123',
+    pay_on_delivery: true,
+    referrers: [{ name: 'Ana Hub', dni: '11111111', telegram: '', phone: '1100000000' }],
+  },
+  {
+    location_id: 34,
+    city: 'Ciudad Prueba',
+    code: 'CPR',
+    address: 'Av. Siempre Viva 742',
+    pay_on_delivery: false,
+    referrers: [{ name: 'Beto Interior', dni: '22222222', telegram: '@beto', phone: '2200000000' }],
+  },
+];
+
 describe('PrintPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, isAdmin: true });
-    mockBoxFetch.mockResolvedValue([]);
+    mockBoxFetch.mockImplementation(async (path: string) =>
+      path === 'logistics/directory/' ? DIRECTORY : [],
+    );
   });
 
-  it('renders CABA direct box label with filled Circle, Germán Kijel, Villa Devoto address and Pago en Destino', async () => {
+  it('renders CABA direct box label with filled Circle, the hub referrer, Villa Devoto New address and Pago en Destino', async () => {
     render(<PrintPage />);
 
     expect(
       await screen.findByRole('img', { name: /Círculo lleno: Destino final CABA/i }),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'CABA' })).toBeInTheDocument();
-    expect(screen.getAllByText(/Germán Kijel/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Nueva York 4311/i)).toBeInTheDocument();
+    expect((await screen.findAllByText(/Ana Hub/)).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Villa Devoto New/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/11111111/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/1100000000/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/PAGO EN DESTINO/i).length).toBeGreaterThan(0);
   });
 
@@ -51,8 +75,8 @@ describe('PrintPage', () => {
     expect(screen.getAllByText(/PAGO EN DESTINO/i).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: /Viaja a localidad del interior/i }));
-    expect(screen.getAllByText(/Bahía Blanca/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Damian Yazyi/).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/Ciudad Prueba/)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Beto Interior/).length).toBeGreaterThan(0);
     expect(screen.queryByText('PAGO EN DESTINO')).not.toBeInTheDocument();
     expect(screen.queryByRole('img', { name: /Círculo/i })).not.toBeInTheDocument();
   });
@@ -61,7 +85,7 @@ describe('PrintPage', () => {
     render(<PrintPage />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Sectores (Localidades)' }));
-    expect(screen.getAllByText(/SECTOR DESARMADO DE CAJAS/i).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/SECTOR DESARMADO DE CAJAS/i)).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/SECTOR ARMADO DE CAJAS/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/Referente:/i)).not.toBeInTheDocument();
 
