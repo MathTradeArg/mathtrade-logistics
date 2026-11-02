@@ -22,14 +22,14 @@ export const AMBA_REFERRER_INFO: LocationReferrerInfo = {
   locationId: EVENT_LOCATION_ID,
   city: 'CABA',
   code: 'CABA',
-  address: 'Vía Cargo Villa Devoto: Nueva York 4311, C1419 Cdad. Autónoma de Buenos Aires',
+  address: 'Vía Cargo Villa Devoto New: Nueva York 4311, C1419 Cdad. Autónoma de Buenos Aires',
   payOnDelivery: true,
   referrers: [
     {
       name: 'Germán Kijel',
-      dni: '',
+      dni: '26466933',
       telegram: '',
-      phone: '',
+      phone: '1133230229',
     },
   ],
 };

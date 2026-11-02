@@ -35,7 +35,10 @@ describe('PrintPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'CABA' })).toBeInTheDocument();
     expect(screen.getAllByText(/Germán Kijel/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Villa Devoto New/i)).toBeInTheDocument();
     expect(screen.getByText(/Nueva York 4311/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/26466933/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/1133230229/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/PAGO EN DESTINO/i).length).toBeGreaterThan(0);
   });
 
