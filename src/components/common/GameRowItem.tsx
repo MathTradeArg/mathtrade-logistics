@@ -1,6 +1,7 @@
 "use client";
 
 import { triggerHaptic } from '@/utils/haptics';
+import { formatTradeCode } from '@/utils/tradeCode';
 import clsx from 'clsx';
 import { Check, Plus, Trash, X } from 'phosphor-react';
 import React from 'react';
@@ -58,6 +59,7 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
   const hasAddButton = isAddToBoxVariant && !!onAddItem;
 
   const TextContainerTag = isCheckboxInteractive ? 'label' : 'div';
+  const label = formatTradeCode(id);
 
   let rowClasses = 'bg-white text-gray-900';
   let idBoxClasses = 'bg-gray-200 text-gray-800';
@@ -171,16 +173,15 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
       )}
       onClick={handleInternalRowClick}
     >
-      <div className={clsx('flex w-14 shrink-0 items-center justify-center sm:w-16', idBoxClasses)}>
+      <div className={clsx('flex min-w-[5.5rem] shrink-0 items-center justify-center px-1.5', idBoxClasses)}>
         <span
           className={clsx(
-            'w-full select-all px-1 text-center text-xl font-extrabold leading-tight sm:text-2xl',
+            'select-all whitespace-nowrap text-center text-base font-extrabold tabular-nums leading-tight sm:text-lg',
             finalIsVisuallyInactive && !idBoxClasses.includes('text-white') ? 'opacity-70' : '',
           )}
-          style={{ wordBreak: 'break-all' }}
-          title={typeof id === 'string' && id.length > 8 ? String(id) : undefined}
+          title={label}
         >
-          {id}
+          {label}
         </span>
       </div>
       <div

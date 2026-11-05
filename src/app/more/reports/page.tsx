@@ -6,6 +6,7 @@ import { GameRow, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/compo
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
 import { EnrichedReport, Report } from '@/types/index';
+import { tradeCodeSearchText } from '@/utils/tradeCode';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 
 function AllReportsContent() {
@@ -53,7 +54,7 @@ function AllReportsContent() {
       const ownerName = report.itemData?.first_name || report.itemData?.last_name
         ? `${report.itemData?.first_name || ''} ${report.itemData?.last_name || ''}` : '';
       const itemTitle = report.item_title || report.itemData?.title || '';
-      const itemCode = String(report.assigned_trade_code || report.itemData?.assigned_trade_code || '');
+      const itemCode = tradeCodeSearchText(report.assigned_trade_code || report.itemData?.assigned_trade_code || '');
       const boxNumber = report.box_number != null ? String(report.box_number) : '';
       const boxId = report.box != null ? String(report.box) : '';
       return reportedUserName.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(normalizedSearchTerm)

@@ -1,13 +1,15 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { StaffPage, StaffSearch } from '@/components/staff';
+import { StaffError, StaffPage, StaffSearch } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import {
-  AMBA_REFERRER_INFO,
+  AMBA_FALLBACK_INFO,
+  buildReferrerDirectory,
   findReferrerInfo,
-  INTERIOR_REFERRER_DIRECTORY,
+  type DirectoryRow,
   type LocationReferrerInfo,
+  type ReferrerDirectory,
 } from '@/config/referrers';
 import { boxFetch } from '@/hooks/boxes/boxApi';
 import { matchesSearch } from '@/hooks/boxes/boxGrouping';
@@ -93,17 +95,19 @@ function PrintPageContent() {
   const [senderDni, setSenderDni] = useState<string>('');
   const [senderPhone, setSenderPhone] = useState<string>('');
   const [labelDestQuery, setLabelDestQuery] = useState<string>('');
-  const [selectedLabelDests, setSelectedLabelDests] = useState<Set<number>>(
-    () => new Set([INTERIOR_REFERRER_DIRECTORY[0]?.locationId ?? 3]),
-  );
+  const [directory, setDirectory] = useState<ReferrerDirectory>({
+    amba: AMBA_FALLBACK_INFO,
+    interior: [],
+  });
+  const [directoryError, setDirectoryError] = useState<string | null>(null);
+  const [selectedLabelDests, setSelectedLabelDests] = useState<Set<number>>(() => new Set());
   const [customAddresses, setCustomAddresses] = useState<Record<number, string>>({});
 
   // --- Sectors State ---
   const [sectorKind, setSectorKind] = useState<SectorKind>('both');
   const [sectorQuery, setSectorQuery] = useState<string>('');
-  const [selectedSectorLocs, setSelectedSectorLocs] = useState<Set<number>>(
-    () => new Set(INTERIOR_REFERRER_DIRECTORY.map((loc) => loc.locationId)),
-  );
+  const [selectedSectorLocs, setSelectedSectorLocs] = useState<Set<number>>(() => new Set());
+  const { amba: ambaInfo, interior: interiorDirectory } = directory;
 
   // --- Windows & Tables State ---
   const [windows, setWindows] = useState<WindowConfigItem[]>([
@@ -118,6 +122,18 @@ function PrintPageContent() {
   useEffect(() => {
     if (!isAuthenticated) return;
     let cancelled = false;
+    boxFetch<DirectoryRow[]>('logistics/directory/')
+      .then((rows) => {
+        if (cancelled) return;
+        const next = buildReferrerDirectory(Array.isArray(rows) ? rows : []);
+        setDirectory(next);
+        setSelectedLabelDests(new Set(next.interior.slice(0, 1).map((loc) => loc.locationId)));
+        setSelectedSectorLocs(new Set(next.interior.map((loc) => loc.locationId)));
+      })
+      .catch(() => {
+        if (!cancelled) setDirectoryError('No se pudo cargar el directorio de referentes.');
+      });
+
     boxFetch<WindowConfigItem[]>('logistics/windows/config/')
       .then((rows) => {
         if (!cancelled && Array.isArray(rows) && rows.length > 0) {
@@ -163,7 +179,10 @@ function PrintPageContent() {
       setSenderPhone('');
       return;
     }
-    const info = findReferrerInfo(Number(locationIdStr));
+    const id = Number(locationIdStr);
+    const info = id === ambaInfo.locationId
+      ? ambaInfo
+      : interiorDirectory.find((loc) => loc.locationId === id);
     if (!info) return;
     const ref = info.referrers[0];
     setSenderCity(info.city);
@@ -174,21 +193,21 @@ function PrintPageContent() {
 
   const filteredLabelLocations = useMemo(
     () =>
-      INTERIOR_REFERRER_DIRECTORY.filter((loc) =>
+      interiorDirectory.filter((loc) =>
         matchesSearch(
           [loc.city, loc.code, ...loc.referrers.map((r) => r.name)].join(' '),
           labelDestQuery,
         ),
       ),
-    [labelDestQuery],
+    [interiorDirectory, labelDestQuery],
   );
 
   const filteredSectorLocations = useMemo(
     () =>
-      INTERIOR_REFERRER_DIRECTORY.filter((loc) =>
+      interiorDirectory.filter((loc) =>
         matchesSearch([loc.city, loc.code].join(' '), sectorQuery),
       ),
-    [sectorQuery],
+    [interiorDirectory, sectorQuery],
   );
 
   const toggleSetItem = (
@@ -209,8 +228,8 @@ function PrintPageContent() {
       return Array.from({ length: count }, (_, idx) => ({
         key: `caba-direct-${idx}`,
         circleFill: 'filled' as CircleFill | null,
-        destInfo: AMBA_REFERRER_INFO,
-        addressOverride: customAddresses[AMBA_REFERRER_INFO.locationId],
+        destInfo: ambaInfo,
+        addressOverride: customAddresses[ambaInfo.locationId],
         payOnDelivery: true,
         isViaCabaOnward: false,
       }));
@@ -219,13 +238,13 @@ function PrintPageContent() {
       return Array.from({ length: count }, (_, idx) => ({
         key: `caba-via-${idx}`,
         circleFill: 'empty' as CircleFill | null,
-        destInfo: AMBA_REFERRER_INFO,
-        addressOverride: customAddresses[AMBA_REFERRER_INFO.locationId],
+        destInfo: ambaInfo,
+        addressOverride: customAddresses[ambaInfo.locationId],
         payOnDelivery: true,
         isViaCabaOnward: true,
       }));
     }
-    const chosen = INTERIOR_REFERRER_DIRECTORY.filter((loc) =>
+    const chosen = interiorDirectory.filter((loc) =>
       selectedLabelDests.has(loc.locationId),
     );
     const list: {
@@ -238,7 +257,7 @@ function PrintPageContent() {
       isViaCabaOnward: boolean;
     }[] = [];
     chosen.forEach((loc) => {
-      const shippingLoc = loc.sendAs ? (findReferrerInfo(loc.sendAs) ?? loc) : loc;
+      const shippingLoc = loc.sendAs ? (findReferrerInfo(directory, loc.sendAs) ?? loc) : loc;
       for (let idx = 0; idx < count; idx += 1) {
         list.push({
           key: `interior-${loc.locationId}-${idx}`,
@@ -252,16 +271,16 @@ function PrintPageContent() {
       }
     });
     return list;
-  }, [routeKind, copiesPerDest, selectedLabelDests, customAddresses]);
+  }, [routeKind, copiesPerDest, selectedLabelDests, customAddresses, ambaInfo, interiorDirectory, directory]);
 
   const sectorSigns = useMemo(() => {
-    const chosen = INTERIOR_REFERRER_DIRECTORY.filter((loc) =>
+    const chosen = interiorDirectory.filter((loc) =>
       selectedSectorLocs.has(loc.locationId),
     );
     const seen = new Set<number>();
     const signs: { key: string; mode: 'unpack' | 'pack'; loc: LocationReferrerInfo }[] = [];
     chosen.forEach((loc) => {
-      const shippingLoc = loc.sendAs ? (findReferrerInfo(loc.sendAs) ?? loc) : loc;
+      const shippingLoc = loc.sendAs ? (findReferrerInfo(directory, loc.sendAs) ?? loc) : loc;
       if (seen.has(shippingLoc.locationId)) return;
       seen.add(shippingLoc.locationId);
       if (sectorKind === 'both' || sectorKind === 'unpack') {
@@ -272,7 +291,7 @@ function PrintPageContent() {
       }
     });
     return signs;
-  }, [sectorKind, selectedSectorLocs]);
+  }, [sectorKind, selectedSectorLocs, interiorDirectory, directory]);
 
   const tableNumbers = useMemo(() => {
     const start = Math.max(1, Math.min(tableStart, tableEnd));
@@ -328,6 +347,8 @@ function PrintPageContent() {
             </button>
           ))}
         </div>
+
+        {directoryError && <StaffError>{directoryError}</StaffError>}
 
         {tab === 'labels' && (
           <div className="staff-card space-y-4 p-4">
@@ -408,7 +429,7 @@ function PrintPageContent() {
                       type="button"
                       onClick={() =>
                         setSelectedLabelDests(
-                          new Set(INTERIOR_REFERRER_DIRECTORY.map((l) => l.locationId)),
+                          new Set(interiorDirectory.map((l) => l.locationId)),
                         )
                       }
                       className="rounded border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-700"
@@ -447,7 +468,7 @@ function PrintPageContent() {
                             <span className="font-semibold">{loc.city}</span> ({loc.code})
                             {loc.sendAs ? (
                               <span className="ml-1 text-xs font-normal text-amber-700 bg-amber-50 rounded px-1">
-                                (vía {findReferrerInfo(loc.sendAs)?.city ?? 'otro'})
+                                (vía {findReferrerInfo(directory, loc.sendAs)?.city ?? 'otro'})
                               </span>
                             ) : null} · {refNames}
                             <span className="block text-xs text-gray-500">
@@ -517,8 +538,8 @@ function PrintPageContent() {
                   className="min-h-10 rounded border border-gray-300 px-2 text-xs"
                 >
                   <option value="">Pre-cargar desde una localidad o dejar vacío...</option>
-                  <option value={String(AMBA_REFERRER_INFO.locationId)}>CABA (Germán Kijel)</option>
-                  {INTERIOR_REFERRER_DIRECTORY.map((loc) => (
+                  <option value={String(ambaInfo.locationId)}>CABA{ambaInfo.referrers[0] ? ` (${ambaInfo.referrers[0].name})` : ''}</option>
+                  {interiorDirectory.map((loc) => (
                     <option key={loc.locationId} value={String(loc.locationId)}>
                       {loc.city} ({loc.referrers.map((r) => r.name).join(' / ')})
                     </option>
@@ -593,7 +614,7 @@ function PrintPageContent() {
                   type="button"
                   onClick={() =>
                     setSelectedSectorLocs(
-                      new Set(INTERIOR_REFERRER_DIRECTORY.map((l) => l.locationId)),
+                      new Set(interiorDirectory.map((l) => l.locationId)),
                     )
                   }
                   className="rounded border border-gray-300 px-2 py-1 text-xs font-semibold"

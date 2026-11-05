@@ -16,6 +16,7 @@ import {
   type User,
 } from '@/types';
 import { useSearchParams } from 'next/navigation';
+import { formatTradeCode, parseTradeCodeQuery } from '@/utils/tradeCode';
 import { FormEvent, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 type LookupMode = 'member' | 'game';
@@ -53,8 +54,8 @@ function TradeCard({
 }) {
   return (
     <div className="staff-card px-4 py-3 text-gray-900">
-      <p className="font-semibold leading-tight">{title || `Código ${code}`}</p>
-      <p className="mt-0.5 text-sm text-gray-500">#{code} · {tableText(table)} · {status}</p>
+      <p className="font-semibold leading-tight">{title || `Código ${formatTradeCode(code)}`}</p>
+      <p className="mt-0.5 text-sm text-gray-500">{formatTradeCode(code)} · {tableText(table)} · {status}</p>
       <p className="mt-0.5 text-sm text-gray-500">{personLabel}: {personName}</p>
     </div>
   );
@@ -128,12 +129,18 @@ function LookupPageContent() {
 
   const handleCodeSearch = async (event: FormEvent) => {
     event.preventDefault();
+    const query = parseTradeCodeQuery(code);
     if (!code.trim()) return;
+    if (!query) {
+      setGame(null);
+      setGameError('No se encontró ese código.');
+      return;
+    }
     setIsSearchingGame(true);
     setGameError(null);
     setGame(null);
     try {
-      const detail = await fetchGame(undefined, `${code.trim()}/detail/`);
+      const detail = await fetchGame(undefined, `${query}/detail/`);
       if (detail) setGame(detail);
       else setGameError('No se encontró ese código.');
     } catch (err) {
@@ -248,9 +255,9 @@ function LookupPageContent() {
           {gameError && <StaffError>{gameError}</StaffError>}
           {game && (
             <div className="staff-card mt-4 px-4 py-3 text-gray-900">
-              <p className="font-semibold leading-tight">{game.item_to?.title || `Código ${game.assigned_trade_code}`}</p>
+              <p className="font-semibold leading-tight">{game.item_to?.title || `Código ${formatTradeCode(game.assigned_trade_code)}`}</p>
               <p className="mt-0.5 text-sm text-gray-500">
-                #{game.assigned_trade_code} · {tableText(game.table_number)} · {getGameStatusText(game.status)}
+                {formatTradeCode(game.assigned_trade_code)} · {tableText(game.table_number)} · {getGameStatusText(game.status)}
               </p>
               <p className="mt-0.5 text-sm text-gray-500">Entrega: {fullName(game.membership)}</p>
               <p className="mt-0.5 text-sm text-gray-500">Recibe: {fullName(game.member_to)}</p>

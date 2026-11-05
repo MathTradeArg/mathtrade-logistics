@@ -44,9 +44,9 @@ describe('ConfirmationModal', () => {
 
   it('displays the list of items to deliver', () => {
     render(<ConfirmationModal {...defaultProps} />);
-    expect(screen.getByText('101')).toBeInTheDocument();
+    expect(screen.getByText('00101')).toBeInTheDocument();
     expect(screen.getByText('Juego de Mesa A')).toBeInTheDocument();
-    expect(screen.getByText('202')).toBeInTheDocument();
+    expect(screen.getByText('00202')).toBeInTheDocument();
     expect(screen.getByText('Juego de Mesa B')).toBeInTheDocument();
   });
 
