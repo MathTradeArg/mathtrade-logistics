@@ -145,6 +145,21 @@ export function isViaAmbaItem(item: Item, eventLocationId = EVENT_LOCATION_ID): 
   return Boolean(item.via_meeting) && item.location != null && item.location !== eventLocationId && item.send_to !== eventLocationId;
 }
 
+/** The lane a city box sits in: boxes to AMBA that carry copies bound for other
+ *  cities are VIA_AMBA_DESTINATION_ID (`-1`), apart from direct AMBA (`1`);
+ *  any other box is its own `destiny`. */
+export function boxLaneId(box: Box, eventLocationId = EVENT_LOCATION_ID): number {
+  if (
+    box.destiny === eventLocationId &&
+    box.origin != null &&
+    box.origin !== eventLocationId &&
+    box.math_items.some((item) => isViaAmbaItem(item, eventLocationId))
+  ) {
+    return VIA_AMBA_DESTINATION_ID;
+  }
+  return box.destiny;
+}
+
 /** Whether a city box to AMBA belongs to the `destinationId` lane (`1` = direct
  *  AMBA, `-1` = via AMBA). An empty open box matches the lane it was opened in,
  *  or either lane if not tagged. */
