@@ -43,4 +43,11 @@ describe('cityViewRules', () => {
     expect(active.params).toEqual({});
     expect(active.readOnly).toBe(false);
   });
+
+  it('does not treat a stored edition as another one while the active edition is unknown', () => {
+    // Editions still loading (or the fetch failed): activeMathtradeId is null.
+    const view = cityViewRules({ ...base, activeMathtradeId: null, isAdmin: true, cityAccess: own, mathtradeId: 8 });
+    expect(view.params).toEqual({});
+    expect(view.readOnly).toBe(false);
+  });
 });
