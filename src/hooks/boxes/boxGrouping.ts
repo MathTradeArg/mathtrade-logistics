@@ -36,17 +36,27 @@ function effectiveDestination(item: Item): { id: number; name?: string | null } 
 }
 
 /** Distinct non-AMBA destinations (by where each game is sent, not its
- *  locality) declared on the games inside `box`, keyed by id. */
+ *  locality) declared on the games inside `box`, keyed by id. The label is the
+ *  sending city, followed by the receivers' localities when they differ from it
+ *  ("Bahía Blanca (Ingeniero White)"). */
 function onwardDestinationsById(box: Box, eventLocationId: number): Map<number, string> {
-  const byId = new Map<number, string>();
+  const byId = new Map<number, { city: string; localities: Set<string> }>();
   box.math_items.forEach((item) => {
     const dest = effectiveDestination(item);
-    if (dest && dest.id !== eventLocationId && dest.name) byId.set(dest.id, dest.name);
+    if (!dest || dest.id === eventLocationId || !dest.name) return;
+    const entry = byId.get(dest.id) ?? { city: dest.name, localities: new Set<string>() };
+    if (item.location_name && item.location_name !== dest.name) entry.localities.add(item.location_name);
+    byId.set(dest.id, entry);
   });
-  return byId;
+  const labels = new Map<number, string>();
+  byId.forEach(({ city, localities }, id) => {
+    const list = Array.from(localities).sort((a, b) => a.localeCompare(b));
+    labels.set(id, list.length > 0 ? `${city} (${list.join(', ')})` : city);
+  });
+  return labels;
 }
 
-/** Distinct non-AMBA destination names declared on the games inside `box`
+/** Distinct non-AMBA destination labels declared on the games inside `box`
  *  (falling back to `box.destination_name` when `box.destiny` is another city). */
 export function boxOnwardDestinations(box: Box, eventLocationId = EVENT_LOCATION_ID): string[] {
   const names = new Set(onwardDestinationsById(box, eventLocationId).values());
