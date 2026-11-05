@@ -97,6 +97,16 @@ function storeTables(tables: string[] | null | undefined) {
   else localStorage.removeItem(TABLES_KEY);
 }
 
+const SESSION_KEYS = [
+  'authToken', 'userName', 'userId', 'isAdmin', 'userUsername',
+  ROLE_KEY, TABLES_KEY, REFERRER_KEY, LOCAL_CITY_KEY,
+];
+
+/** Drop every per-user key, so nothing of a previous user survives on a shared device. */
+function clearStoredSession() {
+  SESSION_KEYS.forEach((key) => localStorage.removeItem(key));
+}
+
 interface AuthContextType {
   isAuthenticated: boolean | null;
   userName: string | null;
@@ -201,6 +211,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setReferrer(readStoredCity(REFERRER_KEY));
       setLocalCity(readStoredCity(LOCAL_CITY_KEY));
     } else {
+      // No valid session: whatever per-user data is left belongs to nobody.
+      clearStoredSession();
+      Sentry.setUser(null);
       setIsAuthenticated(false);
       setUserName(null);
       setUserId(null);
@@ -233,6 +246,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userIsAdmin = userDetails.math_admin || false;
     const idStr = userDetails.id?.toString() || null;
 
+    // Start clean: optional keys (username, tables, cities) must not carry over from a previous user.
+    clearStoredSession();
     localStorage.setItem('authToken', token);
     localStorage.setItem('userName', name);
     if (idStr) {
@@ -272,15 +287,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [router]);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('isAdmin');
-    localStorage.removeItem('userUsername');
-    localStorage.removeItem(ROLE_KEY);
-    localStorage.removeItem(TABLES_KEY);
-    localStorage.removeItem(REFERRER_KEY);
-    localStorage.removeItem(LOCAL_CITY_KEY);
+    clearStoredSession();
     Sentry.setUser(null);
     setIsAuthenticated(false);
     setUserName(null);
