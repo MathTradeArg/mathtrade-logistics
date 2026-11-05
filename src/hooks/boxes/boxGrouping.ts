@@ -152,6 +152,16 @@ export function isViaAmbaItem(item: Item, eventLocationId = EVENT_LOCATION_ID): 
   return Boolean(item.via_meeting) && item.location != null && item.location !== eventLocationId && item.send_to !== eventLocationId;
 }
 
+/** The destination a box belongs to for shipping, as computed by the API
+ *  (`lane_destination`: a destination that ships as another is that one).
+ *  Older responses without the field fall back to `destiny`. A lane equal to
+ *  the box's own origin means nothing to ship, so `destiny` is kept. */
+export function boxLaneDestination(box: Box): number {
+  const lane = box.lane_destination;
+  if (lane == null || lane === box.origin) return box.destiny;
+  return lane;
+}
+
 /** The lane a city box sits in: boxes to AMBA that carry copies bound for other
  *  cities are VIA_AMBA_DESTINATION_ID (`-1`), apart from direct AMBA (`1`);
  *  any other box is its own `destiny`. */
@@ -164,7 +174,7 @@ export function boxLaneId(box: Box, eventLocationId = EVENT_LOCATION_ID): number
   ) {
     return VIA_AMBA_DESTINATION_ID;
   }
-  return box.destiny;
+  return boxLaneDestination(box);
 }
 
 /** Whether a city box to AMBA belongs to the `destinationId` lane (`1` = direct
@@ -172,9 +182,9 @@ export function boxLaneId(box: Box, eventLocationId = EVENT_LOCATION_ID): number
  *  or either lane if not tagged. */
 export function boxMatchesLane(box: Box, destinationId: number, eventLocationId = EVENT_LOCATION_ID): boolean {
   if (destinationId !== eventLocationId && destinationId !== VIA_AMBA_DESTINATION_ID) {
-    return box.destiny === destinationId;
+    return boxLaneDestination(box) === destinationId;
   }
-  if (box.destiny !== eventLocationId) return false;
+  if (boxLaneDestination(box) !== eventLocationId) return false;
   if (box.math_items.length === 0) return true;
   const hasVia = box.math_items.some((item) => isViaAmbaItem(item, eventLocationId));
   return destinationId === VIA_AMBA_DESTINATION_ID ? hasVia : !hasVia;
@@ -308,7 +318,7 @@ export function groupPackingDestinations(
     ) {
       return VIA_AMBA_DESTINATION_ID;
     }
-    return box.destiny;
+    return boxLaneDestination(box);
   };
   const closedBoxesByDest = new Map<number, number>();
   boxes.filter((box) => !isBoxOpen(box)).forEach((box) => {

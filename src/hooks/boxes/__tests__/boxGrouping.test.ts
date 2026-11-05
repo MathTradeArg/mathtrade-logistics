@@ -1,5 +1,5 @@
 import { EVENT_LOCATION_ID } from '@/constants/event';
-import { boxContentsSummary, boxDestinationLabel, boxLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, hasMixedDestinations, boxOnwardDestinations, isTransitBox, splitByRoute, groupPackingDestinations, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
+import { boxContentsSummary, boxLaneDestination, boxMatchesLane, boxDestinationLabel, boxLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, hasMixedDestinations, boxOnwardDestinations, isTransitBox, splitByRoute, groupPackingDestinations, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import type { Box, Item } from '@/types';
 
 const box = (overrides: Partial<Box> & Pick<Box, 'id' | 'origin' | 'origin_name'>): Box => ({
@@ -180,6 +180,35 @@ describe('boxGrouping', () => {
     it('still reports mixed for different real destinations', () => {
       const salta = item(7, { location: 11, location_name: 'Salta', via_meeting: true });
       expect(hasMixedDestinations({ ...cba, math_items: [mendoza, salta] })).toBe(true);
+    });
+  });
+
+  describe('lane_destination from the API', () => {
+    const hub = EVENT_LOCATION_ID;
+    it('falls back to destiny for old responses without the field', () => {
+      expect(boxLaneDestination(box({ id: 1, origin: hub, origin_name: 'AMBA', destiny: 7 }))).toBe(7);
+    });
+
+    it('uses lane_destination when present', () => {
+      expect(boxLaneDestination(box({ id: 1, origin: hub, origin_name: 'AMBA', destiny: 8, lane_destination: 7 }))).toBe(7);
+    });
+
+    it('keeps destiny when the lane is the box origin itself', () => {
+      expect(boxLaneDestination(box({ id: 1, origin: hub, origin_name: 'AMBA', destiny: 20, lane_destination: hub }))).toBe(20);
+    });
+
+    it('matches a box that ships as the lane city, not another lane', () => {
+      const cordoba = box({ id: 1, origin: hub, origin_name: 'AMBA', destiny: 8, lane_destination: 7, math_items: [] });
+      const salta = box({ id: 2, origin: hub, origin_name: 'AMBA', destiny: 11, lane_destination: 11, math_items: [] });
+      expect(boxMatchesLane(cordoba, 7)).toBe(true);
+      expect(boxMatchesLane(salta, 7)).toBe(false);
+    });
+
+    it('counts closed hub boxes under their lane', () => {
+      const closed = box({ id: 1, origin: hub, origin_name: 'AMBA', destiny: 8, lane_destination: 7 });
+      const item = { id: 5, title: 'G', assigned_trade_code: 5, status: 4, location: 8, send_to: 7 } as Item;
+      const groups = groupPackingDestinations([item], [closed], true, hub);
+      expect(groups.find((g) => g.destinationId === 7)?.closedBoxCount).toBe(1);
     });
   });
 });

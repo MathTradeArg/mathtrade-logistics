@@ -6,7 +6,7 @@ import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { getBox, listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
-import { apiDestinationId, boxDestinationLabel, boxedTradeIds, boxContentsSummary, boxMatchesLane, isBoxOpen, isPackable, matchesSearch, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, receptorName, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
+import { apiDestinationId, boxDestinationLabel, boxedTradeIds, boxContentsSummary, boxLaneDestination, boxMatchesLane, isBoxOpen, isPackable, matchesSearch, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, receptorName, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box, Item } from '@/types';
@@ -84,7 +84,9 @@ export default function PackingBox({
         nextBoxes.filter(
           (candidate) =>
             candidate.id !== boxId &&
-            (origin === EVENT_LOCATION_ID || boxMatchesLane(candidate, destinationId)),
+            (origin === EVENT_LOCATION_ID
+              ? boxLaneDestination(candidate) === boxLaneDestination(nextBox)
+              : boxMatchesLane(candidate, destinationId)),
         ),
       );
       setItems(nextItems);
