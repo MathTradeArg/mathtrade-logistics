@@ -273,4 +273,25 @@ describe('useAuth city state', () => {
     expect(localStorage.getItem('logisticsLocalCity')).toBeNull();
     await waitFor(() => expect(screen.getByTestId('referrer')).toHaveTextContent('none'));
   });
+  it('mounting without a token sweeps stale session keys left by a previous user', async () => {
+    localStorage.setItem('logisticsReferrer', JSON.stringify({ id: 7, name: 'Mendoza' }));
+    localStorage.setItem('logisticsLocalCity', JSON.stringify({ id: 9, name: 'Salta' }));
+    localStorage.setItem('logisticsRole', 'window');
+    localStorage.setItem('logisticsTables', JSON.stringify(['A']));
+    localStorage.setItem('userUsername', 'previous.user');
+    render(<AuthProvider><CityProbe /></AuthProvider>);
+    await waitFor(() => expect(localStorage.getItem('logisticsReferrer')).toBeNull());
+    expect(localStorage.getItem('logisticsLocalCity')).toBeNull();
+    expect(localStorage.getItem('logisticsRole')).toBeNull();
+    expect(localStorage.getItem('logisticsTables')).toBeNull();
+    expect(localStorage.getItem('userUsername')).toBeNull();
+    expect(screen.getByTestId('access')).toHaveTextContent('none');
+  });
+
+  it('login without a username does not keep the previous user username', () => {
+    localStorage.setItem('userUsername', 'previous.user');
+    render(<AuthProvider><CityProbe /></AuthProvider>);
+    fireEvent.click(screen.getByText('login'));
+    expect(localStorage.getItem('userUsername')).toBeNull();
+  });
 });
