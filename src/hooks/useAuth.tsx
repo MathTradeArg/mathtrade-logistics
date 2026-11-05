@@ -2,6 +2,7 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { ROLES } from '@/config/roles';
+import { CITY_VIEW_STORAGE_KEY } from '@/config/sessionKeys';
 import { useApi } from '@/hooks/useApi';
 import type { CityAccess, CityRef } from '@/types/city';
 import type { VolunteerRole } from '@/types/volunteer';
@@ -95,6 +96,22 @@ function readStoredTables(): string[] {
 function storeTables(tables: string[] | null | undefined) {
   if (tables && tables.length > 0) localStorage.setItem(TABLES_KEY, JSON.stringify(tables));
   else localStorage.removeItem(TABLES_KEY);
+}
+
+const SESSION_KEYS = [
+  'authToken', 'userName', 'userId', 'isAdmin', 'userUsername',
+  ROLE_KEY, TABLES_KEY, REFERRER_KEY, LOCAL_CITY_KEY,
+];
+
+/** Drop every per-user key, so nothing of a previous user survives on a shared device. */
+function clearStoredSession() {
+  SESSION_KEYS.forEach((key) => localStorage.removeItem(key));
+  try {
+    // The admin's "Ver como" pick (sessionStorage) is per-user too.
+    sessionStorage.removeItem(CITY_VIEW_STORAGE_KEY);
+  } catch {
+    // sessionStorage blocked: nothing was stored there.
+  }
 }
 
 interface AuthContextType {
@@ -201,6 +218,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setReferrer(readStoredCity(REFERRER_KEY));
       setLocalCity(readStoredCity(LOCAL_CITY_KEY));
     } else {
+      // No valid session: whatever per-user data is left belongs to nobody.
+      clearStoredSession();
+      Sentry.setUser(null);
       setIsAuthenticated(false);
       setUserName(null);
       setUserId(null);
@@ -233,6 +253,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const userIsAdmin = userDetails.math_admin || false;
     const idStr = userDetails.id?.toString() || null;
 
+    // Start clean: optional keys (username, tables, cities) must not carry over from a previous user.
+    clearStoredSession();
     localStorage.setItem('authToken', token);
     localStorage.setItem('userName', name);
     if (idStr) {
@@ -272,15 +294,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [router]);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userName');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('isAdmin');
-    localStorage.removeItem('userUsername');
-    localStorage.removeItem(ROLE_KEY);
-    localStorage.removeItem(TABLES_KEY);
-    localStorage.removeItem(REFERRER_KEY);
-    localStorage.removeItem(LOCAL_CITY_KEY);
+    clearStoredSession();
     Sentry.setUser(null);
     setIsAuthenticated(false);
     setUserName(null);

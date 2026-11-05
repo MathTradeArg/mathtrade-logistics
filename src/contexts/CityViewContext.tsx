@@ -6,7 +6,9 @@ import { useAuth } from '@/hooks/useAuth';
 import type { CityAccess, CityRef, MathtradeRef } from '@/types';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-export const CITY_VIEW_STORAGE_KEY = 'logisticsCityView';
+import { CITY_VIEW_STORAGE_KEY } from '@/config/sessionKeys';
+
+export { CITY_VIEW_STORAGE_KEY };
 
 export type CityViewKind = 'referrer' | 'local';
 
@@ -62,7 +64,11 @@ export function cityViewRules({
   const cityId = asLocation ?? own?.id ?? null;
   const params: CityViewParams = {};
   if (asLocation != null && asLocation !== own?.id) params.as_location = asLocation;
-  if (mathtradeId != null && mathtradeId !== activeMathtradeId) params.mathtrade = mathtradeId;
+  // Without a known active edition (still loading, or the fetch failed) a
+  // stored pick can't be told apart from the active one: send no param.
+  if (activeMathtradeId != null && mathtradeId != null && mathtradeId !== activeMathtradeId) {
+    params.mathtrade = mathtradeId;
+  }
   const cityName =
     locations.find((loc) => loc.id === cityId)?.name ?? (cityId != null && cityId === own?.id ? own.name : '');
   return {
@@ -70,7 +76,11 @@ export function cityViewRules({
     cityId,
     cityName,
     params,
-    readOnly: params.as_location != null || params.mathtrade != null,
+    // A stored edition pick with an unknown active edition is shown under
+    // that label but the data is the active one's: read-only until known.
+    readOnly:
+      params.as_location != null || params.mathtrade != null ||
+      (activeMathtradeId == null && mathtradeId != null),
   };
 }
 
@@ -108,7 +118,12 @@ export function CityViewProvider({ children }: { children: ReactNode }) {
   const [mathtrades, setMathtrades] = useState<MathtradeRef[]>([]);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin) {
+      // Logged out (or not an admin): forget the in-memory pick, so the next admin starts clean.
+      setStored({ asLocation: null, mathtradeId: null });
+      setRestored(false);
+      return;
+    }
     setStored(readStored());
     setRestored(true);
     let cancelled = false;

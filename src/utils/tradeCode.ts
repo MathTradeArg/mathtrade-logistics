@@ -21,15 +21,13 @@ export function parseTradeCodeQuery(raw: string): string | null {
   return String(Number(digits));
 }
 
-/** Box label of a copy from the items list: `<origin_number>-<number>`, the
- *  number alone for boxes without an origin sequence, or "—" when unboxed. */
+/** Box label of a copy from the items list: simple number, or "—" when unboxed. */
 export function itemBoxLabel(item: {
   box_number?: number | string | null;
   box_origin_number?: number | null;
 }): string {
   const number = item.box_number;
   if (number === null || number === undefined || `${number}` === '') return '—';
-  if (item.box_origin_number != null) return `${item.box_origin_number}-${number}`;
   return `${number}`;
 }
 

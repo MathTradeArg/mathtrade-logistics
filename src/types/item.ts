@@ -8,6 +8,9 @@ export interface Item {
   telegram?: string | null;
   location?: number;
   location_name?: string;
+  send_to?: number | null;
+  lane_destination?: number;
+  send_to_name?: string | null;
   status?: number;
   box_number?: number | string | null;
   /** Origin-sequence number of the box the copy is in (`<origin_number>-<number>`). */

@@ -2,7 +2,7 @@
 
 import { GameRow, StaffDialog, StaffEmpty, StaffPage, ThumbCta } from '@/components/staff';
 import { listBoxes, listItems } from '@/hooks/boxes/boxApi';
-import { findBoxForTrade, isBoxOpen, receptorName } from '@/hooks/boxes/boxGrouping';
+import { boxLaneDestination, findBoxForTrade, isBoxOpen, receptorName } from '@/hooks/boxes/boxGrouping';
 import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import type { Box, Item } from '@/types';
 import { formatTradeCode } from '@/utils/tradeCode';
@@ -50,12 +50,12 @@ export default function TransitBoxView({
     const inThisBox = new Set(box.math_items.map((item) => item.id));
     return items.filter((item) => {
       if (!(item.status === 4 || item.status === 5)) return false;
-      if (item.location !== box.destiny || item.origin_location !== box.origin) return false;
+      if ((item.lane_destination ?? item.location) !== boxLaneDestination(box) || item.origin_location !== box.origin) return false;
       if (inThisBox.has(item.id)) return false;
       const source = findBoxForTrade(destBoxes, item.id);
       if (!source) return true;
       if (isBoxOpen(source)) return false;
-      return source.origin === box.origin && source.destiny === box.destiny;
+      return source.origin === box.origin && boxLaneDestination(source) === boxLaneDestination(box);
     });
   }, [box, destBoxes, items]);
 

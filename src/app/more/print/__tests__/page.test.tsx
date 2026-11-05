@@ -63,7 +63,7 @@ describe('PrintPage', () => {
     expect(screen.getAllByText(/PAGO EN DESTINO/i).length).toBeGreaterThan(0);
   });
 
-  it('switches to empty Circle for boxes going via CABA and omits Pago en Destino/Circle for interior localities', async () => {
+  it('switches to empty Circle for boxes going via CABA and includes Pago en Destino without Circle for interior localities', async () => {
     render(<PrintPage />);
 
     fireEvent.click(
@@ -77,7 +77,7 @@ describe('PrintPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Viaja a localidad del interior/i }));
     expect((await screen.findAllByText(/Ciudad Prueba/)).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Beto Interior/).length).toBeGreaterThan(0);
-    expect(screen.queryByText('PAGO EN DESTINO')).not.toBeInTheDocument();
+    expect(screen.getAllByText('PAGO EN DESTINO').length).toBeGreaterThan(0);
     expect(screen.queryByRole('img', { name: /Círculo/i })).not.toBeInTheDocument();
   });
 

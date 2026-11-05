@@ -189,7 +189,11 @@ export default function PackingDestination({
               {closedBoxes.map((box) => (
                 <li key={box.id}>
                   <GameRow
-                    title={`#${box.number}`}
+                    title={
+                      origin === EVENT_LOCATION_ID && box.origin_number != null
+                        ? `${box.origin_number}-${box.number}`
+                        : `#${box.number}`
+                    }
                     subtitle={`${box.math_items.length} juegos`}
                     disabled
                   />
