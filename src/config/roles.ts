@@ -79,3 +79,14 @@ export function homeFor(role: VolunteerRole | null, eventPhase: number | null, c
   if (!role && city) return '/city';
   return role ? roleHome(role, eventPhase) : '/';
 }
+
+/** Imprimir: sectores, ventanillas y mesas son material del evento. Una
+ *  persona de ciudad (referente o voluntario local) sin rol de evento y sin
+ *  ser admin solo imprime etiquetas. */
+export function canPrintEventSheets(
+  isAdmin: boolean,
+  role: VolunteerRole | null,
+  city: CityAccess = null,
+): boolean {
+  return isAdmin || role !== null || city === null;
+}
