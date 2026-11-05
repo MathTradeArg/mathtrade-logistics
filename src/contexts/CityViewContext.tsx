@@ -62,7 +62,11 @@ export function cityViewRules({
   const cityId = asLocation ?? own?.id ?? null;
   const params: CityViewParams = {};
   if (asLocation != null && asLocation !== own?.id) params.as_location = asLocation;
-  if (mathtradeId != null && mathtradeId !== activeMathtradeId) params.mathtrade = mathtradeId;
+  // Without a known active edition (still loading, or the fetch failed) a
+  // stored pick can't be told apart from the active one: send no param.
+  if (activeMathtradeId != null && mathtradeId != null && mathtradeId !== activeMathtradeId) {
+    params.mathtrade = mathtradeId;
+  }
   const cityName =
     locations.find((loc) => loc.id === cityId)?.name ?? (cityId != null && cityId === own?.id ? own.name : '');
   return {
