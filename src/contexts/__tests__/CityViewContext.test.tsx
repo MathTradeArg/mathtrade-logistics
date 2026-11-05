@@ -48,6 +48,17 @@ describe('cityViewRules', () => {
     // Editions still loading (or the fetch failed): activeMathtradeId is null.
     const view = cityViewRules({ ...base, activeMathtradeId: null, isAdmin: true, cityAccess: own, mathtradeId: 8 });
     expect(view.params).toEqual({});
+  });
+
+  it('is read-only with a stored edition while the active edition is unknown', () => {
+    const view = cityViewRules({ ...base, activeMathtradeId: null, isAdmin: true, cityAccess: own, mathtradeId: 8 });
+    expect(view.readOnly).toBe(true);
+    expect(view.params).toEqual({});
+  });
+
+  it('keeps writes enabled with no stored edition while the active edition is unknown', () => {
+    const view = cityViewRules({ ...base, activeMathtradeId: null, isAdmin: true, cityAccess: own, mathtradeId: null });
+    expect(view.params).toEqual({});
     expect(view.readOnly).toBe(false);
   });
 });

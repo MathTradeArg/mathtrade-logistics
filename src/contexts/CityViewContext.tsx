@@ -74,7 +74,11 @@ export function cityViewRules({
     cityId,
     cityName,
     params,
-    readOnly: params.as_location != null || params.mathtrade != null,
+    // A stored edition pick with an unknown active edition is shown under
+    // that label but the data is the active one's: read-only until known.
+    readOnly:
+      params.as_location != null || params.mathtrade != null ||
+      (activeMathtradeId == null && mathtradeId != null),
   };
 }
 
