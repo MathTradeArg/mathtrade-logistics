@@ -3,7 +3,7 @@
 import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, StaffEmpty, StaffError } from '@/components/staff';
 import { listBoxes } from '@/hooks/boxes/boxApi';
-import { boxGoesViaHub, boxLabel, destinationLabel, splitByRoute } from '@/hooks/boxes/boxGrouping';
+import { apiDestinationId, boxLabel, boxLaneId, destinationLabel, splitByRoute, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import { saveTracking, uploadReceipt, type TrackingInput } from '@/hooks/city/cityApi';
 import type { Box, Tracking } from '@/types';
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
@@ -25,7 +25,9 @@ type Props = {
 export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: Props) {
   const [closedBoxes, setClosedBoxes] = useState<Box[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [destination, setDestination] = useState<number | null>(tracking?.destiny ?? null);
+  const [destination, setDestination] = useState<number | null>(
+    tracking?.boxes?.[0] ? boxLaneId(tracking.boxes[0]) : (tracking?.destiny ?? null),
+  );
   const [selected, setSelected] = useState<Set<number>>(
     () => new Set((tracking?.boxes ?? []).map((box) => box.id)),
   );
@@ -61,16 +63,21 @@ export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: 
   );
 
   const destinations = useMemo(() => {
-    const map = new Map<number, { name: string; viaHub: boolean }>();
+    const map = new Map<number, string>();
     [...closedBoxes, ...(tracking?.boxes ?? [])].forEach((box) => {
-      const current = map.get(box.destiny);
-      map.set(box.destiny, {
-        name: box.destination_name || current?.name || `Destino ${box.destiny}`,
-        viaHub: Boolean(current?.viaHub) || boxGoesViaHub(box),
-      });
+      const lane = boxLaneId(box);
+      map.set(
+        lane,
+        lane === VIA_AMBA_DESTINATION_ID
+          ? VIA_AMBA_DESTINATION_LABEL
+          : box.destination_name || map.get(lane) || `Destino ${box.destiny}`,
+      );
     });
     return Array.from(map.entries())
-      .map(([id, { name, viaHub }]) => ({ id, name, viaHub, label: destinationLabel(name, viaHub) }))
+      .map(([id, name]) => {
+        const viaHub = id === VIA_AMBA_DESTINATION_ID;
+        return { id, name, viaHub, label: destinationLabel(name, viaHub) };
+      })
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [closedBoxes, tracking]);
 
@@ -79,10 +86,10 @@ export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: 
     if (destination == null) return [];
     const byId = new Map<number, Box>();
     closedBoxes
-      .filter((box) => box.destiny === destination && (!box.tracking || ownBoxIds.has(box.id)))
+      .filter((box) => boxLaneId(box) === destination && (!box.tracking || ownBoxIds.has(box.id)))
       .forEach((box) => byId.set(box.id, box));
     (tracking?.boxes ?? [])
-      .filter((box) => box.destiny === destination)
+      .filter((box) => boxLaneId(box) === destination)
       .forEach((box) => byId.set(box.id, byId.get(box.id) ?? box));
     return Array.from(byId.values()).sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
   }, [closedBoxes, destination, ownBoxIds, tracking]);
@@ -131,7 +138,7 @@ export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: 
     event.preventDefault();
     if (!canSave || destination == null) return;
     const body: TrackingInput = {
-      destiny: destination,
+      destiny: apiDestinationId(destination),
       tracking_code: code.trim(),
       boxes: boxIds,
       weight: Number(weight),
