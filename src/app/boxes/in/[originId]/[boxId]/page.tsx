@@ -10,6 +10,7 @@ import { boxOnwardDestinations, hasMixedDestinations, isTransitBox, receptorName
 import { useAuth } from '@/hooks/useAuth';
 import type { Box } from '@/types';
 import { missingReportHref } from '@/app/more/report/missingReport';
+import { formatTradeCode } from '@/utils/tradeCode';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -141,7 +142,7 @@ export default function IncomingBoxPage() {
                 return (
                   <li key={item.id}>
                     <GameRow
-                      title={`${item.assigned_trade_code} · ${item.title}`}
+                      title={`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}
                       subtitle={subtitle}
                       onClick={() => toggle(item.assigned_trade_code)}
                       selected={checked}

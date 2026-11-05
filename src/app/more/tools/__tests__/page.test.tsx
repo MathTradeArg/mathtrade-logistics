@@ -46,7 +46,7 @@ describe('ToolsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Buscar código' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/#123/)).toBeInTheDocument();
+      expect(screen.getByText(/00123/)).toBeInTheDocument();
     });
     expect(screen.queryByRole('button', { name: 'Volver a pendiente' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Marcar entregado' })).not.toBeInTheDocument();

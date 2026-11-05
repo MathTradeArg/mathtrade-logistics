@@ -1,3 +1,5 @@
+import { formatTradeCode } from '@/utils/tradeCode';
+
 export type MissingItem = {
   item_id?: number;
   title: string;
@@ -92,7 +94,7 @@ export function missingReportComment(opts: {
   items.forEach((item) => {
     if (item.item_id) lines.push(`Item id ${item.item_id}.`);
     if (item.title && item.assigned_trade_code) {
-      lines.push(`Juego: ${item.title} (#${item.assigned_trade_code}).`);
+      lines.push(`Juego: ${item.title} (${formatTradeCode(item.assigned_trade_code)}).`);
     }
   });
   return lines.join('\n');

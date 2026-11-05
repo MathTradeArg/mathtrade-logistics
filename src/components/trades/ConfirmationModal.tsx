@@ -1,6 +1,7 @@
 "use client";
 
 import type { Trade } from "@/types";
+import { formatTradeCode } from '@/utils/tradeCode';
 import { Warning, X } from 'phosphor-react';
 import { useHapticClick } from '@/hooks/useHapticClick';
 
@@ -52,7 +53,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
           {itemsToDeliver.length > 0 ? (
             itemsToDeliver.map(item => (
               <div key={`confirm-${item.result.assigned_trade_code}`} className="flex min-h-14 items-center rounded-lg bg-white px-3 text-sm">
-                <span className="mr-2 w-10 shrink-0 text-center font-bold text-primary">{item.result.assigned_trade_code}</span>
+                <span className="mr-2 min-w-20 shrink-0 text-center font-bold tabular-nums text-primary">{formatTradeCode(item.result.assigned_trade_code)}</span>
                 <span className="min-w-0 flex-grow text-gray-800">{item.math_item_exchanged.title}</span>
               </div>
             ))

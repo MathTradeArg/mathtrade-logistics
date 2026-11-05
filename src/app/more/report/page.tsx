@@ -14,6 +14,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { ChangeEvent, FormEvent, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { missingReportComment, parseMissingItems } from './missingReport';
+import { formatTradeCode, tradeCodeSearchText } from '@/utils/tradeCode';
 
 const normalizeSearchString = (str: string): string => {
   if (!str) return '';
@@ -107,7 +108,7 @@ function NewReportContent() {
     const term = normalizeSearchString(searchTermItems);
     return items.filter((item) =>
       normalizeSearchString(item.title).includes(term) ||
-      item.assigned_trade_code.toString().includes(searchTermItems.toLowerCase()),
+      tradeCodeSearchText(item.assigned_trade_code).toLowerCase().includes(searchTermItems.toLowerCase()),
     );
   }, [availableItems, searchTermItems]);
 
@@ -288,7 +289,7 @@ function NewReportContent() {
                       onClick={() => setSelectedItem(item)}
                       className={`min-h-14 w-full rounded-lg px-4 text-left ${selectedItem?.id === item.id ? 'bg-primary text-white' : 'bg-white'}`}
                     >
-                      {item.title} (#{item.assigned_trade_code})
+                      {item.title} ({formatTradeCode(item.assigned_trade_code)})
                     </button>
                   </li>
                 ))}
@@ -341,7 +342,7 @@ function NewReportContent() {
               }] : []).map((item) => (
                 <p key={`${item.item_id}-${item.assigned_trade_code}`}>
                   Juego id {item.item_id}
-                  {item.assigned_trade_code ? ` · #${item.assigned_trade_code}` : ''}
+                  {item.assigned_trade_code ? ` · ${formatTradeCode(item.assigned_trade_code)}` : ''}
                   {item.title ? ` · ${item.title}` : ''}
                 </p>
               ))}

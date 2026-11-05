@@ -8,6 +8,7 @@ import { bulkUpdateTradeStatus } from '@/hooks/boxes/boxApi';
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
 import type { GameDetail } from '@/types';
+import { formatTradeCode, parseTradeCodeQuery } from '@/utils/tradeCode';
 import { FormEvent, useState } from 'react';
 
 export default function ToolsPage() {
@@ -26,12 +27,18 @@ export default function ToolsPage() {
 
   const handleCodeSearch = async (event: FormEvent) => {
     event.preventDefault();
+    const query = parseTradeCodeQuery(code);
     if (!code.trim()) return;
+    if (!query) {
+      setGame(null);
+      setGameError('No se encontró ese código.');
+      return;
+    }
     setIsSearching(true);
     setGameError(null);
     setGame(null);
     try {
-      const detail = await searchGame(undefined, `${code.trim()}/detail/`);
+      const detail = await searchGame(undefined, `${query}/detail/`);
       if (detail) setGame(detail);
       else setGameError('No se encontró ese código.');
     } catch (err) {
@@ -101,8 +108,8 @@ export default function ToolsPage() {
       {gameError && <StaffError>{gameError}</StaffError>}
       {game && (
         <div className="mt-4 rounded-lg bg-white p-4">
-          <p className="font-medium">{game.item_to?.title || `Código ${game.assigned_trade_code}`}</p>
-          <p className="mt-1 text-sm text-gray-500">#{game.assigned_trade_code} · estado {game.status}</p>
+          <p className="font-medium">{game.item_to?.title || `Código ${formatTradeCode(game.assigned_trade_code)}`}</p>
+          <p className="mt-1 text-sm text-gray-500">{formatTradeCode(game.assigned_trade_code)} · estado {game.status}</p>
           <div className="mt-4 flex flex-col gap-3">
             {showEvento && (
               <button type="button" onClick={() => setPendingStatus(5)} className="min-h-14 rounded-lg bg-want font-semibold text-white">Marcar en evento</button>
