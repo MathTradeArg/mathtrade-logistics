@@ -2,6 +2,7 @@
 
 import * as Sentry from "@sentry/nextjs";
 import { ROLES } from '@/config/roles';
+import { CITY_VIEW_STORAGE_KEY } from '@/config/sessionKeys';
 import { useApi } from '@/hooks/useApi';
 import type { CityAccess, CityRef } from '@/types/city';
 import type { VolunteerRole } from '@/types/volunteer';
@@ -105,6 +106,12 @@ const SESSION_KEYS = [
 /** Drop every per-user key, so nothing of a previous user survives on a shared device. */
 function clearStoredSession() {
   SESSION_KEYS.forEach((key) => localStorage.removeItem(key));
+  try {
+    // The admin's "Ver como" pick (sessionStorage) is per-user too.
+    sessionStorage.removeItem(CITY_VIEW_STORAGE_KEY);
+  } catch {
+    // sessionStorage blocked: nothing was stored there.
+  }
 }
 
 interface AuthContextType {

@@ -174,7 +174,15 @@ describe('boxGrouping', () => {
       const c = item(6, { location: 31, location_name: 'Río Ceballos', send_to: 7, send_to_name: 'Córdoba' });
       const b = box({ id: 2, origin: EVENT_LOCATION_ID, origin_name: 'AMBA', destiny: 7, destination_name: 'Córdoba', math_items: [a, c] });
       expect(hasMixedDestinations(b)).toBe(false);
-      expect(boxOnwardDestinations(b)).toEqual(['Córdoba']);
+      expect(boxOnwardDestinations(b)).toEqual(['Córdoba (Río Ceballos, Villa Carlos Paz)']);
+    });
+
+    it('shows the sending city with the receiver locality when they differ', () => {
+      const white = item(8, { location: 40, location_name: 'Ingeniero White', send_to: 12, send_to_name: 'Bahía Blanca' });
+      const bb = item(9, { location: 12, location_name: 'Bahía Blanca', send_to: 12, send_to_name: 'Bahía Blanca' });
+      expect(boxOnwardDestinations({ ...cba, math_items: [white] })).toEqual(['Bahía Blanca (Ingeniero White)']);
+      expect(boxOnwardDestinations({ ...cba, math_items: [white, bb] })).toEqual(['Bahía Blanca (Ingeniero White)']);
+      expect(boxOnwardDestinations({ ...cba, math_items: [bb] })).toEqual(['Bahía Blanca']);
     });
 
     it('still reports mixed for different real destinations', () => {
