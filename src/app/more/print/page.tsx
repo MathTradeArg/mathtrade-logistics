@@ -22,6 +22,16 @@ type BoxRouteKind = 'amba_direct' | 'amba_via' | 'interior';
 type SectorKind = 'both' | 'unpack' | 'pack';
 type CircleFill = 'filled' | 'empty';
 
+type LabelItem = {
+  key: string;
+  circleFill: CircleFill | null;
+  destInfo: LocationReferrerInfo;
+  clusterCity?: string;
+  addressOverride?: string;
+  payOnDelivery: boolean;
+  isViaCabaOnward: boolean;
+};
+
 type WindowConfigItem = {
   id?: number;
   name: string;
@@ -222,7 +232,7 @@ function PrintPageContent() {
     });
   };
 
-  const labelsToRender = useMemo(() => {
+  const labelsToRender = useMemo<LabelItem[]>(() => {
     const count = Math.max(1, Math.min(20, copiesPerDest || 1));
     if (routeKind === 'amba_direct') {
       return Array.from({ length: count }, (_, idx) => ({
@@ -247,15 +257,7 @@ function PrintPageContent() {
     const chosen = interiorDirectory.filter((loc) =>
       selectedLabelDests.has(loc.locationId),
     );
-    const list: {
-      key: string;
-      circleFill: CircleFill | null;
-      destInfo: LocationReferrerInfo;
-      clusterCity?: string;
-      addressOverride?: string;
-      payOnDelivery: boolean;
-      isViaCabaOnward: boolean;
-    }[] = [];
+    const list: LabelItem[] = [];
     chosen.forEach((loc) => {
       const shippingLoc = loc.sendAs ? (findReferrerInfo(directory, loc.sendAs) ?? loc) : loc;
       for (let idx = 0; idx < count; idx += 1) {
