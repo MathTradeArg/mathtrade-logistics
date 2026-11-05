@@ -1,5 +1,5 @@
 import { EVENT_LOCATION_ID } from '@/constants/event';
-import { boxContentsSummary, boxDestinationLabel, boxLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, splitByRoute, groupPackingDestinations, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
+import { boxContentsSummary, boxDestinationLabel, boxLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, hasMixedDestinations, boxOnwardDestinations, isTransitBox, splitByRoute, groupPackingDestinations, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import type { Box, Item } from '@/types';
 
 const box = (overrides: Partial<Box> & Pick<Box, 'id' | 'origin' | 'origin_name'>): Box => ({
@@ -146,5 +146,40 @@ describe('boxGrouping', () => {
 
     // Box without number
     expect(boxLabel({ origin: EVENT_LOCATION_ID, origin_number: 1, number: null })).toBe('—');
+  });
+  describe('onward destinations of a box', () => {
+    const item = (id: number, extra: Partial<Item>): Item => ({ id, title: `G${id}`, status: 4, ...extra } as Item);
+    const laPlata = item(1, { location: 20, location_name: 'La Plata', send_to: EVENT_LOCATION_ID, send_to_name: 'AMBA', via_meeting: true });
+    const quilmes = item(2, { location: 21, location_name: 'Quilmes', send_to: EVENT_LOCATION_ID, send_to_name: 'AMBA', via_meeting: true });
+    const caba = item(3, { location: EVENT_LOCATION_ID, location_name: 'AMBA' });
+    const mendoza = item(4, { location: 9, location_name: 'Mendoza', via_meeting: true });
+    const cba = box({ id: 1, origin: 5, origin_name: 'Córdoba', destiny: EVENT_LOCATION_ID, closed_at: null });
+
+    it('does not report mixed when several localities are sent as AMBA', () => {
+      const b = { ...cba, math_items: [laPlata, quilmes, caba] };
+      expect(hasMixedDestinations(b)).toBe(false);
+      expect(boxOnwardDestinations(b)).toEqual([]);
+      expect(isTransitBox(b)).toBe(false);
+    });
+
+    it('reports only the real onward destination next to send_as AMBA games', () => {
+      const b = { ...cba, math_items: [laPlata, mendoza] };
+      expect(hasMixedDestinations(b)).toBe(false);
+      expect(boxOnwardDestinations(b)).toEqual(['Mendoza']);
+      expect(isTransitBox(b)).toBe(true);
+    });
+
+    it('does not report mixed for localities sent as the same city', () => {
+      const a = item(5, { location: 30, location_name: 'Villa Carlos Paz', send_to: 7, send_to_name: 'Córdoba' });
+      const c = item(6, { location: 31, location_name: 'Río Ceballos', send_to: 7, send_to_name: 'Córdoba' });
+      const b = box({ id: 2, origin: EVENT_LOCATION_ID, origin_name: 'AMBA', destiny: 7, destination_name: 'Córdoba', math_items: [a, c] });
+      expect(hasMixedDestinations(b)).toBe(false);
+      expect(boxOnwardDestinations(b)).toEqual(['Córdoba']);
+    });
+
+    it('still reports mixed for different real destinations', () => {
+      const salta = item(7, { location: 11, location_name: 'Salta', via_meeting: true });
+      expect(hasMixedDestinations({ ...cba, math_items: [mendoza, salta] })).toBe(true);
+    });
   });
 });

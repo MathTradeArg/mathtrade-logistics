@@ -27,31 +27,38 @@ export function isTransitBox(box: Box, eventLocationId = EVENT_LOCATION_ID): boo
   return box.math_items.some((item) => isViaAmbaItem(item, eventLocationId));
 }
 
+/** The place a copy is really sent to: its `send_to` cluster (send_as) when it
+ *  has one, otherwise its own locality. */
+function effectiveDestination(item: Item): { id: number; name?: string | null } | null {
+  if (item.send_to != null) return { id: item.send_to, name: item.send_to_name };
+  if (item.location != null) return { id: item.location, name: item.location_name };
+  return null;
+}
+
+/** Distinct non-AMBA destinations (by where each game is sent, not its
+ *  locality) declared on the games inside `box`, keyed by id. */
+function onwardDestinationsById(box: Box, eventLocationId: number): Map<number, string> {
+  const byId = new Map<number, string>();
+  box.math_items.forEach((item) => {
+    const dest = effectiveDestination(item);
+    if (dest && dest.id !== eventLocationId && dest.name) byId.set(dest.id, dest.name);
+  });
+  return byId;
+}
+
 /** Distinct non-AMBA destination names declared on the games inside `box`
  *  (falling back to `box.destination_name` when `box.destiny` is another city). */
 export function boxOnwardDestinations(box: Box, eventLocationId = EVENT_LOCATION_ID): string[] {
-  const names = new Set<string>();
-  box.math_items.forEach((item) => {
-    if (item.location != null && item.location !== eventLocationId && item.location_name) {
-      names.add(item.location_name);
-    }
-  });
+  const names = new Set(onwardDestinationsById(box, eventLocationId).values());
   if (names.size === 0 && box.destiny !== eventLocationId && box.destination_name) {
     names.add(box.destination_name);
   }
   return Array.from(names).sort((a, b) => a.localeCompare(b));
 }
 
-/** Whether `box` holds games bound for more than one onward locality. */
+/** Whether `box` holds games bound for more than one onward destination. */
 export function hasMixedDestinations(box: Box, eventLocationId = EVENT_LOCATION_ID): boolean {
-  const ids = new Set<number>();
-  box.math_items.forEach((item) => {
-    if (item.location != null && item.location !== eventLocationId) {
-      ids.add(item.location);
-    }
-  });
-  if (ids.size > 1) return true;
-  return boxOnwardDestinations(box, eventLocationId).length > 1;
+  return onwardDestinationsById(box, eventLocationId).size > 1;
 }
 
 export function boxedTradeIds(boxes: Box[]): Set<number> {
