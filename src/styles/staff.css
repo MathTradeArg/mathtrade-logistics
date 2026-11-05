@@ -96,21 +96,25 @@
   }
 
   .print-sheet {
+    width: 100% !important;
+    box-sizing: border-box !important;
     break-inside: avoid;
     page-break-inside: avoid;
-    margin-bottom: 10mm;
+    page-break-after: always;
+    break-after: page;
+    margin: 0 !important;
     box-shadow: none !important;
   }
 
   .print-sheet:last-child {
-    margin-bottom: 0;
+    page-break-after: auto;
+    break-after: auto;
   }
 
   .print-sheet-a4 {
     width: 100% !important;
-    height: 276mm !important;
-    min-height: 276mm !important;
-    max-height: 276mm !important;
+    min-height: 250mm !important;
+    max-height: 265mm !important;
     box-sizing: border-box !important;
     page-break-after: always;
     break-after: page;

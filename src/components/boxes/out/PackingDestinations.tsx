@@ -126,7 +126,10 @@ export default function PackingDestinations({
       return;
     }
     if (box && !isBoxOpen(box)) {
-      setError(`Ese juego ya está en la caja #${box.number} (cerrada).`);
+      const tag = origin === EVENT_LOCATION_ID && box.origin_number != null
+        ? `${box.origin_number}-${box.number}`
+        : `#${box.number}`;
+      setError(`Ese juego ya está en la caja ${tag} (cerrada).`);
       return;
     }
     const destId = packingDestinationId(item, origin);
@@ -164,7 +167,11 @@ export default function PackingDestinations({
               const subtitle = box
                 ? isBoxOpen(box)
                   ? `En caja abierta a ${boxDestinationLabel(box)}`
-                  : `En caja #${box.number} (cerrada)`
+                  : `En caja ${
+                      origin === EVENT_LOCATION_ID && box.origin_number != null
+                        ? `${box.origin_number}-${box.number}`
+                        : `#${box.number}`
+                    } (cerrada)`
                 : item.location_name
                   ? `Listo para ${destinationLabel(item.location_name, goesViaHub(origin, item.location, item.via_meeting))}`
                   : 'Listo para empacar';

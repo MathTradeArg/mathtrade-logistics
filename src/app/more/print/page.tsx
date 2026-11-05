@@ -32,10 +32,10 @@ type WindowConfigItem = {
 function BoxCircleSymbol({ fill }: { fill: CircleFill }) {
   const isFilled = fill === 'filled';
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center rounded-xl border-4 border-black bg-white p-4 text-center">
+    <div className="flex h-full w-full flex-col items-center justify-center rounded-xl border-4 border-black bg-white p-4 print:p-2 text-center">
       <svg
         viewBox="0 0 200 200"
-        className="h-52 w-52 sm:h-60 sm:w-60 print:h-56 print:w-56 text-black"
+        className="h-52 w-52 sm:h-60 sm:w-60 print:h-36 print:w-36 text-black"
         role="img"
         aria-label={
           isFilled
@@ -52,7 +52,7 @@ function BoxCircleSymbol({ fill }: { fill: CircleFill }) {
           strokeWidth="16"
         />
       </svg>
-      <span className="mt-2 text-sm font-black tracking-wider text-black uppercase">
+      <span className="mt-2 print:mt-1 text-sm print:text-xs font-black tracking-wider text-black uppercase">
         {isFilled ? 'CÍRCULO LLENO · FINAL CABA' : 'CÍRCULO VACÍO · VÍA CABA'}
       </span>
     </div>
@@ -232,18 +232,21 @@ function PrintPageContent() {
       key: string;
       circleFill: CircleFill | null;
       destInfo: LocationReferrerInfo;
+      clusterCity?: string;
       addressOverride?: string;
       payOnDelivery: boolean;
       isViaCabaOnward: boolean;
     }[] = [];
     chosen.forEach((loc) => {
+      const shippingLoc = loc.sendAs ? (findReferrerInfo(loc.sendAs) ?? loc) : loc;
       for (let idx = 0; idx < count; idx += 1) {
         list.push({
           key: `interior-${loc.locationId}-${idx}`,
           circleFill: null,
-          destInfo: loc,
-          addressOverride: customAddresses[loc.locationId],
-          payOnDelivery: false,
+          destInfo: shippingLoc,
+          clusterCity: loc.sendAs ? loc.city : undefined,
+          addressOverride: customAddresses[loc.locationId] || customAddresses[shippingLoc.locationId],
+          payOnDelivery: true,
           isViaCabaOnward: false,
         });
       }
@@ -255,13 +258,17 @@ function PrintPageContent() {
     const chosen = INTERIOR_REFERRER_DIRECTORY.filter((loc) =>
       selectedSectorLocs.has(loc.locationId),
     );
+    const seen = new Set<number>();
     const signs: { key: string; mode: 'unpack' | 'pack'; loc: LocationReferrerInfo }[] = [];
     chosen.forEach((loc) => {
+      const shippingLoc = loc.sendAs ? (findReferrerInfo(loc.sendAs) ?? loc) : loc;
+      if (seen.has(shippingLoc.locationId)) return;
+      seen.add(shippingLoc.locationId);
       if (sectorKind === 'both' || sectorKind === 'unpack') {
-        signs.push({ key: `unpack-${loc.locationId}`, mode: 'unpack', loc });
+        signs.push({ key: `unpack-${shippingLoc.locationId}`, mode: 'unpack', loc: shippingLoc });
       }
       if (sectorKind === 'both' || sectorKind === 'pack') {
-        signs.push({ key: `pack-${loc.locationId}`, mode: 'pack', loc });
+        signs.push({ key: `pack-${shippingLoc.locationId}`, mode: 'pack', loc: shippingLoc });
       }
     });
     return signs;
@@ -370,7 +377,7 @@ function PrintPageContent() {
                   }`}
                 >
                   <span>Viaja a localidad del interior (desde el evento o directo)</span>
-                  <span className="text-xs font-semibold uppercase">Por localidad</span>
+                  <span className="text-xs font-semibold uppercase">Pago en destino</span>
                 </button>
               </div>
             </div>
@@ -437,7 +444,12 @@ function PrintPageContent() {
                             className="mt-1 h-4 w-4"
                           />
                           <span className="flex-1">
-                            <span className="font-semibold">{loc.city}</span> ({loc.code}) · {refNames}
+                            <span className="font-semibold">{loc.city}</span> ({loc.code})
+                            {loc.sendAs ? (
+                              <span className="ml-1 text-xs font-normal text-amber-700 bg-amber-50 rounded px-1">
+                                (vía {findReferrerInfo(loc.sendAs)?.city ?? 'otro'})
+                              </span>
+                            ) : null} · {refNames}
                             <span className="block text-xs text-gray-500">
                               {customAddresses[loc.locationId] ??
                                 (loc.address || 'Dirección Vía Cargo sin definir (sale línea para rellenar)')}
@@ -721,10 +733,10 @@ function PrintPageContent() {
             return (
               <section
                 key={item.key}
-                className="print-sheet rounded-xl border-4 border-black bg-white p-6 text-black"
+                className="print-sheet rounded-xl border-4 border-black bg-white p-6 print:p-4 text-black"
               >
                 {/* Top Header: Destination + Giant Circle Symbol (for CABA) + Box Number */}
-                <div className="grid grid-cols-1 gap-4 border-b-4 border-black pb-4 sm:grid-cols-12 sm:items-stretch">
+                <div className="grid grid-cols-1 gap-4 border-b-4 border-black pb-4 print:pb-2 sm:grid-cols-12 sm:items-stretch">
                   <div
                     className={`flex flex-col justify-between ${
                       item.circleFill ? 'sm:col-span-4' : 'sm:col-span-8'
@@ -734,9 +746,19 @@ function PrintPageContent() {
                       <p className="text-xs font-bold tracking-widest uppercase">
                         DESTINO DEL ENVÍO
                       </p>
-                      <h2 className="mt-1 text-5xl font-black uppercase leading-none">
+                      <h2 className="mt-1 text-5xl print:text-4xl font-black uppercase leading-none">
                         {item.destInfo.city}
                       </h2>
+                      {item.clusterCity && (
+                        <div className="mt-3 rounded-lg border-2 border-black bg-gray-100 p-2">
+                          <p className="text-xs font-bold uppercase">
+                            PASA POR {item.destInfo.city} · SIGUE A:
+                          </p>
+                          <p className="mt-1 text-xl font-black uppercase">
+                            {item.clusterCity}
+                          </p>
+                        </div>
+                      )}
                       {item.isViaCabaOnward && (
                         <div className="mt-3 rounded-lg border-2 border-black bg-gray-100 p-2">
                           <p className="text-xs font-bold uppercase">
@@ -784,13 +806,13 @@ function PrintPageContent() {
                       )}
                     </div>
                     <span className="text-[11px] font-semibold">
-                      (Origen - Caja / #)
+                      (#)
                     </span>
                   </div>
                 </div>
 
                 {/* Middle: Destination Address & Recipient Referrer */}
-                <div className="mt-4 grid grid-cols-1 gap-4 border-b-4 border-black pb-4 sm:grid-cols-2">
+                <div className="mt-4 print:mt-2 grid grid-cols-1 gap-4 border-b-4 border-black pb-4 print:pb-2 sm:grid-cols-2">
                   <div>
                     <p className="text-xs font-black tracking-wider uppercase">
                       DIRECCIÓN / SUCURSAL VÍA CARGO DESTINO
@@ -837,7 +859,7 @@ function PrintPageContent() {
                 </div>
 
                 {/* Bottom: Fillable Sender Referrer Info */}
-                <div className="mt-4">
+                <div className="mt-4 print:mt-2">
                   <p className="text-xs font-black tracking-wider uppercase">
                     ENVÍA (DATOS DEL REFERENTE REMITENTE)
                   </p>
@@ -892,20 +914,20 @@ function PrintPageContent() {
           sectorSigns.map((sign) => (
             <section
               key={sign.key}
-              className="print-sheet-a4 flex min-h-[85vh] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 text-center text-black"
+              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[260mm] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
             >
-              <div className="border-b-4 border-black pb-6">
-                <p className="text-3xl font-black tracking-widest uppercase">
+              <div className="border-b-4 border-black pb-6 print:pb-4">
+                <p className="text-3xl print:text-2xl font-black tracking-widest uppercase">
                   {sign.mode === 'unpack'
                     ? 'SECTOR DESARMADO DE CAJAS (LLEGAN)'
                     : 'SECTOR ARMADO DE CAJAS (SALEN)'}
                 </p>
               </div>
-              <div className="my-auto flex flex-1 flex-col items-center justify-center py-8">
-                <p className="text-9xl font-black uppercase tracking-tight leading-none">
+              <div className="my-auto flex flex-1 flex-col items-center justify-center py-8 print:py-4">
+                <p className="text-9xl print:text-8xl font-black uppercase tracking-tight leading-none">
                   {sign.loc.code}
                 </p>
-                <h2 className="mt-6 text-7xl font-black uppercase leading-tight">
+                <h2 className="mt-6 print:mt-4 text-7xl print:text-6xl font-black uppercase leading-tight">
                   {sign.loc.city}
                 </h2>
               </div>
@@ -916,23 +938,23 @@ function PrintPageContent() {
           windows.map((win, idx) => (
             <section
               key={idx}
-              className="print-sheet-a4 flex min-h-[85vh] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 text-center text-black"
+              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[260mm] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
             >
-              <div className="border-b-4 border-black pb-6">
-                <p className="text-3xl font-black tracking-widest uppercase">
+              <div className="border-b-4 border-black pb-6 print:pb-4">
+                <p className="text-3xl print:text-2xl font-black tracking-widest uppercase">
                   MATH TRADE ARGENTINA · ENTREGA Y RECEPCIÓN
                 </p>
               </div>
-              <div className="my-auto flex flex-1 items-center justify-center py-8">
-                <h2 className="text-8xl font-black uppercase leading-none">
+              <div className="my-auto flex flex-1 items-center justify-center py-8 print:py-4">
+                <h2 className="text-8xl print:text-7xl font-black uppercase leading-none">
                   {win.name}
                 </h2>
               </div>
-              <div className="border-t-4 border-black pt-6">
-                <p className="text-3xl font-black uppercase">
+              <div className="border-t-4 border-black pt-6 print:pt-4">
+                <p className="text-3xl print:text-2xl font-black uppercase">
                   Acercate con tu QR
                 </p>
-                <p className="mt-2 text-2xl font-bold uppercase">
+                <p className="mt-2 text-2xl print:text-xl font-bold uppercase">
                   Para retirar: cuando hagamos las entregas, esperá a aparecer en pantalla
                 </p>
               </div>
@@ -943,16 +965,16 @@ function PrintPageContent() {
           tableNumbers.map((num) => (
             <section
               key={num}
-              className="print-sheet-a4 flex min-h-[85vh] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 text-center text-black"
+              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[260mm] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
             >
-              <div className="border-b-4 border-black pb-6">
-                <p className="text-3xl font-black tracking-widest uppercase">
+              <div className="border-b-4 border-black pb-6 print:pb-4">
+                <p className="text-3xl print:text-2xl font-black tracking-widest uppercase">
                   MATH TRADE ARGENTINA · SECTOR DE MESAS
                 </p>
               </div>
-              <div className="my-auto flex flex-1 flex-col items-center justify-center py-8">
-                <p className="text-6xl font-bold uppercase">MESA</p>
-                <h2 className="mt-4 text-[11rem] font-black leading-none">{num}</h2>
+              <div className="my-auto flex flex-1 flex-col items-center justify-center py-8 print:py-4">
+                <p className="text-6xl print:text-5xl font-bold uppercase">MESA</p>
+                <h2 className="mt-4 text-[11rem] print:text-[8.5rem] font-black leading-none">{num}</h2>
               </div>
             </section>
           ))}

@@ -1,5 +1,5 @@
 import { EVENT_LOCATION_ID } from '@/constants/event';
-import { boxContentsSummary, boxDestinationLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, splitByRoute, groupPackingDestinations, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
+import { boxContentsSummary, boxDestinationLabel, boxLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, splitByRoute, groupPackingDestinations, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import type { Box, Item } from '@/types';
 
 const box = (overrides: Partial<Box> & Pick<Box, 'id' | 'origin' | 'origin_name'>): Box => ({
@@ -133,5 +133,18 @@ describe('boxGrouping', () => {
     expect(boxContentsSummary(open)).toBe('Catan, Azul, Root y 1 más');
     expect(openBoxSubtitle(open)).toBe('Catan, Azul, Root y 1 más · la abrió Ana Palermo');
     expect(boxContentsSummary({ ...open, math_items: [] })).toBe('Vacía');
+  });
+
+  it('labels boxes with compound format in AMBA and simple format in the interior', () => {
+    // AMBA box towards the interior: compound origin_number-number
+    const ambaBox = { origin: EVENT_LOCATION_ID, origin_number: 3, number: 1 };
+    expect(boxLabel(ambaBox)).toBe('3-1');
+
+    // Interior box: simple number
+    const interiorBox = { origin: 7, origin_number: 1, number: 2 };
+    expect(boxLabel(interiorBox)).toBe('2');
+
+    // Box without number
+    expect(boxLabel({ origin: EVENT_LOCATION_ID, origin_number: 1, number: null })).toBe('—');
   });
 });

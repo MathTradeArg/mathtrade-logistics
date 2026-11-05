@@ -50,7 +50,7 @@ export default function PackingBox({
   const [selectedAdds, setSelectedAdds] = useState<Set<number>>(new Set());
   const [movingTradeId, setMovingTradeId] = useState<number | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Item | null>(null);
-  const [closedNumber, setClosedNumber] = useState<number | null>(null);
+  const [closedBox, setClosedBox] = useState<Box | null>(null);
   const [showDelete, setShowDelete] = useState(false);
   const [addedTitles, setAddedTitles] = useState<string[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,7 +60,12 @@ export default function PackingBox({
   const asLocation = viewParams?.as_location;
   const mathtrade = viewParams?.mathtrade;
 
-  useStaffTitle(box?.number != null ? `#${box.number}` : 'Caja abierta');
+  const boxTitle = box?.number != null
+    ? (origin === EVENT_LOCATION_ID && box.origin_number != null
+        ? `Caja ${box.origin_number}-${box.number}`
+        : `#${box.number}`)
+    : 'Caja abierta';
+  useStaffTitle(boxTitle);
 
   const physicalDestId = apiDestinationId(destinationId);
 
@@ -191,7 +196,7 @@ export default function PackingBox({
       const closed = await closeBox(boxId);
       if (closed) {
         setBox(closed);
-        setClosedNumber(closed.number);
+        setClosedBox(closed);
       }
     } catch {
       // toast via hook
@@ -431,19 +436,27 @@ export default function PackingBox({
       />
 
       <StaffDialog
-        open={closedNumber != null}
+        open={closedBox != null}
         title="Vas a escribir este número"
         confirmLabel="Listo"
         onConfirm={() => {
-          setClosedNumber(null);
+          setClosedBox(null);
           router.replace(`${basePath}/${destinationId}`);
         }}
       >
-        {closedNumber != null && (
+        {closedBox != null && (
           <div className="text-center">
-            <p className="text-5xl font-bold text-gray-900">#{closedNumber}</p>
+            <p className="text-5xl font-bold text-gray-900">
+              {origin === EVENT_LOCATION_ID && closedBox.origin_number != null
+                ? `${closedBox.origin_number}-${closedBox.number}`
+                : `#${closedBox.number}`}
+            </p>
             <p className="mt-3">
-              Escribí el #{closedNumber} en la caja física a {boxDestLabel}. {box?.math_items.length} juegos.
+              Escribí el{' '}
+              {origin === EVENT_LOCATION_ID && closedBox.origin_number != null
+                ? `${closedBox.origin_number}-${closedBox.number}`
+                : `#${closedBox.number}`}{' '}
+              en la caja física a {boxDestLabel}. {box?.math_items.length} juegos.
             </p>
           </div>
         )}

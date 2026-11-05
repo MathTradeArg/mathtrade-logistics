@@ -14,6 +14,7 @@ export type LocationReferrerInfo = {
   city: string;
   code: string;
   address: string;
+  sendAs?: number;
   payOnDelivery?: boolean;
   referrers: ReferrerContact[];
 };
@@ -123,6 +124,7 @@ export const REFERRER_DIRECTORY: LocationReferrerInfo[] = [
     city: 'Esperanza',
     code: 'ESP',
     address: 'Brig. López 182, Esperanza, Santa Fe',
+    sendAs: 33,
     referrers: [
       {
         name: 'Franco Iturraspe',
@@ -168,6 +170,7 @@ export const REFERRER_DIRECTORY: LocationReferrerInfo[] = [
     city: 'La Plata',
     code: 'LPL',
     address: '',
+    sendAs: EVENT_LOCATION_ID,
     referrers: [
       {
         name: 'Bernabé Ibáñez',
@@ -241,6 +244,7 @@ export const REFERRER_DIRECTORY: LocationReferrerInfo[] = [
     city: 'Paraná',
     code: 'PAR',
     address: 'Sagastume 946, Paraná, Entre Ríos',
+    sendAs: 33,
     referrers: [
       {
         name: 'Matias Cepellotti',
@@ -286,6 +290,7 @@ export const REFERRER_DIRECTORY: LocationReferrerInfo[] = [
     city: 'Rafaela',
     code: 'RAF',
     address: 'Av. Int. O. Zobboli 716, S2300 Rafaela, Santa Fe',
+    sendAs: 33,
     referrers: [
       {
         name: 'Pablo Pochettino',

@@ -142,7 +142,7 @@ export function apiDestinationId(destinationId: number, eventLocationId = EVENT_
 
 /** Whether a copy from a city travels through AMBA to another city. */
 export function isViaAmbaItem(item: Item, eventLocationId = EVENT_LOCATION_ID): boolean {
-  return Boolean(item.via_meeting) && item.location != null && item.location !== eventLocationId;
+  return Boolean(item.via_meeting) && item.location != null && item.location !== eventLocationId && item.send_to !== eventLocationId;
 }
 
 /** Whether a city box to AMBA belongs to the `destinationId` lane (`1` = direct
@@ -160,7 +160,8 @@ export function boxMatchesLane(box: Box, destinationId: number, eventLocationId 
 
 /** The destination lane a copy is packed into from `origin`: from a city (not
  *  the event), `via_meeting` copies to other cities go to VIA_AMBA_DESTINATION_ID
- *  (`-1`), separate from direct AMBA (`1`); at the event they go to their final city. */
+ *  (`-1`), separate from direct AMBA (`1`); at the event they go to their final city.
+ *  Localities that have a `send_as` cluster under that destination lane. */
 export function packingDestinationId(
   item: Item,
   origin?: number | null,
@@ -170,11 +171,15 @@ export function packingDestinationId(
   if (origin != null && origin !== eventLocationId && isViaAmbaItem(item, eventLocationId)) {
     return VIA_AMBA_DESTINATION_ID;
   }
+  if (item.send_to && item.send_to !== origin) {
+    return item.send_to;
+  }
   return item.location;
 }
 
 /** Subtitle for a copy inside a packing box: when a city box to AMBA holds a
- *  `via_meeting` copy bound for another city, prepend its final destination. */
+ *  `via_meeting` copy bound for another city, prepend its final destination.
+ *  When a box holds games for a clustered locality (send_as), show the locality. */
 export function packingItemSubtitle(
   item: Item,
   origin?: number | null,
@@ -182,8 +187,10 @@ export function packingItemSubtitle(
 ): string | undefined {
   const receptor = receptorName(item);
   const viaHop = goesViaHub(origin, item.location, item.via_meeting, eventLocationId);
+  const clusterHop = !viaHop && item.send_to && item.location && item.send_to !== item.location;
   const parts = [
     viaHop && item.location_name ? `Sigue a ${item.location_name}` : null,
+    clusterHop && item.location_name ? item.location_name : null,
     receptor || null,
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(' · ') : undefined;
@@ -294,7 +301,7 @@ export function groupPackingDestinations(
     if (!destId) return;
     const destName = destId === VIA_AMBA_DESTINATION_ID
       ? VIA_AMBA_DESTINATION_LABEL
-      : item.location_name;
+      : (destId === item.send_to && item.send_to_name ? item.send_to_name : item.location_name);
     if (!destName) return;
     const current = map.get(destId) || {
       destinationId: destId,
@@ -342,9 +349,18 @@ export function findBoxForTrade(boxes: Box[], tradeId: number): Box | undefined 
   return boxes.find((box) => box.math_items.some((item) => item.id === tradeId));
 }
 
-/** The label written on a city box: `<origin_number>-<number>` (per-origin
- *  and per-destination counters), or `#<number>` without the first one. */
-export function boxLabel(box: Pick<Box, 'number' | 'origin_number'>): string {
-  if (box.origin_number != null && box.number != null) return `${box.origin_number}-${box.number}`;
-  return `#${box.number ?? '?'}`;
+/** The label written on a box:
+ *  - For boxes packed in AMBA towards the interior (origin === EVENT_LOCATION_ID): compound `<origin_number>-<number>`
+ *    so volunteers can quickly distinguish boxes across different destinations.
+ *  - For boxes packed in the interior: simple `<number>` (e.g. `1`, `2`).
+ */
+export function boxLabel(
+  box: Pick<Box, 'number' | 'origin_number'> & { origin?: number | null },
+  eventLocationId = EVENT_LOCATION_ID,
+): string {
+  if (box.number == null) return '—';
+  if (box.origin === eventLocationId && box.origin_number != null) {
+    return `${box.origin_number}-${box.number}`;
+  }
+  return `${box.number}`;
 }

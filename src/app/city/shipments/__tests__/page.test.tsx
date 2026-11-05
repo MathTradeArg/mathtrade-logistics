@@ -64,7 +64,7 @@ describe('city shipments', () => {
     expect(await screen.findByText('AR123')).toBeInTheDocument();
     expect(cityApi.listTrackings).toHaveBeenCalledWith({});
     expect(screen.getByText('AMBA')).toBeInTheDocument();
-    expect(screen.getByText('Cajas: 1-2, 2-3')).toBeInTheDocument();
+    expect(screen.getByText('Cajas: 2, 3')).toBeInTheDocument();
     expect(screen.getByText('6 juegos')).toBeInTheDocument();
     expect(screen.getByText('$5000 · 3.5 kg')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ver envío' })).toHaveAttribute('href', '/city/shipments/4');
@@ -78,7 +78,7 @@ describe('city shipments', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Ejemplares' }));
     expect(await screen.findByText('0012 · Catan')).toBeInTheDocument();
     expect(boxApi.listItems).toHaveBeenCalledWith({ origin: 7 });
-    expect(screen.getByText('Ana Paz · Caja 1-2 · AMBA')).toBeInTheDocument();
+    expect(screen.getByText('Ana Paz · Caja 2 · AMBA')).toBeInTheDocument();
     expect(screen.getByText('0006 · Azul')).toBeInTheDocument();
     expect(screen.queryByText(/Carcassonne/)).not.toBeInTheDocument();
 
@@ -89,7 +89,7 @@ describe('city shipments', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Descargar Excel' }));
     });
     expect(downloadSheet).toHaveBeenCalledWith(
-      [expect.objectContaining({ 'Código': '0012', 'Juego': 'Catan', 'Caja': '1-2', 'Destino': 'AMBA' })],
+      [expect.objectContaining({ 'Código': '0012', 'Juego': 'Catan', 'Caja': '2', 'Destino': 'AMBA' })],
       'ejemplares_mendoza.xlsx',
       'Ejemplares',
     );

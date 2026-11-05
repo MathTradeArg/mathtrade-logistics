@@ -37,11 +37,11 @@ describe('TrackingEditor', () => {
     expect(boxApi.listBoxes).toHaveBeenCalledWith({ origin: 7, status: 'closed' });
 
     fill(/Destino/, '1');
-    expect(screen.getByRole('checkbox', { name: /Caja 1-1/ })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /Caja 3-3/ })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Caja 1\b/ })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Caja 3\b/ })).toBeInTheDocument();
     // In another shipment, or for another destination.
-    expect(screen.queryByRole('checkbox', { name: /Caja 2-2/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('checkbox', { name: /Caja 4-1/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /Caja 2\b/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /Caja 4\b/ })).not.toBeInTheDocument();
   });
 
   it('keeps the boxes of the shipment being edited', async () => {
@@ -50,8 +50,8 @@ describe('TrackingEditor', () => {
       boxes: [box(31, 2, 1, 'OTHER-CODE')],
     };
     render(<TrackingEditor cityId={7} tracking={editing} onSaved={jest.fn()} onCancel={jest.fn()} />);
-    expect(await screen.findByRole('checkbox', { name: /Caja 2-2/ })).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: /Caja 1-1/ })).toBeInTheDocument();
+    expect(await screen.findByRole('checkbox', { name: /Caja 2\b/ })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Caja 1\b/ })).toBeInTheDocument();
   });
 
   it('submits the body the backend expects', async () => {
@@ -61,8 +61,8 @@ describe('TrackingEditor', () => {
     await screen.findByLabelText('Destino');
 
     fill(/Destino/, '1');
-    fireEvent.click(screen.getByRole('checkbox', { name: /Caja 1-1/ }));
-    fireEvent.click(screen.getByRole('checkbox', { name: /Caja 3-3/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Caja 1\b/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Caja 3\b/ }));
     fill(/Código de seguimiento/, ' AR999 ');
     fill(/Precio/, '4500');
     fill(/Peso/, '2.5');
@@ -106,7 +106,7 @@ describe('TrackingEditor', () => {
     render(<TrackingEditor cityId={7} onSaved={jest.fn()} onCancel={jest.fn()} />);
     await screen.findByLabelText('Destino');
     fill(/Destino/, '1');
-    fireEvent.click(screen.getByRole('checkbox', { name: /Caja 1-1/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Caja 1\b/ }));
     fill(/Código de seguimiento/, 'AR1');
     fill(/Precio/, '1');
     fill(/Peso/, '1');
