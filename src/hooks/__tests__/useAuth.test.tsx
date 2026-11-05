@@ -273,6 +273,36 @@ describe('useAuth city state', () => {
     expect(localStorage.getItem('logisticsLocalCity')).toBeNull();
     await waitFor(() => expect(screen.getByTestId('referrer')).toHaveTextContent('none'));
   });
+  it('logout and login drop the admin "Ver como" pick but keep device preferences', () => {
+    loggedIn();
+    fetchMock.mockReturnValue(new Promise(() => {}));
+    const seed = () => {
+      sessionStorage.setItem('logisticsCityView', JSON.stringify({ asLocation: 3, mathtradeId: 5 }));
+      localStorage.setItem('darkModeEnabled', 'true');
+      localStorage.setItem('windowStorage', 'x');
+    };
+    seed();
+    render(<AuthProvider><CityProbe /></AuthProvider>);
+    act(() => {
+      fireEvent.click(screen.getByText('logout'));
+    });
+    expect(sessionStorage.getItem('logisticsCityView')).toBeNull();
+    expect(localStorage.getItem('darkModeEnabled')).toBe('true');
+    expect(localStorage.getItem('windowStorage')).toBe('x');
+
+    seed();
+    act(() => {
+      fireEvent.click(screen.getByText('login'));
+    });
+    expect(sessionStorage.getItem('logisticsCityView')).toBeNull();
+  });
+
+  it('mounting without a token drops a stale "Ver como" pick', async () => {
+    sessionStorage.setItem('logisticsCityView', JSON.stringify({ asLocation: 3, mathtradeId: null }));
+    render(<AuthProvider><CityProbe /></AuthProvider>);
+    await waitFor(() => expect(sessionStorage.getItem('logisticsCityView')).toBeNull());
+  });
+
   it('mounting without a token sweeps stale session keys left by a previous user', async () => {
     localStorage.setItem('logisticsReferrer', JSON.stringify({ id: 7, name: 'Mendoza' }));
     localStorage.setItem('logisticsLocalCity', JSON.stringify({ id: 9, name: 'Salta' }));
