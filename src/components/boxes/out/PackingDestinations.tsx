@@ -12,13 +12,16 @@ import {
   goesViaHub,
   groupPackingDestinations,
   isBoxOpen,
+  isIntraLocality,
   matchesSearch,
   packingDestinationId,
   receptorName,
   splitByRoute,
 } from '@/hooks/boxes/boxGrouping';
 import { useAuth } from '@/hooks/useAuth';
+import { buildBoxesExport, buildIntraExport } from '@/utils/boxesExport';
 import { formatTradeCode, tradeCodeSearchText } from '@/utils/tradeCode';
+import { downloadWorkbook, type WorkbookSheet } from '@/utils/xlsx';
 import type { Box, Item } from '@/types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -35,17 +38,24 @@ export type PackingDestinationsProps = {
   excludeDestination: number;
   /** Admin "Ver como" params for the box list (city screens). */
   viewParams?: CityViewParams;
+  /** When set, shows an "Excel de cajas" button that saves the loaded games
+   *  bound for other cities under this file name. */
+  exportFileName?: string;
+  /** When set, shows an "Excel intralocalidad" button that saves the loaded
+   *  games that stay in the city under this file name. */
+  intraExportFileName?: string;
 };
 
 /** Destinations to pack for, from `origin`. */
 export default function PackingDestinations({
-  origin, basePath, phaseGated, loadItems, excludeDestination, viewParams,
+  origin, basePath, phaseGated, loadItems, excludeDestination, viewParams, exportFileName, intraExportFileName,
 }: PackingDestinationsProps) {
   const router = useRouter();
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
   const { eventPhase, isLoadingEventPhase } = useEventPhase();
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Item[]>([]);
+  const [allItems, setAllItems] = useState<Item[]>([]);
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +76,7 @@ export default function PackingDestinations({
         loadItemsRef.current(),
         listBoxes({ origin, as_location: asLocation, mathtrade }),
       ]);
+      setAllItems(nextItems);
       setItems(nextItems.filter((item) => item.location !== excludeDestination));
       setBoxes(nextBoxes);
     } catch (err) {
@@ -86,6 +97,24 @@ export default function PackingDestinations({
       .map((dest) => ({ ...dest, label: destinationLabel(dest.destinationName, dest.viaHub) })),
     [items, boxes, requirePackableStatus, excludeDestination, origin],
   );
+
+  const exportItems = useMemo(
+    () => allItems.filter((item) => !isIntraLocality(item, origin)),
+    [allItems, origin],
+  );
+
+  const intraItems = useMemo(
+    () => allItems.filter((item) => isIntraLocality(item, origin)),
+    [allItems, origin],
+  );
+
+  const runExport = async (build: () => WorkbookSheet[], fileName: string) => {
+    try {
+      await downloadWorkbook(build(), fileName);
+    } catch {
+      setError('No se pudo generar el Excel.');
+    }
+  };
 
   const filteredDestinations = useMemo(() => {
     return destinations.filter((dest) => {
@@ -155,6 +184,31 @@ export default function PackingDestinations({
         placeholder="Buscar destino, juego o etiqueta"
         aria-label="Buscar destinos o juegos"
       />
+
+      {(exportFileName || intraExportFileName) && (
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row" role="group" aria-label="Descargas en Excel">
+          {exportFileName && (
+            <button
+              type="button"
+              className="staff-btn staff-btn-outline !min-h-12 text-sm"
+              disabled={isLoading || exportItems.length === 0}
+              onClick={() => runExport(() => buildBoxesExport(exportItems, origin), exportFileName)}
+            >
+              Excel de cajas
+            </button>
+          )}
+          {intraExportFileName && (
+            <button
+              type="button"
+              className="staff-btn staff-btn-outline !min-h-12 text-sm"
+              disabled={isLoading || intraItems.length === 0}
+              onClick={() => runExport(() => buildIntraExport(intraItems, origin), intraExportFileName)}
+            >
+              Excel intralocalidad
+            </button>
+          )}
+        </div>
+      )}
 
       {isLoading && <div className="mt-8"><LoadingSpinner message="Cargando destinos..." /></div>}
       {error && <StaffError>{error}</StaffError>}

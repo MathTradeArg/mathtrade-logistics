@@ -238,6 +238,22 @@ export function packingItemSubtitle(
   return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
+/** Trade that stays inside the referrer's city: send_as cities count as the same city. */
+export const isIntraLocality = (item: Item, cityId: number): boolean =>
+  (item.lane_destination ?? item.location) === cityId;
+
+export type LaneLabel = 'AMBA' | 'Vía reunión' | 'Directo';
+
+/** The lane a copy travels in from `origin`, derived from `packingDestinationId`
+ *  (the id the packing screen groups by) so the screen and the Excel cannot
+ *  drift: `-1` is via the event, the hub id is AMBA, anything else is direct. */
+export function laneLabel(item: Item, origin: number, eventLocationId = EVENT_LOCATION_ID): LaneLabel {
+  const lane = packingDestinationId(item, origin, eventLocationId);
+  if (lane === VIA_AMBA_DESTINATION_ID) return 'Vía reunión';
+  if (lane === eventLocationId) return 'AMBA';
+  return 'Directo';
+}
+
 export function receptorName(item: Item): string {
   return [item.receptor_first_name, item.receptor_last_name].filter(Boolean).join(' ').trim();
 }
