@@ -8,8 +8,9 @@ jest.mock('@/hooks/boxes/boxApi');
 jest.mock('@/components/staff/StaffTitleContext', () => ({
   useStaffTitle: jest.fn(),
 }));
+let mockSearch = '';
 jest.mock('next/navigation', () => ({
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => new URLSearchParams(mockSearch),
 }));
 jest.mock('@/components/common/ui', () => ({
   LoadingSpinner: ({ message }: { message?: string }) => (
@@ -43,6 +44,7 @@ const DIRECTORY = [
 describe('PrintPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSearch = '';
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, isAdmin: true });
     mockBoxFetch.mockImplementation(async (path: string) =>
       path === 'logistics/directory/' ? DIRECTORY : [],
@@ -100,5 +102,53 @@ describe('PrintPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Mesas' }));
     expect(screen.getByText('15')).toBeInTheDocument();
     expect(screen.queryByText(/MESA DE JUEGOS/i)).not.toBeInTheDocument();
+  });
+
+  describe('city people without an event role', () => {
+    const EVENT_TABS = ['Sectores (Localidades)', 'Ventanillas', 'Mesas'];
+
+    it.each([
+      ['referrer', { kind: 'referrer', city: { id: 7, name: 'Mendoza' } }],
+      ['local volunteer', { kind: 'local', city: { id: 7, name: 'Mendoza' } }],
+    ])('shows only labels to a %s', async (_name, cityAccess) => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true, isLoading: false, isAdmin: false, role: null, cityAccess,
+      });
+      render(<PrintPage />);
+
+      expect(await screen.findByText(/Configurar etiquetas de cajas/i)).toBeInTheDocument();
+      for (const name of EVENT_TABS) {
+        expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
+      }
+    });
+
+    it('opens labels when a referrer asks for ?tab=windows', async () => {
+      mockSearch = 'tab=windows';
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true, isLoading: false, isAdmin: false, role: null,
+        cityAccess: { kind: 'referrer', city: { id: 7, name: 'Mendoza' } },
+      });
+      render(<PrintPage />);
+
+      expect(await screen.findByText(/Configurar etiquetas de cajas/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Identificaciones para Ventanillas/i)).not.toBeInTheDocument();
+    });
+
+    it.each([
+      ['an admin', { isAdmin: true, role: null }],
+      ['a window volunteer', { isAdmin: false, role: 'window' }],
+    ])('keeps the four tabs for %s with a city', async (_name, auth) => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true, isLoading: false,
+        cityAccess: { kind: 'referrer', city: { id: 7, name: 'Mendoza' } },
+        ...auth,
+      });
+      render(<PrintPage />);
+
+      expect(await screen.findByRole('button', { name: 'Etiquetas de cajas' })).toBeInTheDocument();
+      for (const name of EVENT_TABS) {
+        expect(screen.getByRole('button', { name })).toBeInTheDocument();
+      }
+    });
   });
 });

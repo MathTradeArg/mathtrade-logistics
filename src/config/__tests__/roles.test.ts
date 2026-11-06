@@ -1,4 +1,4 @@
-import { homeFor, isPathAllowed, roleHome } from '../roles';
+import { canPrintEventSheets, homeFor, isPathAllowed, roleHome } from '../roles';
 
 describe('isPathAllowed', () => {
   it('lets only window into /receive', () => {
@@ -128,5 +128,27 @@ describe('city users', () => {
     expect(homeFor(null, null, { kind: 'local', city: { id: 7, name: 'Mendoza' } })).toBe('/city');
     expect(homeFor('boxes', 2, referrer)).toBe('/boxes/out');
     expect(homeFor(null, 1, null)).toBe('/');
+  });
+});
+
+describe('canPrintEventSheets', () => {
+  const referrer = { kind: 'referrer', city: { id: 7, name: 'Mendoza' } } as const;
+  const local = { kind: 'local', city: { id: 7, name: 'Mendoza' } } as const;
+
+  it('keeps every tab for an admin, even with a city', () => {
+    expect(canPrintEventSheets(true, null, referrer)).toBe(true);
+  });
+
+  it('keeps every tab for a referrer who also has an event role', () => {
+    expect(canPrintEventSheets(false, 'window', referrer)).toBe(true);
+  });
+
+  it('limits a city person without event role to labels', () => {
+    expect(canPrintEventSheets(false, null, referrer)).toBe(false);
+    expect(canPrintEventSheets(false, null, local)).toBe(false);
+  });
+
+  it('keeps every tab with no city and no role', () => {
+    expect(canPrintEventSheets(false, null, null)).toBe(true);
   });
 });

@@ -12,6 +12,11 @@ jest.mock('@/components/common/ui', () => ({
   LoadingSpinner: ({ message }: { message?: string }) => <div data-testid="loading-spinner">{message}</div>,
 }));
 
+jest.mock('@/components/common/FullScreenImageModal', () => ({
+  __esModule: true,
+  default: ({ imageUrl }: { imageUrl: string | null }) => (imageUrl ? <div data-testid="image-modal">{imageUrl}</div> : null),
+}));
+
 const mockUseAuth = useAuth as jest.Mock;
 
 const tracking = {
@@ -52,6 +57,21 @@ describe('city received', () => {
 
     fireEvent.click(screen.getByText('Salta · AR123'));
     expect(screen.getByText('00012 · Catan → Ana Paz')).toBeInTheDocument();
+  });
+
+  it('shows the receipt photo and opens it full screen', async () => {
+    (cityApi.listTrackings as jest.Mock).mockResolvedValue([{ ...tracking, image: 'https://img/receipt.jpg' }]);
+    render(<CityReceivedPage />);
+    expect(await screen.findByAltText('Comprobante')).toBeInTheDocument();
+    expect(screen.queryByTestId('image-modal')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ver comprobante' }));
+    expect(screen.getByTestId('image-modal')).toHaveTextContent('https://img/receipt.jpg');
+  });
+
+  it('shows no receipt button when the shipment has no photo', async () => {
+    render(<CityReceivedPage />);
+    await screen.findByText('Salta · AR123');
+    expect(screen.queryByRole('button', { name: 'Ver comprobante' })).not.toBeInTheDocument();
   });
 
   it('filters the Ejemplares by origin and by via meeting', async () => {

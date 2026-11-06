@@ -11,6 +11,7 @@ import {
   type LocationReferrerInfo,
   type ReferrerDirectory,
 } from '@/config/referrers';
+import { canPrintEventSheets } from '@/config/roles';
 import { boxFetch } from '@/hooks/boxes/boxApi';
 import { matchesSearch } from '@/hooks/boxes/boxGrouping';
 import { useAuth } from '@/hooks/useAuth';
@@ -88,12 +89,16 @@ export default function PrintPage() {
 function PrintPageContent() {
   useStaffTitle('Imprimir');
   const searchParams = useSearchParams();
-  const { isAuthenticated, isLoading: authIsLoading } = useAuth();
+  const { isAuthenticated, isLoading: authIsLoading, isAdmin, role, cityAccess } = useAuth();
 
+  const canEventTabs = canPrintEventSheets(isAdmin, role, cityAccess);
+  const allowedTabs: PrintTab[] = canEventTabs ? ['labels', 'sectors', 'windows', 'tables'] : ['labels'];
   const initialTab = (searchParams.get('tab') as PrintTab) || 'labels';
-  const [tab, setTab] = useState<PrintTab>(
-    ['labels', 'sectors', 'windows', 'tables'].includes(initialTab) ? initialTab : 'labels',
-  );
+  const [tab, setTab] = useState<PrintTab>(allowedTabs.includes(initialTab) ? initialTab : 'labels');
+
+  useEffect(() => {
+    if (!canEventTabs && tab !== 'labels') setTab('labels');
+  }, [canEventTabs, tab]);
 
   // --- Box Labels State ---
   const [routeKind, setRouteKind] = useState<BoxRouteKind>('amba_direct');
@@ -328,13 +333,14 @@ function PrintPageContent() {
   return (
     <StaffPage className="print-container pb-24">
       <div className="no-print space-y-6">
+        {allowedTabs.length > 1 && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
             { id: 'labels' as const, label: 'Etiquetas de cajas' },
             { id: 'sectors' as const, label: 'Sectores (Localidades)' },
             { id: 'windows' as const, label: 'Ventanillas' },
             { id: 'tables' as const, label: 'Mesas' },
-          ].map((option) => (
+          ].filter((option) => allowedTabs.includes(option.id)).map((option) => (
             <button
               key={option.id}
               type="button"
@@ -349,6 +355,7 @@ function PrintPageContent() {
             </button>
           ))}
         </div>
+        )}
 
         {directoryError && <StaffError>{directoryError}</StaffError>}
 
