@@ -1,5 +1,6 @@
 "use client";
 
+import FullScreenImageModal from '@/components/common/FullScreenImageModal';
 import { LoadingSpinner } from '@/components/common/ui';
 import NoCity from '@/components/city/NoCity';
 import ReadOnlyBadge from '@/components/city/ReadOnlyBadge';
@@ -24,27 +25,40 @@ const TABS: { id: Tab; label: string }[] = [
 const receiverName = (item: Item) =>
   `${item.receptor_first_name || '—'} ${item.receptor_last_name || ''}`.trim();
 
-function TrackingCard({ tracking }: { tracking: Tracking }) {
+function TrackingCard({ tracking, onOpenImage }: { tracking: Tracking; onOpenImage: (url: string) => void }) {
   const [open, setOpen] = useState(false);
   const origin = tracking.boxes.find((box) => box.origin_name)?.origin_name || '—';
   const count = tracking.item_count;
   return (
     <li className="staff-card p-4">
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        aria-expanded={open}
-        className="w-full text-left"
-      >
-        <p className="text-base font-semibold text-gray-900">{origin} · {tracking.tracking_code}</p>
-        <p className="text-sm text-gray-700">
-          Cajas: {tracking.boxes.map(boxLabel).join(', ') || '—'} · {count} juegos
-        </p>
-        <p className="text-sm text-gray-700">
-          {formatMoney(tracking.price)} en total ·{' '}
-          {pricePerItem(tracking.price, count)} por juego
-        </p>
-      </button>
+      <div className="flex items-start gap-3">
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          aria-expanded={open}
+          className="min-w-0 flex-1 text-left"
+        >
+          <p className="text-base font-semibold text-gray-900">{origin} · {tracking.tracking_code}</p>
+          <p className="text-sm text-gray-700">
+            Cajas: {tracking.boxes.map(boxLabel).join(', ') || '—'} · {count} juegos
+          </p>
+          <p className="text-sm text-gray-700">
+            {formatMoney(tracking.price)} en total ·{' '}
+            {pricePerItem(tracking.price, count)} por juego
+          </p>
+        </button>
+        {tracking.image && (
+          <button
+            type="button"
+            onClick={() => onOpenImage(tracking.image as string)}
+            aria-label="Ver comprobante"
+            className="shrink-0"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={tracking.image} alt="Comprobante" className="h-16 w-16 rounded-md object-cover" />
+          </button>
+        )}
+      </div>
       {open && (
         <div className="mt-3 flex flex-col gap-3 border-t border-stroke pt-3">
           {tracking.boxes.map((box) => (
@@ -80,6 +94,7 @@ export default function CityReceivedPage() {
   const [viaMeeting, setViaMeeting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (cityId === null || !isReferrer) return;
@@ -135,7 +150,7 @@ export default function CityReceivedPage() {
           {trackings.length > 0 && (
             <ul className="mt-4 flex flex-col gap-3">
               {trackings.map((tracking) => (
-                <TrackingCard key={tracking.id} tracking={tracking} />
+                <TrackingCard key={tracking.id} tracking={tracking} onOpenImage={setImageUrl} />
               ))}
             </ul>
           )}
@@ -190,6 +205,7 @@ export default function CityReceivedPage() {
           )}
         </>
       )}
+      <FullScreenImageModal imageUrl={imageUrl} onClose={() => setImageUrl(null)} />
     </StaffPage>
   );
 }
