@@ -1,7 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, PhaseBlocked, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
+import { GameRow, PhaseBlocked, StaffEmpty, StaffError, StaffPage, StaffSearch, ThumbCta } from '@/components/staff';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { listBoxes, type CityViewParams } from '@/hooks/boxes/boxApi';
@@ -12,13 +12,16 @@ import {
   goesViaHub,
   groupPackingDestinations,
   isBoxOpen,
+  isIntraLocality,
   matchesSearch,
   packingDestinationId,
   receptorName,
   splitByRoute,
 } from '@/hooks/boxes/boxGrouping';
 import { useAuth } from '@/hooks/useAuth';
+import { buildBoxesExport } from '@/utils/boxesExport';
 import { formatTradeCode, tradeCodeSearchText } from '@/utils/tradeCode';
+import { downloadWorkbook } from '@/utils/xlsx';
 import type { Box, Item } from '@/types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -35,17 +38,21 @@ export type PackingDestinationsProps = {
   excludeDestination: number;
   /** Admin "Ver como" params for the box list (city screens). */
   viewParams?: CityViewParams;
+  /** When set, shows a "Descargar Excel" button that saves the loaded games
+   *  bound for other cities under this file name. */
+  exportFileName?: string;
 };
 
 /** Destinations to pack for, from `origin`. */
 export default function PackingDestinations({
-  origin, basePath, phaseGated, loadItems, excludeDestination, viewParams,
+  origin, basePath, phaseGated, loadItems, excludeDestination, viewParams, exportFileName,
 }: PackingDestinationsProps) {
   const router = useRouter();
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
   const { eventPhase, isLoadingEventPhase } = useEventPhase();
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Item[]>([]);
+  const [allItems, setAllItems] = useState<Item[]>([]);
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +73,7 @@ export default function PackingDestinations({
         loadItemsRef.current(),
         listBoxes({ origin, as_location: asLocation, mathtrade }),
       ]);
+      setAllItems(nextItems);
       setItems(nextItems.filter((item) => item.location !== excludeDestination));
       setBoxes(nextBoxes);
     } catch (err) {
@@ -86,6 +94,20 @@ export default function PackingDestinations({
       .map((dest) => ({ ...dest, label: destinationLabel(dest.destinationName, dest.viaHub) })),
     [items, boxes, requirePackableStatus, excludeDestination, origin],
   );
+
+  const exportItems = useMemo(
+    () => allItems.filter((item) => !isIntraLocality(item, origin)),
+    [allItems, origin],
+  );
+
+  const handleExport = async () => {
+    if (!exportFileName) return;
+    try {
+      await downloadWorkbook(buildBoxesExport(exportItems, origin), exportFileName);
+    } catch {
+      setError('No se pudo generar el Excel.');
+    }
+  };
 
   const filteredDestinations = useMemo(() => {
     return destinations.filter((dest) => {
@@ -155,6 +177,12 @@ export default function PackingDestinations({
         placeholder="Buscar destino, juego o etiqueta"
         aria-label="Buscar destinos o juegos"
       />
+
+      {exportFileName && (
+        <ThumbCta onClick={handleExport} disabled={isLoading || exportItems.length === 0}>
+          Descargar Excel
+        </ThumbCta>
+      )}
 
       {isLoading && <div className="mt-8"><LoadingSpinner message="Cargando destinos..." /></div>}
       {error && <StaffError>{error}</StaffError>}

@@ -3,12 +3,17 @@ import { useEventPhase } from '@/contexts/EventPhaseContext';
 import * as boxApi from '@/hooks/boxes/boxApi';
 import { useAuth } from '@/hooks/useAuth';
 import '@testing-library/jest-dom';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import * as xlsx from '@/utils/xlsx';
 import CityBoxesPage from '../page';
 
 jest.mock('@/hooks/useAuth');
 jest.mock('@/contexts/EventPhaseContext');
 jest.mock('@/hooks/boxes/boxApi');
+jest.mock('@/utils/xlsx', () => ({
+  ...jest.requireActual('@/utils/xlsx'),
+  downloadWorkbook: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(() => ({ push: jest.fn(), replace: jest.fn() })),
 }));
@@ -20,6 +25,7 @@ const mockUseAuth = useAuth as jest.Mock;
 const mockUseEventPhase = useEventPhase as jest.Mock;
 const mockListBoxes = boxApi.listBoxes as jest.Mock;
 const mockListItems = boxApi.listItems as jest.Mock;
+const mockDownload = xlsx.downloadWorkbook as jest.Mock;
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <ActionStatusProvider>{children}</ActionStatusProvider>
@@ -51,7 +57,7 @@ describe('CityBoxesPage', () => {
     expect(screen.queryByRole('link', { name: /Mendoza/ })).not.toBeInTheDocument();
     expect(screen.getAllByText(/1 listos/)).toHaveLength(2);
     expect(mockListBoxes).toHaveBeenCalledWith({ origin: 7 });
-    expect(mockListItems).toHaveBeenCalledWith({ origin: 7 });
+    expect(mockListItems).toHaveBeenCalledWith({ origin: 7, includeSendAs: true });
     expect(screen.queryByText('El evento no empezó')).not.toBeInTheDocument();
   });
 
@@ -75,10 +81,67 @@ describe('CityBoxesPage', () => {
     expect(within(direct).queryByText(/AMBA/)).not.toBeInTheDocument();
   });
 
+  describe('Excel export', () => {
+    it('lets the referrer download cajas_<slug>.xlsx with the two sheets, without local games', async () => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true, isLoading: false,
+        cityAccess: { kind: 'referrer', city: { id: 7, name: 'San Martín' } },
+      });
+      render(<CityBoxesPage />, { wrapper });
+      const button = await screen.findByRole('button', { name: 'Descargar Excel' });
+      await waitFor(() => expect(button).toBeEnabled());
+      fireEvent.click(button);
+      await waitFor(() => expect(mockDownload).toHaveBeenCalledTimes(1));
+      const [sheets, fileName] = mockDownload.mock.calls[0];
+      expect(fileName).toBe('cajas_san_martin.xlsx');
+      expect(sheets.map((s: { name: string }) => s.name)).toEqual(['Por destino', 'Total']);
+      expect(sheets[1].rows.map((r: Record<string, string>) => r['Juego'])).toEqual(['Catan', 'Azul']);
+    });
+
+    it('is shown to an admin viewing as a referrer (read only) and asks for send_as items', async () => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true, isLoading: false, isAdmin: true,
+        cityAccess: { kind: 'referrer', city: { id: 7, name: 'Mendoza' } },
+      });
+      render(<CityBoxesPage />, { wrapper });
+      expect(await screen.findByRole('button', { name: 'Descargar Excel' })).toBeInTheDocument();
+      expect(mockListItems).toHaveBeenCalledWith(expect.objectContaining({ includeSendAs: true }));
+    });
+
+    it('is hidden from a local volunteer, who does not ask for send_as items', async () => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true, isLoading: false,
+        cityAccess: { kind: 'local', city: { id: 7, name: 'Mendoza' } },
+      });
+      render(<CityBoxesPage />, { wrapper });
+      await screen.findByRole('link', { name: /AMBA/ });
+      expect(screen.queryByRole('button', { name: 'Descargar Excel' })).not.toBeInTheDocument();
+      expect(mockListItems).toHaveBeenCalledWith({ origin: 7, includeSendAs: false });
+    });
+
+    it('is disabled when there is nothing to send to other cities', async () => {
+      mockListItems.mockResolvedValue([
+        { id: 3, title: 'Root', assigned_trade_code: 103, status: 2, location: 7, location_name: 'Mendoza' },
+      ]);
+      render(<CityBoxesPage />, { wrapper });
+      expect(await screen.findByRole('button', { name: 'Descargar Excel' })).toBeDisabled();
+    });
+
+    it('shows an error when the file cannot be generated', async () => {
+      mockDownload.mockRejectedValueOnce(new Error('boom'));
+      render(<CityBoxesPage />, { wrapper });
+      const button = await screen.findByRole('button', { name: 'Descargar Excel' });
+      await waitFor(() => expect(button).toBeEnabled());
+      fireEvent.click(button);
+      expect(await screen.findByText('No se pudo generar el Excel.')).toBeInTheDocument();
+    });
+  });
+
   it('says so when the user has no city', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, cityAccess: null });
     render(<CityBoxesPage />, { wrapper });
     expect(screen.getByText('No tenés una ciudad asignada.')).toBeInTheDocument();
     expect(mockListBoxes).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Descargar Excel' })).not.toBeInTheDocument();
   });
 });

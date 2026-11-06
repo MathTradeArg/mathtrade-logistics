@@ -124,6 +124,8 @@ export type ItemListParams = CityViewParams & {
   destination?: number;
   origin?: number;
   excludeAmba?: number;
+  /** Also list the copies of cities that ship as this origin (send_as). */
+  includeSendAs?: boolean;
 };
 
 export async function listItems(params: ItemListParams = {}): Promise<Item[]> {
@@ -132,6 +134,7 @@ export async function listItems(params: ItemListParams = {}): Promise<Item[]> {
       destination: params.destination,
       origin: params.origin,
       exclude_amba: params.excludeAmba,
+      include_send_as: params.includeSendAs ? 1 : undefined,
       as_location: params.as_location,
       mathtrade: params.mathtrade,
     })}`,

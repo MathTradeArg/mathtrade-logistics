@@ -42,3 +42,7 @@ export function formatMoney(value: number | null | undefined): string {
 export function pricePerItem(price: number | null | undefined, count: number): string {
   return price && count > 0 ? money.format(price / count) : '—';
 }
+
+/** The giver's full name, or "—" when the copy carries none. */
+export const giverName = (item: { first_name?: string; last_name?: string }): string =>
+  `${item.first_name ?? ''} ${item.last_name ?? ''}`.trim() || '—';

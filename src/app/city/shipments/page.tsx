@@ -13,7 +13,7 @@ import { destinationLabel, goesViaHub, matchesSearch } from '@/hooks/boxes/boxGr
 import { listTrackings } from '@/hooks/city/cityApi';
 import type { Item, Tracking } from '@/types';
 import { fileSlug, downloadSheet } from '@/utils/xlsx';
-import { formatTradeCode, itemBoxLabel } from '@/utils/tradeCode';
+import { formatTradeCode, giverName, itemBoxLabel } from '@/utils/tradeCode';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -24,8 +24,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'shipments', label: 'Envíos' },
   { id: 'items', label: 'Ejemplares' },
 ];
-
-const giverName = (item: Item) => `${item.first_name ?? ''} ${item.last_name ?? ''}`.trim() || '—';
 
 /** "Catamarca · Vía AMBA" when the copy travels through the event. */
 const itemDestination = (item: Item, cityId: number | null) => (item.location_name

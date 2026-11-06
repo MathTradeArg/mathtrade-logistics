@@ -238,6 +238,20 @@ export function packingItemSubtitle(
   return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
+/** Trade that stays inside the referrer's city: send_as cities count as the same city. */
+export const isIntraLocality = (item: Item, cityId: number): boolean =>
+  (item.lane_destination ?? item.location) === cityId;
+
+export type LaneLabel = 'AMBA' | 'Vía reunión' | 'Directo';
+
+/** The lane a copy travels in from `origin`: straight to the hub, through the
+ *  hub to another city (`via_meeting`), or straight to its city. */
+export function laneLabel(item: Item, origin: number, eventLocationId = EVENT_LOCATION_ID): LaneLabel {
+  if ((item.send_to ?? item.location) === eventLocationId) return 'AMBA';
+  if (goesViaHub(origin, item.location, item.via_meeting, eventLocationId)) return 'Vía reunión';
+  return 'Directo';
+}
+
 export function receptorName(item: Item): string {
   return [item.receptor_first_name, item.receptor_last_name].filter(Boolean).join(' ').trim();
 }
