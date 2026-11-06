@@ -88,7 +88,7 @@ describe('CityBoxesPage', () => {
         cityAccess: { kind: 'referrer', city: { id: 7, name: 'San Martín' } },
       });
       render(<CityBoxesPage />, { wrapper });
-      const button = await screen.findByRole('button', { name: 'Descargar Excel' });
+      const button = await screen.findByRole('button', { name: 'Excel de cajas' });
       await waitFor(() => expect(button).toBeEnabled());
       fireEvent.click(button);
       await waitFor(() => expect(mockDownload).toHaveBeenCalledTimes(1));
@@ -104,7 +104,7 @@ describe('CityBoxesPage', () => {
         cityAccess: { kind: 'referrer', city: { id: 7, name: 'Mendoza' } },
       });
       render(<CityBoxesPage />, { wrapper });
-      expect(await screen.findByRole('button', { name: 'Descargar Excel' })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Excel de cajas' })).toBeInTheDocument();
       expect(mockListItems).toHaveBeenCalledWith(expect.objectContaining({ includeSendAs: true }));
     });
 
@@ -115,7 +115,7 @@ describe('CityBoxesPage', () => {
       });
       render(<CityBoxesPage />, { wrapper });
       await screen.findByRole('link', { name: /AMBA/ });
-      expect(screen.queryByRole('button', { name: 'Descargar Excel' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Excel de cajas' })).not.toBeInTheDocument();
       expect(mockListItems).toHaveBeenCalledWith({ origin: 7, includeSendAs: false });
     });
 
@@ -124,13 +124,97 @@ describe('CityBoxesPage', () => {
         { id: 3, title: 'Root', assigned_trade_code: 103, status: 2, location: 7, location_name: 'Mendoza' },
       ]);
       render(<CityBoxesPage />, { wrapper });
-      expect(await screen.findByRole('button', { name: 'Descargar Excel' })).toBeDisabled();
+      expect(await screen.findByRole('button', { name: 'Excel de cajas' })).toBeDisabled();
     });
 
     it('shows an error when the file cannot be generated', async () => {
       mockDownload.mockRejectedValueOnce(new Error('boom'));
       render(<CityBoxesPage />, { wrapper });
-      const button = await screen.findByRole('button', { name: 'Descargar Excel' });
+      const button = await screen.findByRole('button', { name: 'Excel de cajas' });
+      await waitFor(() => expect(button).toBeEnabled());
+      fireEvent.click(button);
+      expect(await screen.findByText('No se pudo generar el Excel.')).toBeInTheDocument();
+    });
+  });
+
+  describe('Excel intralocalidad', () => {
+    const intraButton = () => screen.findByRole('button', { name: 'Excel intralocalidad' });
+
+    it('downloads intralocalidad_<slug>.xlsx with one sheet of only intra games', async () => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true, isLoading: false,
+        cityAccess: { kind: 'referrer', city: { id: 7, name: 'San Martín' } },
+      });
+      render(<CityBoxesPage />, { wrapper });
+      const button = await intraButton();
+      await waitFor(() => expect(button).toBeEnabled());
+      fireEvent.click(button);
+      await waitFor(() => expect(mockDownload).toHaveBeenCalledTimes(1));
+      const [sheets, fileName] = mockDownload.mock.calls[0];
+      expect(fileName).toBe('intralocalidad_san_martin.xlsx');
+      expect(sheets.map((s: { name: string }) => s.name)).toEqual(['Intralocalidad']);
+      expect(sheets[0].rows.map((r: Record<string, string>) => r['Juego'])).toEqual(['Root']);
+    });
+
+    it('counts a send_as city (lane_destination = own city) as intra, not in the boxes Excel', async () => {
+      mockListItems.mockResolvedValue([
+        { id: 6, title: 'Esp', assigned_trade_code: 106, status: 2, location: 12, location_name: 'Esperanza', send_to: 7, lane_destination: 7 },
+        { id: 2, title: 'Azul', assigned_trade_code: 102, status: 2, location: 8, location_name: 'Córdoba' },
+      ]);
+      render(<CityBoxesPage />, { wrapper });
+      const intra = await intraButton();
+      await waitFor(() => expect(intra).toBeEnabled());
+      fireEvent.click(intra);
+      await waitFor(() => expect(mockDownload).toHaveBeenCalledTimes(1));
+      expect(mockDownload.mock.calls[0][0][0].rows.map((r: Record<string, string>) => r['Juego'])).toEqual(['Esp']);
+      fireEvent.click(screen.getByRole('button', { name: 'Excel de cajas' }));
+      await waitFor(() => expect(mockDownload).toHaveBeenCalledTimes(2));
+      expect(mockDownload.mock.calls[1][0][1].rows.map((r: Record<string, string>) => r['Juego'])).toEqual(['Azul']);
+    });
+
+    it('puts both buttons together before the destination list', async () => {
+      render(<CityBoxesPage />, { wrapper });
+      const group = await screen.findByRole('group', { name: 'Descargas en Excel' });
+      expect(within(group).getAllByRole('button').map((b) => b.textContent))
+        .toEqual(['Excel de cajas', 'Excel intralocalidad']);
+      const firstLink = await screen.findByRole('link', { name: /AMBA/ });
+      expect(group.compareDocumentPosition(firstLink) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('is shown to an admin viewing as a referrer', async () => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true, isLoading: false, isAdmin: true,
+        cityAccess: { kind: 'referrer', city: { id: 7, name: 'Mendoza' } },
+      });
+      render(<CityBoxesPage />, { wrapper });
+      expect(await intraButton()).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Excel de cajas' })).toBeInTheDocument();
+    });
+
+    it('is hidden from a local volunteer, along with the boxes button', async () => {
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true, isLoading: false,
+        cityAccess: { kind: 'local', city: { id: 7, name: 'Mendoza' } },
+      });
+      render(<CityBoxesPage />, { wrapper });
+      await screen.findByRole('link', { name: /AMBA/ });
+      expect(screen.queryByRole('button', { name: 'Excel intralocalidad' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Excel de cajas' })).not.toBeInTheDocument();
+    });
+
+    it('is disabled without intra games, while the boxes button stays enabled', async () => {
+      mockListItems.mockResolvedValue([
+        { id: 2, title: 'Azul', assigned_trade_code: 102, status: 2, location: 8, location_name: 'Córdoba' },
+      ]);
+      render(<CityBoxesPage />, { wrapper });
+      expect(await intraButton()).toBeDisabled();
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Excel de cajas' })).toBeEnabled());
+    });
+
+    it('shows an error when the file cannot be generated', async () => {
+      mockDownload.mockRejectedValueOnce(new Error('boom'));
+      render(<CityBoxesPage />, { wrapper });
+      const button = await intraButton();
       await waitFor(() => expect(button).toBeEnabled());
       fireEvent.click(button);
       expect(await screen.findByText('No se pudo generar el Excel.')).toBeInTheDocument();
@@ -142,6 +226,6 @@ describe('CityBoxesPage', () => {
     render(<CityBoxesPage />, { wrapper });
     expect(screen.getByText('No tenés una ciudad asignada.')).toBeInTheDocument();
     expect(mockListBoxes).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: 'Descargar Excel' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Excel de cajas' })).not.toBeInTheDocument();
   });
 });

@@ -244,11 +244,13 @@ export const isIntraLocality = (item: Item, cityId: number): boolean =>
 
 export type LaneLabel = 'AMBA' | 'Vía reunión' | 'Directo';
 
-/** The lane a copy travels in from `origin`: straight to the hub, through the
- *  hub to another city (`via_meeting`), or straight to its city. */
+/** The lane a copy travels in from `origin`, derived from `packingDestinationId`
+ *  (the id the packing screen groups by) so the screen and the Excel cannot
+ *  drift: `-1` is via the event, the hub id is AMBA, anything else is direct. */
 export function laneLabel(item: Item, origin: number, eventLocationId = EVENT_LOCATION_ID): LaneLabel {
-  if ((item.send_to ?? item.location) === eventLocationId) return 'AMBA';
-  if (goesViaHub(origin, item.location, item.via_meeting, eventLocationId)) return 'Vía reunión';
+  const lane = packingDestinationId(item, origin, eventLocationId);
+  if (lane === VIA_AMBA_DESTINATION_ID) return 'Vía reunión';
+  if (lane === eventLocationId) return 'AMBA';
   return 'Directo';
 }
 

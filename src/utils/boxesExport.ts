@@ -6,6 +6,7 @@ import {
   isIntraLocality,
   laneLabel,
   packingDestinationId,
+  receptorName,
   splitByRoute,
 } from '@/hooks/boxes/boxGrouping';
 import type { Item } from '@/types';
@@ -73,4 +74,19 @@ export function buildBoxesExport(items: Item[], origin: number): WorkbookSheet[]
     { name: 'Por destino', aoa },
     { name: 'Total', rows: total },
   ];
+}
+
+/** The referrer's intra-locality workbook: one sheet with every game that stays
+ *  in `cityId`'s city (send_as cities included), by trade code. */
+export function buildIntraExport(items: Item[], cityId: number): WorkbookSheet[] {
+  const rows = items
+    .filter((item) => isIntraLocality(item, cityId))
+    .sort(byCode)
+    .map((item) => ({
+      Código: formatTradeCode(item.assigned_trade_code),
+      Juego: item.title,
+      Entregador: giverName(item),
+      Receptor: receptorName(item),
+    }));
+  return [{ name: 'Intralocalidad', rows }];
 }

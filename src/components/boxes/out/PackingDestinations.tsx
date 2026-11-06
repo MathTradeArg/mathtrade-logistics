@@ -1,7 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, PhaseBlocked, StaffEmpty, StaffError, StaffPage, StaffSearch, ThumbCta } from '@/components/staff';
+import { GameRow, PhaseBlocked, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { listBoxes, type CityViewParams } from '@/hooks/boxes/boxApi';
@@ -19,9 +19,9 @@ import {
   splitByRoute,
 } from '@/hooks/boxes/boxGrouping';
 import { useAuth } from '@/hooks/useAuth';
-import { buildBoxesExport } from '@/utils/boxesExport';
+import { buildBoxesExport, buildIntraExport } from '@/utils/boxesExport';
 import { formatTradeCode, tradeCodeSearchText } from '@/utils/tradeCode';
-import { downloadWorkbook } from '@/utils/xlsx';
+import { downloadWorkbook, type WorkbookSheet } from '@/utils/xlsx';
 import type { Box, Item } from '@/types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -38,14 +38,17 @@ export type PackingDestinationsProps = {
   excludeDestination: number;
   /** Admin "Ver como" params for the box list (city screens). */
   viewParams?: CityViewParams;
-  /** When set, shows a "Descargar Excel" button that saves the loaded games
+  /** When set, shows an "Excel de cajas" button that saves the loaded games
    *  bound for other cities under this file name. */
   exportFileName?: string;
+  /** When set, shows an "Excel intralocalidad" button that saves the loaded
+   *  games that stay in the city under this file name. */
+  intraExportFileName?: string;
 };
 
 /** Destinations to pack for, from `origin`. */
 export default function PackingDestinations({
-  origin, basePath, phaseGated, loadItems, excludeDestination, viewParams, exportFileName,
+  origin, basePath, phaseGated, loadItems, excludeDestination, viewParams, exportFileName, intraExportFileName,
 }: PackingDestinationsProps) {
   const router = useRouter();
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
@@ -100,10 +103,14 @@ export default function PackingDestinations({
     [allItems, origin],
   );
 
-  const handleExport = async () => {
-    if (!exportFileName) return;
+  const intraItems = useMemo(
+    () => allItems.filter((item) => isIntraLocality(item, origin)),
+    [allItems, origin],
+  );
+
+  const runExport = async (build: () => WorkbookSheet[], fileName: string) => {
     try {
-      await downloadWorkbook(buildBoxesExport(exportItems, origin), exportFileName);
+      await downloadWorkbook(build(), fileName);
     } catch {
       setError('No se pudo generar el Excel.');
     }
@@ -178,10 +185,29 @@ export default function PackingDestinations({
         aria-label="Buscar destinos o juegos"
       />
 
-      {exportFileName && (
-        <ThumbCta onClick={handleExport} disabled={isLoading || exportItems.length === 0}>
-          Descargar Excel
-        </ThumbCta>
+      {(exportFileName || intraExportFileName) && (
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row" role="group" aria-label="Descargas en Excel">
+          {exportFileName && (
+            <button
+              type="button"
+              className="staff-btn staff-btn-outline !min-h-12 text-sm"
+              disabled={isLoading || exportItems.length === 0}
+              onClick={() => runExport(() => buildBoxesExport(exportItems, origin), exportFileName)}
+            >
+              Excel de cajas
+            </button>
+          )}
+          {intraExportFileName && (
+            <button
+              type="button"
+              className="staff-btn staff-btn-outline !min-h-12 text-sm"
+              disabled={isLoading || intraItems.length === 0}
+              onClick={() => runExport(() => buildIntraExport(intraItems, origin), intraExportFileName)}
+            >
+              Excel intralocalidad
+            </button>
+          )}
+        </div>
       )}
 
       {isLoading && <div className="mt-8"><LoadingSpinner message="Cargando destinos..." /></div>}

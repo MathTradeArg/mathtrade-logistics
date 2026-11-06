@@ -1,5 +1,5 @@
 import { EVENT_LOCATION_ID } from '@/constants/event';
-import { boxContentsSummary, boxLaneDestination, boxMatchesLane, boxDestinationLabel, boxLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, hasMixedDestinations, boxOnwardDestinations, isTransitBox, splitByRoute, groupPackingDestinations, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
+import { boxContentsSummary, boxLaneDestination, boxMatchesLane, boxDestinationLabel, boxLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, hasMixedDestinations, boxOnwardDestinations, isTransitBox, splitByRoute, groupPackingDestinations, laneLabel, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import type { Box, Item } from '@/types';
 
 const box = (overrides: Partial<Box> & Pick<Box, 'id' | 'origin' | 'origin_name'>): Box => ({
@@ -217,6 +217,27 @@ describe('boxGrouping', () => {
       const item = { id: 5, title: 'G', assigned_trade_code: 5, status: 4, location: 8, send_to: 7 } as Item;
       const groups = groupPackingDestinations([item], [closed], true, hub);
       expect(groups.find((g) => g.destinationId === 7)?.closedBoxCount).toBe(1);
+    });
+  });
+
+  describe('laneLabel agrees with the packing screen grouping', () => {
+    const MENDOZA = 7;
+    const fixtures: Array<[string, Item, string]> = [
+      ['AMBA', { id: 1, title: 'a', assigned_trade_code: 1, status: 2, location: EVENT_LOCATION_ID, location_name: 'AMBA' }, 'AMBA'],
+      ['AMBA with via_meeting', { id: 2, title: 'b', assigned_trade_code: 2, status: 2, location: EVENT_LOCATION_ID, location_name: 'AMBA', via_meeting: true }, 'AMBA'],
+      ['attendee shipped to AMBA', { id: 3, title: 'c', assigned_trade_code: 3, status: 2, location: 9, location_name: 'Rosario', send_to: EVENT_LOCATION_ID, via_meeting: true }, 'AMBA'],
+      ['via_meeting', { id: 4, title: 'd', assigned_trade_code: 4, status: 2, location: 15, location_name: 'Salta', via_meeting: true }, 'Vía reunión'],
+      ['direct', { id: 5, title: 'e', assigned_trade_code: 5, status: 2, location: 9, location_name: 'Rosario', via_meeting: false }, 'Directo'],
+      ['send_as cluster', { id: 6, title: 'f', assigned_trade_code: 6, status: 2, location: 12, location_name: 'Esperanza', send_to: 13, send_to_name: 'Santa Fe', via_meeting: false }, 'Directo'],
+    ];
+
+    it.each(fixtures)('%s', (_name, item, expected) => {
+      expect(laneLabel(item, MENDOZA)).toBe(expected);
+      const [group] = groupPackingDestinations([item], [], false, MENDOZA);
+      const fromScreen = group.destinationId === VIA_AMBA_DESTINATION_ID
+        ? 'Vía reunión'
+        : group.destinationId === EVENT_LOCATION_ID ? 'AMBA' : 'Directo';
+      expect(fromScreen).toBe(laneLabel(item, MENDOZA));
     });
   });
 });

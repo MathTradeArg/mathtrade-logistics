@@ -83,4 +83,10 @@ describe('BoxesOutPage', () => {
     expect(mockListBoxes).toHaveBeenCalledWith({ origin: 1 });
     expect(mockListItems).toHaveBeenCalledWith({ excludeAmba: 1 });
   });
+
+  it('has no Excel buttons', async () => {
+    render(<BoxesOutPage />, { wrapper });
+    await screen.findByText('Córdoba');
+    expect(screen.queryByRole('button', { name: /Excel/ })).not.toBeInTheDocument();
+  });
 });

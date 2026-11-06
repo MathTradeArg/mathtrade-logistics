@@ -21,6 +21,7 @@ export default function CityBoxesPage() {
       excludeDestination={cityId}
       viewParams={params}
       exportFileName={kind === 'referrer' ? `cajas_${fileSlug(cityName)}.xlsx` : undefined}
+      intraExportFileName={kind === 'referrer' ? `intralocalidad_${fileSlug(cityName)}.xlsx` : undefined}
     />
   );
 }

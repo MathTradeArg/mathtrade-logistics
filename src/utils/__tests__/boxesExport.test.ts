@@ -1,6 +1,6 @@
 import type { Item } from '@/types';
 import * as XLSX from 'xlsx';
-import { buildBoxesExport } from '../boxesExport';
+import { buildBoxesExport, buildIntraExport } from '../boxesExport';
 import { buildWorkbook } from '../xlsx';
 
 const SANTA_FE = 5;
@@ -74,5 +74,41 @@ describe('buildBoxesExport', () => {
     const book = await buildWorkbook(sheets);
     expect(book.SheetNames).toEqual(['Por destino', 'Total']);
     expect(XLSX.utils.sheet_to_json(book.Sheets['Total'])).toHaveLength(5);
+  });
+});
+
+describe('buildIntraExport', () => {
+  const intraItems: Item[] = [
+    ...items,
+    { ...base, id: 8, title: 'Con apellido', assigned_trade_code: 5, first_name: 'Gus', last_name: 'Lima', receptor_first_name: 'Ema', receptor_last_name: 'Paz', location: SANTA_FE, location_name: 'Santa Fe' },
+    { ...base, id: 9, title: 'Sin apellido', assigned_trade_code: 6, receptor_first_name: 'Fer', location: SANTA_FE, location_name: 'Santa Fe' },
+  ];
+  const out = buildIntraExport(intraItems, SANTA_FE);
+  const rows = (out[0] as { rows: Record<string, string | number>[] }).rows;
+
+  it('has one sheet named Intralocalidad with exact headers', async () => {
+    expect(out.map((s) => s.name)).toEqual(['Intralocalidad']);
+    const book = await buildWorkbook(out);
+    expect(book.SheetNames).toEqual(['Intralocalidad']);
+    const aoa = XLSX.utils.sheet_to_json<string[]>(book.Sheets['Intralocalidad'], { header: 1 });
+    expect(aoa[0]).toEqual(['Código', 'Juego', 'Entregador', 'Receptor']);
+    expect(aoa).toHaveLength(1 + rows.length);
+    expect(aoa[1]).toEqual(['00005', 'Con apellido', 'Gus Lima', 'Ema Paz']);
+  });
+
+  it('orders by code, with receiver with and without last name', () => {
+    expect(rows.map((r) => r['Código'])).toEqual(['00005', '00006', '00030', '00031']);
+    expect(rows[1]['Receptor']).toBe('Fer');
+  });
+
+  it('counts Santa Fe -> Esperanza as intra and leaves out trades to other cities', () => {
+    expect(rows.map((r) => r['Juego'])).toEqual(['Con apellido', 'Sin apellido', 'Local', 'Esp']);
+  });
+
+  it('boxes and intra exports partition the items', () => {
+    const boxed = (buildBoxesExport(intraItems, SANTA_FE)[1] as { rows: Record<string, string>[] }).rows;
+    const codes = [...boxed, ...rows].map((r) => r['Código']);
+    expect(codes).toHaveLength(intraItems.length);
+    expect(new Set(codes).size).toBe(intraItems.length);
   });
 });
