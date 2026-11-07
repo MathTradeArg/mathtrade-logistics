@@ -179,39 +179,3 @@ describe('OutgoingBoxPage reopen: a closed box can be reopened only while it is 
     await waitFor(() => expect(mockGetBox).toHaveBeenCalledTimes(2));
   });
 });
-
-describe('OutgoingBoxPage add list: games that go on to another city are offered without the "en evento" mark', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
-    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
-    mockUseBoxLifecycle.mockReturnValue({
-      inFlight: false,
-      addItems: jest.fn(),
-      removeItem: jest.fn(),
-      moveItem: jest.fn(),
-      closeBox: jest.fn(),
-      deleteBox: mockDeleteBox,
-      reopenBox: mockReopenBox,
-    });
-    mockGetBox.mockResolvedValue(emptyBox);
-    mockListBoxes.mockResolvedValue([]);
-  });
-
-  it('offers an unmarked onward game, not an unmarked one handed over at the event', async () => {
-    const onward = { id: 31, title: 'Brass', assigned_trade_code: 401, status: 4, location: 2, via_meeting: true, origin_location: 8 };
-    // An attending giver from Córdoba: the API lists it under origin = hub.
-    const attendeeGiver = { id: 32, title: 'Root', assigned_trade_code: 402, status: 4, location: 2, via_meeting: true, origin_location: 8 };
-    const direct = { id: 33, title: 'Cascadia', assigned_trade_code: 403, status: 4, location: 2, via_meeting: false, origin_location: 8 };
-    mockListItems.mockImplementation((params: { origin?: number }) =>
-      Promise.resolve(params.origin === 1 ? [attendeeGiver] : [onward, attendeeGiver, direct]),
-    );
-
-    render(<OutgoingBoxPage />, { wrapper });
-    fireEvent.click(await screen.findByRole('button', { name: 'Agregar juegos' }));
-
-    expect(await screen.findByText(/Brass/)).toBeInTheDocument();
-    expect(screen.queryByText(/Root/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Cascadia/)).not.toBeInTheDocument();
-  });
-});

@@ -4,7 +4,7 @@ import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, PhaseBlocked, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
-import { listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
+import { listBoxes, type CityViewParams } from '@/hooks/boxes/boxApi';
 import {
   boxDestinationLabel,
   destinationLabel,
@@ -57,7 +57,6 @@ export default function PackingDestinations({
   const [items, setItems] = useState<Item[]>([]);
   const [allItems, setAllItems] = useState<Item[]>([]);
   const [boxes, setBoxes] = useState<Box[]>([]);
-  const [handedOverAtHub, setHandedOverAtHub] = useState<ReadonlySet<number>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // The caller passes a new function each render; only the latest is used.
@@ -73,15 +72,10 @@ export default function PackingDestinations({
     setIsLoading(true);
     setError(null);
     try {
-      const needsHubGivers = requirePackableStatus && origin === EVENT_LOCATION_ID;
-      const [nextItems, nextBoxes, hubGiven] = await Promise.all([
+      const [nextItems, nextBoxes] = await Promise.all([
         loadItemsRef.current(),
         listBoxes({ origin, as_location: asLocation, mathtrade }),
-        needsHubGivers
-          ? listItems({ origin: EVENT_LOCATION_ID, excludeAmba: EVENT_LOCATION_ID })
-          : Promise.resolve([] as Item[]),
       ]);
-      setHandedOverAtHub(new Set(hubGiven.map((item) => item.id)));
       setAllItems(nextItems);
       setItems(nextItems.filter((item) => item.location !== excludeDestination));
       setBoxes(nextBoxes);
@@ -90,7 +84,7 @@ export default function PackingDestinations({
     } finally {
       setIsLoading(false);
     }
-  }, [origin, excludeDestination, asLocation, mathtrade, requirePackableStatus]);
+  }, [origin, excludeDestination, asLocation, mathtrade]);
 
   useEffect(() => {
     if (!isAuthenticated || blocked) return;
@@ -98,10 +92,10 @@ export default function PackingDestinations({
   }, [isAuthenticated, blocked, load]);
 
   const destinations = useMemo(
-    () => groupPackingDestinations(items, boxes, requirePackableStatus, origin, handedOverAtHub)
+    () => groupPackingDestinations(items, boxes, requirePackableStatus, origin)
       .filter((dest) => dest.destinationId !== excludeDestination)
       .map((dest) => ({ ...dest, label: destinationLabel(dest.destinationName, dest.viaHub) })),
-    [items, boxes, requirePackableStatus, excludeDestination, origin, handedOverAtHub],
+    [items, boxes, requirePackableStatus, excludeDestination, origin],
   );
 
   const exportItems = useMemo(
