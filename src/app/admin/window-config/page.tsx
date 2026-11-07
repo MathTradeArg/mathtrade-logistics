@@ -265,7 +265,7 @@ export default function WindowConfigPage() {
                         {windows.length > 1 && (
                           <button
                             onClick={() => handleRemoveWindow(window.id)}
-                            className="mt-6 p-2 min-h-14 rounded-lg bg-want px-4 font-semibold text-white flex-shrink-0"
+                            className="mt-6 p-2 min-h-14 rounded-lg bg-danger px-4 font-semibold text-white flex-shrink-0"
                             title="Eliminar ventanilla"
                           >
                             <Trash2 size={16} />
