@@ -6,7 +6,8 @@ import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { getBox, markItemsReceived } from '@/hooks/boxes/boxApi';
-import { boxOnwardDestinations, hasMixedDestinations, isTransitBox, receptorName } from '@/hooks/boxes/boxGrouping';
+import { boxOnwardDestinations, hasMixedDestinations, isBoxOpen, isTransitBox, receptorName } from '@/hooks/boxes/boxGrouping';
+import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box } from '@/types';
 import { missingReportHref } from '@/app/more/report/missingReport';
@@ -14,6 +15,14 @@ import { formatTradeCode } from '@/utils/tradeCode';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import TransitBoxView from './TransitBoxView';
+
+/** Neither end is AMBA (the backend's transit box): it reaches the event
+ *  inside its shipment and event staff may reopen it to rebuild it. Boxes to
+ *  AMBA, mixed ones included, are received instead. */
+function canBeRebuilt(box: Box): boolean {
+  return box.origin !== EVENT_LOCATION_ID && box.destiny !== EVENT_LOCATION_ID;
+}
 
 export default function IncomingBoxPage() {
   const params = useParams<{ originId: string; boxId: string }>();
@@ -26,6 +35,8 @@ export default function IncomingBoxPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showRebuild, setShowRebuild] = useState(false);
+  const { inFlight, reopenBox } = useBoxLifecycle();
 
   const title = box?.number != null ? `#${box.number}` : 'Caja';
   useStaffTitle(box ? `${title}` : 'Caja');
@@ -83,6 +94,18 @@ export default function IncomingBoxPage() {
     }
   };
 
+  const handleRebuild = async () => {
+    try {
+      const reopened = await reopenBox(boxId);
+      if (reopened) {
+        setShowRebuild(false);
+        await load();
+      }
+    } catch {
+      setShowRebuild(false); // the error toast comes from the hook
+    }
+  };
+
   if (authIsLoading || isAuthenticated === null || isLoadingEventPhase) {
     return <div className="flex min-h-[50dvh] items-center justify-center"><LoadingSpinner message="Cargando..." /></div>;
   }
@@ -91,6 +114,11 @@ export default function IncomingBoxPage() {
     return <PhaseBlocked />;
   }
 
+  if (box && canBeRebuilt(box) && isBoxOpen(box)) {
+    return <TransitBoxView box={box} onReload={load} userId={userId} />;
+  }
+
+  const rebuildable = box ? canBeRebuilt(box) : false;
   const transit = box ? isTransitBox(box) : false;
   const mixed = box ? hasMixedDestinations(box) : false;
   const onwardNames = box ? boxOnwardDestinations(box) : [];
@@ -179,6 +207,17 @@ export default function IncomingBoxPage() {
           >
             Reportar faltante{selected.size > 1 ? ` (${selected.size})` : ''}
           </Link>
+
+          {rebuildable && (
+            <button
+              type="button"
+              disabled={inFlight}
+              onClick={() => setShowRebuild(true)}
+              className="staff-btn staff-btn-outline mt-3"
+            >
+              Rearmar caja
+            </button>
+          )}
         </>
       )}
 
@@ -201,6 +240,18 @@ export default function IncomingBoxPage() {
         onCancel={() => setShowConfirm(false)}
       >
         Vas a marcar {selected.size} juegos de esta caja como En evento.
+      </StaffDialog>
+
+      <StaffDialog
+        open={showRebuild}
+        title="Rearmar esta caja"
+        confirmLabel="Rearmar"
+        variant="danger"
+        confirmDisabled={inFlight}
+        onConfirm={handleRebuild}
+        onCancel={() => setShowRebuild(false)}
+      >
+        La caja vuelve a estar abierta para rehacerla y conserva su número{box?.number != null ? ` (#${box.number})` : ''}. Los juegos que siguen a otras ciudades no se marcan como recibidos.
       </StaffDialog>
     </StaffPage>
   );

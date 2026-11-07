@@ -26,6 +26,7 @@ const mockUseEventPhase = useEventPhase as jest.Mock;
 const mockGetBox = boxApi.getBox as jest.Mock;
 const mockListBoxes = boxApi.listBoxes as jest.Mock;
 const mockListItems = boxApi.listItems as jest.Mock;
+const mockReopenBox = boxApi.reopenBox as jest.Mock;
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <ActionStatusProvider>{children}</ActionStatusProvider>
@@ -158,5 +159,106 @@ describe('IncomingBoxPage', () => {
     await waitFor(() => {
       expect(boxApi.markItemsReceived).toHaveBeenCalledWith([20040, 20041], '1');
     });
+  });
+});
+
+// Rule: a box in a shipment is reopened at the event only when it is a transit
+// box (neither origin nor destination is AMBA); event staff rebuild it there.
+describe('IncomingBoxPage rebuild of transit boxes', () => {
+  const closedTransitBox = {
+    id: 392,
+    number: 16,
+    origin: 8,
+    origin_name: 'Salta',
+    destiny: 3,
+    destination_name: 'Córdoba',
+    closed_at: '2026-09-01T10:00:00Z',
+    tracking: 'VC-123',
+    math_items: [
+      { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, location: 3, location_name: 'Córdoba' },
+    ],
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, userId: '1' });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockListBoxes.mockResolvedValue([]);
+    mockListItems.mockResolvedValue([]);
+  });
+
+  it('a transit box in a shipment can be rebuilt: confirming reopens it and leaves it editable', async () => {
+    mockGetBox
+      .mockResolvedValueOnce(closedTransitBox)
+      .mockResolvedValue({ ...closedTransitBox, closed_at: null });
+    mockReopenBox.mockResolvedValue({ ...closedTransitBox, closed_at: null });
+
+    render(<IncomingBoxPage />, { wrapper });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Rearmar caja' }));
+    expect(
+      screen.getByText(/Los juegos que siguen a otras ciudades no se marcan como recibidos/),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Rearmar' }));
+
+    await waitFor(() => expect(mockReopenBox).toHaveBeenCalledWith(392));
+    expect(await screen.findByRole('button', { name: 'Cerrar de nuevo' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sacar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Agregar juegos' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Marcar recibidos/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Marcar recibido' })).not.toBeInTheDocument();
+  });
+
+  it('in a rebuilt transit box only games that end in AMBA can be marked received; games going on to other cities cannot', async () => {
+    mockGetBox.mockResolvedValue({
+      ...closedTransitBox,
+      closed_at: null,
+      math_items: [
+        { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, location: 3, location_name: 'Córdoba', lane_destination: 3 },
+        { id: 11, item_id: 92, title: 'Brass', assigned_trade_code: 20042, status: 4, location: 1, location_name: 'AMBA', lane_destination: 1 },
+      ],
+    });
+
+    render(<IncomingBoxPage />, { wrapper });
+
+    expect(
+      await screen.findByText(/Los juegos que siguen a otras ciudades no se marcan como recibidos/),
+    ).toBeInTheDocument();
+    const receiveButtons = screen.getAllByRole('button', { name: 'Marcar recibido' });
+    expect(receiveButtons).toHaveLength(1);
+    fireEvent.click(receiveButtons[0]);
+
+    await waitFor(() => expect(boxApi.markItemsReceived).toHaveBeenCalledWith([20042], '1'));
+  });
+
+  it('does not offer rebuilding a box to AMBA that is in a shipment', async () => {
+    mockGetBox.mockResolvedValue({ ...ambaBox, closed_at: '2026-09-01T10:00:00Z', tracking: 'VC-9' });
+
+    render(<IncomingBoxPage />, { wrapper });
+
+    await screen.findByRole('checkbox', { name: /Catan/ });
+    expect(screen.queryByRole('button', { name: 'Rearmar caja' })).not.toBeInTheDocument();
+  });
+
+  it('does not offer rebuilding a mixed-locality box to AMBA (it is received, not rebuilt)', async () => {
+    mockGetBox.mockResolvedValue({
+      id: 401,
+      number: 17,
+      origin: 8,
+      origin_name: 'Salta',
+      destiny: 1,
+      destination_name: 'AMBA',
+      closed_at: '2026-09-01T10:00:00Z',
+      tracking: 'VC-10',
+      math_items: [
+        { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, via_meeting: true, location: 3, location_name: 'Córdoba' },
+        { id: 10, item_id: 91, title: 'Azul', assigned_trade_code: 20041, status: 4, via_meeting: true, location: 4, location_name: 'Catamarca' },
+      ],
+    });
+
+    render(<IncomingBoxPage />, { wrapper });
+
+    await screen.findByRole('checkbox', { name: /Wingspan/ });
+    expect(screen.queryByRole('button', { name: 'Rearmar caja' })).not.toBeInTheDocument();
   });
 });
