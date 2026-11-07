@@ -2,6 +2,7 @@
 
 import AppHeader from '@/components/common/AppHeader';
 import BottomNav from '@/components/staff/BottomNav';
+import { StaffBanner } from '@/components/staff/StaffPage';
 import { StaffTitleProvider, useStaffTitleValue } from '@/components/staff/StaffTitleContext';
 import { getPageTitle, isBarePath, shouldShowBack } from '@/config/nav';
 import { homeFor, isPathAllowed } from '@/config/roles';
@@ -52,6 +53,25 @@ function useRoleGuard() {
   ]);
 }
 
+/** Shown when the event phase could not be refreshed (keeps the last known
+ *  one) or never loaded (offers a retry instead of a false "not started"). */
+function EventPhaseWarning() {
+  const { eventPhase, errorEventPhase, refetchEventPhase } = useEventPhase();
+  if (!errorEventPhase) return null;
+  if (eventPhase === null) {
+    return (
+      <div className="mx-auto w-full max-w-lg px-4">
+        <StaffBanner onRetry={refetchEventPhase}>No se pudo cargar la fase del evento.</StaffBanner>
+      </div>
+    );
+  }
+  return (
+    <p role="status" className="mx-auto mt-2 w-full max-w-lg px-4 text-xs text-amber-700">
+      No se pudo actualizar la fase del evento. Se muestra la última conocida.
+    </p>
+  );
+}
+
 function StaffChromeInner({ children }: { children: ReactNode }) {
   useRoleGuard();
   const pathname = usePathname();
@@ -71,7 +91,10 @@ function StaffChromeInner({ children }: { children: ReactNode }) {
         pageTitle={pageTitle}
         showBackButton={shouldShowBack(pathname ?? '')}
       />
-      <div className="pb-[calc(3.5rem+env(safe-area-inset-bottom))]">{children}</div>
+      <div className="pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
+        <EventPhaseWarning />
+        {children}
+      </div>
       <BottomNav />
     </div>
   );

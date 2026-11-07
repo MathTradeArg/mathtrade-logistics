@@ -1,4 +1,10 @@
 import type { Box, Item } from '@/types';
+import {
+  apiErrorMessage,
+  fetchWithTimeout,
+  NETWORK_ERROR_MESSAGE,
+  NetworkError,
+} from '@/utils/fetchWithTimeout';
 
 const apiHost = () => process.env.NEXT_PUBLIC_MT_API_HOST || '';
 
@@ -51,20 +57,21 @@ export async function boxFetch<T>(
     idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
   );
 
-  const response = await fetch(`${apiHost()}${path}`, {
-    method,
-    headers,
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  let response: Response;
+  try {
+    response = await fetchWithTimeout(
+      `${apiHost()}${path}`,
+      { method, headers, body: body === undefined ? undefined : JSON.stringify(body) },
+      { retries: method === 'GET' ? 2 : 0 },
+    );
+  } catch (err) {
+    if (err instanceof NetworkError) throw new BoxApiError(NETWORK_ERROR_MESSAGE, 0, null);
+    throw err;
+  }
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({
-      detail: `Request failed with status ${response.status}`,
-    }));
-    const message =
-      (errorData as { message?: string; detail?: string }).message ||
-      (errorData as { detail?: string }).detail ||
-      `Error: ${response.statusText}`;
+    const errorData = await response.json().catch(() => null);
+    const message = apiErrorMessage(errorData, `Error: ${response.statusText}`);
     throw new BoxApiError(message, response.status, errorData);
   }
 

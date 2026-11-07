@@ -1,12 +1,13 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, PhaseBlocked, StaffDialog, StaffEmpty, StaffError, StaffPage, ThumbCta } from '@/components/staff';
+import { GameRow, PhaseBlocked, StaffBanner, StaffDialog, StaffEmpty, StaffPage, ThumbCta } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { getBox, markItemsReceived } from '@/hooks/boxes/boxApi';
-import { boxOnwardDestinations, hasMixedDestinations, isTransitBox, receptorName } from '@/hooks/boxes/boxGrouping';
+import { boxOnwardDestinations, hasMixedDestinations, isBoxOpen, isTransitBox, receptorName } from '@/hooks/boxes/boxGrouping';
+import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box } from '@/types';
 import { missingReportHref } from '@/app/more/report/missingReport';
@@ -14,6 +15,16 @@ import { formatTradeCode } from '@/utils/tradeCode';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import TransitBoxView from './TransitBoxView';
+
+/** Event staff may reopen a box that reached the event to rebuild it: a
+ *  transit box (neither end is AMBA) or a box to AMBA already in a shipment.
+ *  A box leaving AMBA already left; a box to AMBA never shipped keeps the
+ *  receive flow. */
+function canBeRebuilt(box: Box): boolean {
+  if (box.origin === EVENT_LOCATION_ID) return false;
+  return box.destiny !== EVENT_LOCATION_ID || box.tracking != null;
+}
 
 export default function IncomingBoxPage() {
   const params = useParams<{ originId: string; boxId: string }>();
@@ -25,21 +36,30 @@ export default function IncomingBoxPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Only a failed load offers "Reintentar" (a reload); a failed mark does not.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showRebuild, setShowRebuild] = useState(false);
+  const { inFlight, reopenBox } = useBoxLifecycle();
 
   const title = box?.number != null ? `#${box.number}` : 'Caja';
   useStaffTitle(box ? `${title}` : 'Caja');
 
-  const load = useCallback(async () => {
-    if (!boxId) return;
+  /** Reloads the box; returns it, or null if it failed (shown as `error`). */
+  const load = useCallback(async (): Promise<Box | null> => {
+    if (!boxId) return null;
     setIsLoading(true);
     setError(null);
+    setLoadFailed(false);
     try {
       const next = await getBox(boxId);
       setBox(next);
       setSelected(new Set());
+      return next;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo cargar la caja.');
+      setLoadFailed(true);
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -72,6 +92,7 @@ export default function IncomingBoxPage() {
     if (selected.size === 0 || isSaving) return;
     setIsSaving(true);
     setError(null);
+    setLoadFailed(false);
     try {
       await markItemsReceived(Array.from(selected), userId);
       setShowConfirm(false);
@@ -83,6 +104,18 @@ export default function IncomingBoxPage() {
     }
   };
 
+  const handleRebuild = async () => {
+    try {
+      const reopened = await reopenBox(boxId);
+      if (reopened) {
+        setShowRebuild(false);
+        await load();
+      }
+    } catch {
+      setShowRebuild(false); // the error toast comes from the hook
+    }
+  };
+
   if (authIsLoading || isAuthenticated === null || isLoadingEventPhase) {
     return <div className="flex min-h-[50dvh] items-center justify-center"><LoadingSpinner message="Cargando..." /></div>;
   }
@@ -91,6 +124,13 @@ export default function IncomingBoxPage() {
     return <PhaseBlocked />;
   }
 
+  if (box && canBeRebuilt(box) && isBoxOpen(box)) {
+    return (
+      <TransitBoxView box={box} onReload={load} reloadError={error} reloading={isLoading} userId={userId} />
+    );
+  }
+
+  const rebuildable = box ? canBeRebuilt(box) : false;
   const transit = box ? isTransitBox(box) : false;
   const mixed = box ? hasMixedDestinations(box) : false;
   const onwardNames = box ? boxOnwardDestinations(box) : [];
@@ -103,7 +143,7 @@ export default function IncomingBoxPage() {
   return (
     <StaffPage className="pb-28">
       {isLoading && <LoadingSpinner message="Cargando caja..." />}
-      {error && <StaffError>{error}</StaffError>}
+      {error && <StaffBanner onRetry={loadFailed ? load : undefined} retrying={isLoading}>{error}</StaffBanner>}
       {!isLoading && !box && <StaffEmpty>Caja no encontrada.</StaffEmpty>}
 
       {box && (
@@ -179,6 +219,17 @@ export default function IncomingBoxPage() {
           >
             Reportar faltante{selected.size > 1 ? ` (${selected.size})` : ''}
           </Link>
+
+          {rebuildable && (
+            <button
+              type="button"
+              disabled={inFlight}
+              onClick={() => setShowRebuild(true)}
+              className="staff-btn staff-btn-outline mt-3"
+            >
+              Rearmar caja
+            </button>
+          )}
         </>
       )}
 
@@ -201,6 +252,18 @@ export default function IncomingBoxPage() {
         onCancel={() => setShowConfirm(false)}
       >
         Vas a marcar {selected.size} juegos de esta caja como En evento.
+      </StaffDialog>
+
+      <StaffDialog
+        open={showRebuild}
+        title="Rearmar esta caja"
+        confirmLabel="Rearmar"
+        variant="danger"
+        confirmDisabled={inFlight}
+        onConfirm={handleRebuild}
+        onCancel={() => setShowRebuild(false)}
+      >
+        La caja vuelve a estar abierta para rehacerla y conserva su número{box?.number != null ? ` (#${box.number})` : ''}. Marcá todos sus juegos como recibidos, también los que siguen a otras ciudades.
       </StaffDialog>
     </StaffPage>
   );

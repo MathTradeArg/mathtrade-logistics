@@ -100,4 +100,12 @@ describe('HomePage', () => {
     expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
     expect(mockReplace).not.toHaveBeenCalled();
   });
+
+  it('does not claim "El evento no empezó" when the phase never loaded (StaffChrome offers Reintentar)', () => {
+    mockUseEventPhase.mockReturnValue({ eventPhase: null, isLoadingEventPhase: false, errorEventPhase: 'sin red' });
+    render(<HomePage />);
+
+    expect(screen.queryByText('El evento no empezó')).not.toBeInTheDocument();
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
 });

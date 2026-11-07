@@ -10,7 +10,7 @@ import { Suspense, useEffect } from 'react';
 
 function LandingPageContent() {
   const { isAuthenticated, isLoading: authIsLoading, isAdmin, role, cityAccess } = useAuth();
-  const { eventPhase, isLoadingEventPhase } = useEventPhase();
+  const { eventPhase, isLoadingEventPhase, errorEventPhase } = useEventPhase();
   const router = useRouter();
 
   // Where this user goes from the landing, or null to stay on it. A volunteer
@@ -45,6 +45,10 @@ function LandingPageContent() {
       </div>
     );
   }
+
+  // Phase unknown because the request failed: StaffChrome shows the retry
+  // instead of a false "El evento no empezó".
+  if (eventPhase === null && errorEventPhase) return null;
 
   return (
     <main className="flex min-h-[70dvh] flex-col items-center justify-center px-6 text-center text-gray-900">
