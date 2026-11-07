@@ -18,8 +18,8 @@ export default function TrackingSummary({
   const labels = tracking.boxes.map(boxLabel).join(', ');
   return (
     <div className="flex items-start gap-3">
-      <div className="min-w-0 flex-1 text-sm text-gray-700">
-        <p className="text-base font-semibold text-gray-900">{tracking.tracking_code}</p>
+      <div className="min-w-0 flex-1 text-body text-gray-700">
+        <p className="text-body-lg font-semibold text-gray-900">{tracking.tracking_code}</p>
         <p>{destinationName}</p>
         <p>Cajas: {labels || '—'}</p>
         <p>{tracking.item_count} juegos</p>
@@ -38,7 +38,7 @@ export default function TrackingSummary({
           <img src={tracking.image} alt="Comprobante" className="h-20 w-20 rounded-md object-cover" />
         </button>
       ) : (
-        <span className="shrink-0 text-xs text-gray-500">Sin comprobante</span>
+        <span className="shrink-0 text-caption text-gray-500">Sin comprobante</span>
       )}
     </div>
   );

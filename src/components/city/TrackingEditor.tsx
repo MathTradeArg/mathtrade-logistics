@@ -11,7 +11,7 @@ import { apiErrorMessage } from './errors';
 
 const inputClass =
   'mt-2 block min-h-14 w-full rounded-md border border-stroke bg-white px-4 text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none';
-const labelClass = 'block text-sm font-medium text-gray-700';
+const labelClass = 'block text-body font-medium text-gray-700';
 
 type Props = {
   cityId: number;
@@ -178,7 +178,7 @@ export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: 
           ))}
         </select>
         {destinations.length === 0 && (
-          <p className="mt-2 text-sm text-gray-500">No hay cajas cerradas para enviar.</p>
+          <p className="mt-2 text-body text-gray-500">No hay cajas cerradas para enviar.</p>
         )}
       </div>
 

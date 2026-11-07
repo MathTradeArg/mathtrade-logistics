@@ -333,7 +333,7 @@ function NewReportContent() {
       {currentStep === 'describe_problem' && (
         <form onSubmit={handleReportSubmit} className="space-y-4">
           {(selectedBoxId || preloadedItems.length > 0 || selectedItem) && (
-            <div className="staff-card space-y-1 p-4 text-sm text-gray-700">
+            <div className="staff-card space-y-1 p-4 text-body text-gray-700">
               {selectedBoxId && <p>Caja id {selectedBoxId}{searchParams.get('boxNumber') ? ` · #${searchParams.get('boxNumber')}` : ''}</p>}
               {(preloadedItems.length > 0 ? preloadedItems : selectedItem ? [{
                 item_id: selectedItem.item_id,
@@ -368,11 +368,11 @@ function NewReportContent() {
 
       {currentStep === 'submitted' && (
         <div className="rounded-lg bg-white p-6 text-center">
-          <p className="text-lg font-bold">
+          <p className="text-heading font-bold">
             {preloadedItems.length > 1 ? `${preloadedItems.length} reportes enviados` : 'Reporte enviado'}
           </p>
           {mergedLabels.length > 0 && (
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-body text-gray-600">
               {mergedLabels.length === 1 && preloadedItems.length <= 1
                 ? 'Ya había un reporte abierto para este ítem: agregamos tu mensaje a esa conversación.'
                 : `Ya había un reporte abierto para: ${mergedLabels.join(', ')}. Agregamos tu mensaje a esas conversaciones.`}

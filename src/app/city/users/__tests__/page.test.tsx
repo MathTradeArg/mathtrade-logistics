@@ -42,8 +42,8 @@ describe('city users', () => {
     expect(screen.getByRole('link', { name: '0261 555 1234' })).toHaveAttribute('href', 'https://wa.me/5492615551234');
     expect(screen.getByRole('link', { name: '@ana' })).toHaveAttribute('href', 'https://t.me/ana');
     const rows = screen.getAllByTestId('member-row');
-    expect(rows[0]).toHaveClass('bg-green-50');
-    expect(rows[1]).toHaveClass('bg-red-50');
+    expect(rows[0]).toHaveClass('bg-want/10');
+    expect(rows[1]).toHaveClass('bg-danger/10');
 
     fireEvent.click(screen.getByRole('checkbox', { name: /COMPROMETIERON/ }));
     expect(screen.queryByText('Beto Gil')).not.toBeInTheDocument();
@@ -58,6 +58,6 @@ describe('city users', () => {
     expect(await screen.findByText('Ana Paz')).toBeInTheDocument();
     expect(screen.getAllByRole('columnheader').map((th) => th.textContent)).toEqual(['Nombre', 'Teléfono', 'Telegram']);
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-    expect(screen.getAllByTestId('member-row')[0]).not.toHaveClass('bg-green-50');
+    expect(screen.getAllByTestId('member-row')[0]).not.toHaveClass('bg-want/10');
   });
 });

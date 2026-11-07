@@ -89,11 +89,11 @@ export default function ToolsPage() {
 
   return (
     <StaffPage className="pb-8">
-      <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <p className="rounded-lg bg-warning/20 px-4 py-3 text-body text-gray-900">
         Avisá si no estás seguro. Estas acciones fuerzan estados y se ven en la tele.
       </p>
 
-      <h2 className="mt-8 text-sm font-semibold text-gray-500">Forzar juego</h2>
+      <h2 className="mt-8 text-body font-semibold text-gray-500">Forzar juego</h2>
       <form onSubmit={handleCodeSearch} className="mt-3 flex flex-col gap-3">
         <StaffSearch
           value={code}
@@ -109,7 +109,7 @@ export default function ToolsPage() {
       {game && (
         <div className="mt-4 rounded-lg bg-white p-4">
           <p className="font-medium">{game.item_to?.title || `Código ${formatTradeCode(game.assigned_trade_code)}`}</p>
-          <p className="mt-1 text-sm text-gray-500">{formatTradeCode(game.assigned_trade_code)} · estado {game.status}</p>
+          <p className="mt-1 text-body text-gray-500">{formatTradeCode(game.assigned_trade_code)} · estado {game.status}</p>
           <div className="mt-4 flex flex-col gap-3">
             {showEvento && (
               <button type="button" onClick={() => setPendingStatus(5)} className="min-h-14 rounded-lg bg-want font-semibold text-white">Marcar en evento</button>
@@ -118,18 +118,18 @@ export default function ToolsPage() {
               <button type="button" onClick={() => setPendingStatus(6)} className="min-h-14 rounded-lg bg-primary font-semibold text-white">Marcar entregado</button>
             )}
             {showPendiente && (
-              <button type="button" onClick={() => setPendingStatus(4)} className="min-h-14 rounded-lg bg-amber-500 font-semibold text-white">Volver a pendiente</button>
+              <button type="button" onClick={() => setPendingStatus(4)} className="min-h-14 rounded-lg bg-warning font-semibold text-gray-900">Volver a pendiente</button>
             )}
           </div>
         </div>
       )}
 
-      <h2 className="mt-10 text-sm font-semibold text-gray-500">Marcar no apareció</h2>
+      <h2 className="mt-10 text-body font-semibold text-gray-500">Marcar no apareció</h2>
       <MemberNameSearch
         onSelect={(member) => setNoShowMember({ id: member.user_id, name: `${member.first_name} ${member.last_name}`.trim() })}
       />
 
-      <h2 className="mt-10 text-sm font-semibold text-gray-500">Interior</h2>
+      <h2 className="mt-10 text-body font-semibold text-gray-500">Interior</h2>
       <div className="mt-3 flex flex-col gap-3">
         <GameRow title="Pendientes AMBA del interior" href="/more/tools/amba-pending" />
         <GameRow title="Faltantes AMBA" href="/more/reports/amba-missing" />

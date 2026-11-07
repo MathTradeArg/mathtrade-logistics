@@ -115,7 +115,7 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
             ) : report.itemData ? (
               <Package className="w-5 h-5 mr-3 text-orange-500 flex-shrink-0" />
             ) : null}
-            <h3 className="font-semibold text-lg">
+            <h3 className="font-semibold text-heading">
               {report.reportedUserData ? 'Reporte de Usuario:' : report.itemData ? 'Reporte de Ítem:' : 'Reporte General'}
             </h3>
             {report.resolved_at && (
@@ -125,7 +125,7 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
 
           {(report.reportedUserData || report.itemData || report.box) && (
             <div className="flex items-center mt-1">
-              <h3 className="font-normal text-lg" title={
+              <h3 className="font-normal text-heading" title={
                 report.reportedUserData ? `${report.reportedUserData.first_name} ${report.reportedUserData.last_name} ${report.reportedUserData.bgg_user ? `(${report.reportedUserData.bgg_user})` : ''}` :
                   report.itemData ? `${report.itemData.title} (${itemCodeLabel(report)})` : ''
               }>
@@ -135,14 +135,14 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
             </div>
           )}
           {(report.box || report.box_number != null) && (
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-body text-gray-600">
               Caja {report.box_number != null ? `#${report.box_number}` : ''}{report.box ? ` · id ${report.box}` : ''}
               {report.box_origin_name ? ` · ${report.box_origin_name}` : ''}
               {report.box_destination_name ? ` → ${report.box_destination_name}` : ''}
             </p>
           )}
           {report.resolved_at && (
-            <p className="mt-1 text-sm text-want">
+            <p className="mt-1 text-body text-want">
               Solucionado {report.resolved_at}
               {report.found_in_box_number != null ? ` · apareció en caja #${report.found_in_box_number}` : ''}
               {report.found_in_box && report.found_in_box_number == null ? ` · apareció en caja id ${report.found_in_box}` : ''}
@@ -152,7 +152,7 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
           {report.itemData && (report.itemData.first_name || report.itemData.last_name) && (
             <div className="flex items-center mt-2">
               <UserIcon className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0" />
-              <p className="font-normal text-sm text-gray-700 dark:text-gray-300">
+              <p className="font-normal text-body text-gray-700">
                 De: <span className="font-semibold">
                   {report.itemData.first_name} {report.itemData.last_name}
                 </span>
@@ -175,18 +175,18 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
             <button
               onClick={handleShowDeleteModal}
               disabled={isDeletingReport}
-              className="p-2 rounded-full bg-red-100 dark:bg-red-900/30 text-danger dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-2 rounded-full bg-danger/10 text-danger hover:bg-danger/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title="Eliminar reporte"
             >
               <Trash className="w-4 h-4" />
             </button>
             )}
             <div className="text-right">
-              <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+              <span className="text-caption text-gray-500 whitespace-nowrap">
                 {report.created}
               </span>
               {report.user && (
-                <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                <div className="text-caption text-gray-600 mt-1">
                   Reportado por: <span className="font-medium">{report.user.first_name} {report.user.last_name}</span>
                 </div>
               )}
@@ -207,15 +207,15 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
           </button>
         )}
         <div className="flex items-start gap-3">
-          <ChatText className="w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0 mt-0.5" />
-          <p className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-md flex-1">{report.comment}</p>
+          <ChatText className="w-5 h-5 text-gray-500 flex-shrink-0 mt-0.5" />
+          <p className="text-gray-700 bg-gray-50 p-3 rounded-md flex-1">{report.comment}</p>
         </div>
 
         {report.images && (
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <Camera className="w-5 h-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-              <h4 className="font-medium text-gray-600 dark:text-gray-400">Imágenes adjuntas:</h4>
+              <Camera className="w-5 h-5 text-gray-500 flex-shrink-0" />
+              <h4 className="font-medium text-gray-600">Imágenes adjuntas:</h4>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {report.images.split(',').map((imgUrl, imgIndex) => (
@@ -227,11 +227,11 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
           </div>
         )}
 
-        <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+        <div className="border-t border-gray-200 pt-4">
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={handleToggleComments}
-              className="flex items-center gap-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+              className="flex items-center gap-2 text-body font-medium text-gray-600 hover:text-gray-800 transition-colors"
             >
               Comentarios ({comments.length})
               {showComments ? <CaretUp className="w-4 h-4" /> : <CaretDown className="w-4 h-4" />}
@@ -240,7 +240,7 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
             {canComment && (
             <button
               onClick={handleToggleAddComment}
-              className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 text-primary dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+              className="p-2 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
               title="Agregar comentario"
             >
               <Plus className="w-4 h-4" />
@@ -251,42 +251,42 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
           {showComments && comments.length > 0 && (
             <div className="space-y-3">
               {comments.map((comment) => (
-                <div key={comment.id} className="bg-primary/10 dark:bg-blue-900/20 border-l-4 border-blue-400 p-3 rounded-r-lg">
+                <div key={comment.id} className="bg-primary/10 border-l-4 border-primary p-3 rounded-r-lg">
                   <div className="flex justify-between items-start mb-2">
-                    <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                    <span className="text-body font-medium text-primary">
                       {comment.user_info.first_name} {comment.user_info.last_name}
                     </span>
-                    <span className="text-xs text-primary dark:text-blue-400">
+                    <span className="text-caption text-primary">
                       {comment.created}
                     </span>
                   </div>
-                  <p className="text-sm text-primary dark:text-blue-100">{comment.comment}</p>
+                  <p className="text-body text-primary">{comment.comment}</p>
                 </div>
               ))}
             </div>
           )}
 
           {showAddComment && (
-            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="p-4 bg-gray-50 rounded-lg">
               <textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
                 onFocus={() => triggerHaptic()}
                 placeholder="Escribir comentario de seguimiento..."
                 rows={3}
-                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full p-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-transparent resize-none"
               />
               <div className="flex justify-end gap-2 mt-3">
                 <button
                   onClick={handleToggleAddComment}
-                  className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                  className="px-4 py-2 text-body font-medium text-gray-600 hover:text-gray-800 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSubmitComment}
                   disabled={!newComment.trim() || isAddingComment}
-                  className="px-4 py-2 text-sm font-medium bg-primary hover:bg-primary text-white rounded-lg shadow-sm transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-body font-medium bg-primary hover:bg-primary text-white rounded-lg shadow-sm transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isAddingComment ? 'Agregando...' : 'Agregar comentario'}
                 </button>
