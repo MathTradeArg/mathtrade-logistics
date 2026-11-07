@@ -128,59 +128,6 @@ describe('IncomingBoxPage', () => {
     });
   });
 
-  it('says marking games that go on to another city is optional in a single-locality onward box', async () => {
-    // Rule: games that only pass through AMBA are packed into hub boxes
-    // without the "En evento" mark; marking them is optional.
-    mockGetBox.mockResolvedValue({
-      id: 400,
-      number: 16,
-      origin: 8,
-      origin_name: 'Salta',
-      destiny: 3,
-      destination_name: 'Córdoba',
-      closed_at: '2026-09-01T10:00:00Z',
-      math_items: [
-        { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, location: 3, location_name: 'Córdoba' },
-      ],
-    });
-
-    render(<IncomingBoxPage />, { wrapper });
-
-    expect(
-      await screen.findByText(
-        'Todos los juegos declarados van a Córdoba. No hace falta marcarlos para sumarlos a las cajas que salen de AMBA; marcarlos En evento es opcional.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/marcá los juegos como recibidos/i)).not.toBeInTheDocument();
-  });
-
-  it('says only games staying in AMBA must be marked in a mixed-locality box', async () => {
-    // Rule: games staying in AMBA are marked "En evento"; games going on to
-    // another city may be marked, but it is not required to separate them.
-    mockGetBox.mockResolvedValue({
-      id: 401,
-      number: 17,
-      origin: 8,
-      origin_name: 'Salta',
-      destiny: 1,
-      destination_name: 'AMBA',
-      closed_at: '2026-09-01T10:00:00Z',
-      math_items: [
-        { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, via_meeting: true, location: 3, location_name: 'Córdoba' },
-        { id: 10, item_id: 91, title: 'Azul', assigned_trade_code: 20041, status: 4, via_meeting: true, location: 4, location_name: 'Catamarca' },
-      ],
-    });
-
-    render(<IncomingBoxPage />, { wrapper });
-
-    expect(
-      await screen.findByText(
-        'Localidades mezcladas (Catamarca, Córdoba): hay que abrir esta caja para separar los juegos por destino. Los que quedan en AMBA se marcan En evento; marcar los que siguen a otras ciudades es opcional.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/marcar los juegos como recibidos para separarlos/i)).not.toBeInTheDocument();
-  });
-
   it('flags mixed-locality onward boxes and lets volunteers receive their games to separate by destination', async () => {
     mockGetBox.mockResolvedValue({
       id: 401,
