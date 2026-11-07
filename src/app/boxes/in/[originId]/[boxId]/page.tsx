@@ -1,7 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, PhaseBlocked, StaffDialog, StaffEmpty, StaffError, StaffPage, ThumbCta } from '@/components/staff';
+import { GameRow, PhaseBlocked, StaffBanner, StaffDialog, StaffEmpty, StaffPage, ThumbCta } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
@@ -36,6 +36,8 @@ export default function IncomingBoxPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Only a failed load offers "Reintentar" (a reload); a failed mark does not.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showRebuild, setShowRebuild] = useState(false);
   const { inFlight, reopenBox } = useBoxLifecycle();
@@ -48,6 +50,7 @@ export default function IncomingBoxPage() {
     if (!boxId) return null;
     setIsLoading(true);
     setError(null);
+    setLoadFailed(false);
     try {
       const next = await getBox(boxId);
       setBox(next);
@@ -55,6 +58,7 @@ export default function IncomingBoxPage() {
       return next;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo cargar la caja.');
+      setLoadFailed(true);
       return null;
     } finally {
       setIsLoading(false);
@@ -88,6 +92,7 @@ export default function IncomingBoxPage() {
     if (selected.size === 0 || isSaving) return;
     setIsSaving(true);
     setError(null);
+    setLoadFailed(false);
     try {
       await markItemsReceived(Array.from(selected), userId);
       setShowConfirm(false);
@@ -138,7 +143,7 @@ export default function IncomingBoxPage() {
   return (
     <StaffPage className="pb-28">
       {isLoading && <LoadingSpinner message="Cargando caja..." />}
-      {error && <StaffError>{error}</StaffError>}
+      {error && <StaffBanner onRetry={loadFailed ? load : undefined} retrying={isLoading}>{error}</StaffBanner>}
       {!isLoading && !box && <StaffEmpty>Caja no encontrada.</StaffEmpty>}
 
       {box && (

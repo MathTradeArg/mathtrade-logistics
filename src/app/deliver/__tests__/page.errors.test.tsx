@@ -165,3 +165,72 @@ describe('DeliverPage: a participant with nothing to pick up sees a message, not
     await waitFor(() => expect(screen.getByTestId('qr-scanner')).toBeInTheDocument());
   });
 });
+
+describe('DeliverPage: "Reintentar" sends bulk-update-status exactly once more', () => {
+  const originalHost = process.env.NEXT_PUBLIC_MT_API_HOST;
+
+  beforeAll(() => { process.env.NEXT_PUBLIC_MT_API_HOST = 'http://api.test/'; });
+  afterAll(() => { process.env.NEXT_PUBLIC_MT_API_HOST = originalHost; });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    fetchMock.resetMocks();
+    localStorage.setItem('authToken', 'fake-token');
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, userId: '1', isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 2, isLoadingEventPhase: false });
+    mockUseSearchParams.mockReturnValue(new URLSearchParams());
+    mockUsePathname.mockReturnValue('/deliver');
+  });
+
+  async function failFirstPatch() {
+    render(<DeliverPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Simulate Scan' }));
+    await waitFor(() => expect(screen.getByTestId('game-list')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Update All Items' }));
+    return screen.findByRole('alert');
+  }
+
+  it('a 503 and one click on "Reintentar" make 2 PATCH in total (no automatic resend)', async () => {
+    routeApi({
+      scan: { status: 200, body: mockTradesResponse },
+      patchReplies: [
+        { status: 503, body: { detail: 'Servicio no disponible' } },
+        { status: 200, body: { success: true } },
+      ],
+    });
+    const alert = await failFirstPatch();
+    expect(alert).toHaveTextContent('Servicio no disponible');
+    expect(bulkCalls()).toHaveLength(1);
+
+    fireEvent.click(within(alert).getByRole('button', { name: 'Reintentar' }));
+
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('users/update-status/'))).toBe(true));
+    expect(bulkCalls()).toHaveLength(2);
+  });
+
+  it('a double click on "Reintentar" while the PATCH hangs still makes 2 PATCH in total', async () => {
+    let release: (reply: { status: number; body: string }) => void = () => undefined;
+    let patchCount = 0;
+    fetchMock.mockResponse(async (req) => {
+      if (req.url.includes('/games/deliver/')) return json({ status: 200, body: mockTradesResponse });
+      if (req.url.includes('games/bulk-update-status/')) {
+        patchCount += 1;
+        if (patchCount === 1) return json({ status: 503, body: { detail: 'Servicio no disponible' } });
+        return new Promise((resolve) => { release = resolve; });
+      }
+      if (req.url.includes('users/update-status/')) return json({ status: 200, body: {} });
+      return json({ status: 404, body: { detail: 'unexpected url' } });
+    });
+    const alert = await failFirstPatch();
+    const retry = within(alert).getByRole('button', { name: 'Reintentar' });
+
+    fireEvent.click(retry);
+    fireEvent.click(retry);
+    await waitFor(() => expect(bulkCalls()).toHaveLength(2));
+
+    await act(async () => { release(json({ status: 200, body: { success: true } })); });
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes('users/update-status/'))).toBe(true));
+    expect(bulkCalls()).toHaveLength(2);
+  });
+});

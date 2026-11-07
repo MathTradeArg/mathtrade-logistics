@@ -536,3 +536,40 @@ describe('IncomingBoxPage rebuilt box: batch add with a partial failure and visi
     expect(await screen.findByText(/00101 · Catan/)).toBeInTheDocument();
   });
 });
+
+describe('a network error in a list can be retried without leaving the screen', () => {
+  const offline = 'No hay conexión o el servidor tardó demasiado. Probá de nuevo.';
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, userId: '1' });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false, errorEventPhase: null });
+    mockListBoxes.mockResolvedValue([]);
+    mockListItems.mockResolvedValue([]);
+  });
+
+  it('shows the error with "Reintentar", and retrying loads the box games', async () => {
+    mockGetBox.mockRejectedValueOnce(new Error(offline)).mockResolvedValue(ambaBox);
+    render(<IncomingBoxPage />, { wrapper });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(offline);
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByRole('checkbox', { name: /Catan/ })).toBeInTheDocument();
+    expect(mockGetBox).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('a failed "Marcar recibidos" is not offered as a reload: no "Reintentar" for it', async () => {
+    mockGetBox.mockResolvedValue(ambaBox);
+    (boxApi.markItemsReceived as jest.Mock).mockRejectedValueOnce(new Error(offline));
+    render(<IncomingBoxPage />, { wrapper });
+
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Earth/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar recibidos (1)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar (1)' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(offline);
+    expect(screen.queryByRole('button', { name: 'Reintentar' })).toBeNull();
+  });
+});

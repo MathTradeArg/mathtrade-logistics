@@ -3,7 +3,7 @@
 import AddByCodeField, { type AddByCodeResult } from '@/components/boxes/AddByCodeField';
 import AddResultDialog from '@/components/boxes/AddResultDialog';
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, PhaseBlocked, StaffDialog, StaffEmpty, StaffError, StaffPage, StaffSearch, ThumbCta } from '@/components/staff';
+import { GameRow, PhaseBlocked, StaffBanner, StaffDialog, StaffEmpty, StaffPage, StaffSearch, ThumbCta } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
@@ -308,7 +308,7 @@ export default function PackingBox({
   return (
     <StaffPage className="pb-28">
       {isLoading && <LoadingSpinner message="Cargando caja..." />}
-      {error && <StaffError>{error}</StaffError>}
+      {error && <StaffBanner onRetry={load} retrying={isLoading}>{error}</StaffBanner>}
       {!isLoading && !box && <StaffEmpty>Caja no encontrada.</StaffEmpty>}
 
       {box && mode === 'view' && (

@@ -1,7 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, PhaseBlocked, StaffEmpty, StaffError, StaffPage, StaffSegmented } from '@/components/staff';
+import { GameRow, PhaseBlocked, StaffBanner, StaffEmpty, StaffPage, StaffSegmented } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
@@ -126,7 +126,7 @@ function BoxesInOriginPageContent() {
       />
 
       {isLoading && <div className="mt-8"><LoadingSpinner message="Cargando cajas..." /></div>}
-      {error && <StaffError>{error}</StaffError>}
+      {error && <StaffBanner onRetry={load} retrying={isLoading}>{error}</StaffBanner>}
 
       {!isLoading && !error && visible.length === 0 && (
         <StaffEmpty>

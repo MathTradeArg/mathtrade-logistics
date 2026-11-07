@@ -52,7 +52,7 @@ export default function PackingDestinations({
 }: PackingDestinationsProps) {
   const router = useRouter();
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
-  const { eventPhase, isLoadingEventPhase } = useEventPhase();
+  const { eventPhase, isLoadingEventPhase, errorEventPhase } = useEventPhase();
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Item[]>([]);
   const [allItems, setAllItems] = useState<Item[]>([]);
@@ -167,6 +167,11 @@ export default function PackingDestinations({
       router.push(`${basePath}/${destId}`);
     }
   };
+
+  // Phase unknown because the request failed: StaffChrome shows the retry.
+  if (!authIsLoading && isAuthenticated !== null && phaseGated && eventPhase === null && errorEventPhase && !isLoadingEventPhase) {
+    return null;
+  }
 
   if (authIsLoading || isAuthenticated === null || (phaseGated && (isLoadingEventPhase || eventPhase === null))) {
     return <div className="flex min-h-[50dvh] items-center justify-center"><LoadingSpinner message="Cargando..." /></div>;

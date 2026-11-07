@@ -303,3 +303,36 @@ describe('OutgoingBoxPage batch add: a partial failure reloads the box and lists
     expect(mockGetBox).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('a network error in a list can be retried without leaving the screen', () => {
+  const offline = 'No hay conexión o el servidor tardó demasiado. Probá de nuevo.';
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false, errorEventPhase: null });
+    mockUseBoxLifecycle.mockReturnValue({
+      inFlight: false,
+      addItems: jest.fn(),
+      removeItem: jest.fn(),
+      moveItem: jest.fn(),
+      closeBox: jest.fn(),
+      deleteBox: mockDeleteBox,
+      reopenBox: mockReopenBox,
+    });
+    mockListBoxes.mockResolvedValue([]);
+    mockListItems.mockResolvedValue([]);
+  });
+
+  it('shows the error with "Reintentar", and retrying loads the box games', async () => {
+    mockGetBox.mockRejectedValueOnce(new Error(offline)).mockResolvedValue(filledBox);
+    render(<OutgoingBoxPage />, { wrapper });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(offline);
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText(/Catan/)).toBeInTheDocument();
+    expect(mockGetBox).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+});
