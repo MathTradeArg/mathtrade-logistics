@@ -59,13 +59,13 @@ const AdminSection: React.FC<AdminSectionProps> = ({
     <div className="space-y-6">
       {!hideAdminActions && (
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+          <h3 className="text-heading font-semibold text-gray-800 mb-4">
             Acciones de Administrador
           </h3>
           
           <div className="space-y-3">
-            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <h4 className="text-body font-medium text-gray-700 mb-3">
                 Cambiar fase del evento
               </h4>
               <div className="flex flex-wrap gap-2">
@@ -74,10 +74,10 @@ const AdminSection: React.FC<AdminSectionProps> = ({
                     key={phase.id}
                     onClick={() => handlePhaseChange(phase.id)}
                     disabled={isUpdatingPhase || eventPhase === phase.id}
-                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`px-3 py-2 text-body font-medium rounded-lg transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
                       eventPhase === phase.id
                         ? `${phase.color} text-white`
-                        : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
                     {phase.name}
@@ -85,7 +85,7 @@ const AdminSection: React.FC<AdminSectionProps> = ({
                 ))}
               </div>
               {isUpdatingPhase && (
-                <div className="flex items-center text-sm text-gray-500 mt-2">
+                <div className="flex items-center text-body text-gray-500 mt-2">
                   <LoadingSpinner />
                   <span className="ml-2">Actualizando fase...</span>
                 </div>
@@ -107,7 +107,7 @@ const AdminSection: React.FC<AdminSectionProps> = ({
 
       {!hideTVViews && (
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+          <h3 className="text-heading font-semibold text-gray-800 mb-4">
             Administrar logística de entrega
           </h3>
           

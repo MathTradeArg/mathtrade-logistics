@@ -9,6 +9,7 @@ import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { useHapticClick } from '@/hooks/useHapticClick';
 import { getGlobalDisplayConfig, updateGlobalMaxUsers, updateGlobalPollingInterval } from '@/utils/windowStorage';
 import { apiErrorMessage } from '@/components/city/errors';
+import { LoadingSpinner } from '@/components/common/ui';
 
 interface WindowConfig {
   /** Server id; windows added on screen get a negative list id and `isNew`. */
@@ -162,7 +163,7 @@ export default function WindowConfigPage() {
   const handleToggleGlobalConfig = useHapticClick(() => setShowGlobalConfig(!showGlobalConfig));
 
   if (authIsLoading || isAuthenticated === null) {
-    return <div className="flex justify-center items-center min-h-screen"><p>Cargando...</p></div>;
+    return <div className="flex min-h-[50dvh] items-center justify-center"><LoadingSpinner message="Cargando..." /></div>;
   }
 
   if (isAdmin === false) {
@@ -183,7 +184,7 @@ export default function WindowConfigPage() {
               <div className="flex flex-col mb-6 justify-center items-center">
                 <button
                   onClick={handleToggleGlobalConfig}
-                  className="min-h-14 rounded-lg border border-gray-200 bg-white px-4 font-semibold text-gray-800 flex items-center justify-center gap-2 text-sm px-4 py-2 mb-4"
+                  className="min-h-14 rounded-lg border border-gray-200 bg-white px-4 font-semibold text-gray-800 flex items-center justify-center gap-2 text-body px-4 py-2 mb-4"
                 >
                   <Cog size={16} />
                   Configuración Local del Display
@@ -191,10 +192,10 @@ export default function WindowConfigPage() {
                 </button>
                 
                 {showGlobalConfig && (
-                  <div className="p-4 bg-primary/10 dark:bg-blue-900/20 rounded-lg border border-primary/30 dark:border-blue-800 animate-in slide-in-from-top-1 duration-200">
+                  <div className="p-4 bg-primary/10 rounded-lg border border-primary/30 animate-in slide-in-from-top-1 duration-200">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">
+                        <label className="block text-body font-medium text-primary mb-1">
                           Máx. usuarios por ventanilla
                         </label>
                         <input
@@ -206,12 +207,12 @@ export default function WindowConfigPage() {
                           className="min-h-14 rounded-lg border border-gray-200 bg-white px-3 text-gray-900 w-full"
                           placeholder="10"
                         />
-                        <p className="text-xs text-primary dark:text-blue-400 mt-1">
+                        <p className="text-caption text-primary mt-1">
                           Cantidad máxima de usuarios mostrados por ventanilla en el display
                         </p>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-blue-700 dark:text-blue-300 mb-1">
+                        <label className="block text-body font-medium text-primary mb-1">
                           Intervalo de actualización (segundos)
                         </label>
                         <input
@@ -223,7 +224,7 @@ export default function WindowConfigPage() {
                           className="min-h-14 rounded-lg border border-gray-200 bg-white px-3 text-gray-900 w-full"
                           placeholder="10"
                         />
-                        <p className="text-xs text-primary dark:text-blue-400 mt-1">
+                        <p className="text-caption text-primary mt-1">
                           Frecuencia de actualización automática del display
                         </p>
                       </div>
@@ -233,12 +234,12 @@ export default function WindowConfigPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 md:mb-6 gap-3">
-                <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-100 ">
+                <h2 className="text-heading font-semibold text-gray-900 ">
                   Ventanillas ({windows.length})
                 </h2>
                 <button
                   onClick={handleAddWindow}
-                  className="min-h-14 rounded-lg bg-primary px-4 font-semibold text-white flex items-center justify-center gap-2 text-sm px-3 py-2"
+                  className="min-h-14 rounded-lg bg-primary px-4 font-semibold text-white flex items-center justify-center gap-2 text-body px-3 py-2"
                 >
                   <Plus size={16} />
                   Agregar Ventanilla
@@ -251,7 +252,7 @@ export default function WindowConfigPage() {
                     <div className="flex flex-col gap-3 mb-4">
                       <div className="flex justify-between items-start gap-3">
                         <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 ">
+                          <label className="block text-body font-medium text-gray-700 mb-1 ">
                             Nombre
                           </label>
                           <input
@@ -264,7 +265,7 @@ export default function WindowConfigPage() {
                         {windows.length > 1 && (
                           <button
                             onClick={() => handleRemoveWindow(window.id)}
-                            className="mt-6 p-2 text-red-500 hover:text-danger  min-h-14 rounded-lg bg-want px-4 font-semibold text-white flex-shrink-0"
+                            className="mt-6 p-2 min-h-14 rounded-lg bg-want px-4 font-semibold text-white flex-shrink-0"
                             title="Eliminar ventanilla"
                           >
                             <Trash2 size={16} />
@@ -274,25 +275,25 @@ export default function WindowConfigPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 ">
+                      <label className="block text-body font-medium text-gray-700 mb-2 ">
                         Mesas asignadas ({window.tables.length})
                       </label>
                       
                       <div className="flex flex-wrap gap-2 mb-3 min-h-[2rem]">
                         {window.tables.length === 0 ? (
-                          <span className="text-sm text-gray-500 dark:text-gray-400 italic">
+                          <span className="text-body text-gray-500 italic">
                             No hay mesas asignadas
                           </span>
                         ) : (
                           window.tables.map((table) => (
                             <span
                               key={table}
-                              className="rounded bg-primary/10 inline-flex items-center gap-1 text-blue-700 dark:text-blue-300 text-sm  px-2 py-1"
+                              className="rounded bg-primary/10 inline-flex items-center gap-1 text-primary text-body  px-2 py-1"
                             >
                               Mesa {table}
                               <button
                                 onClick={() => handleRemoveTableFromWindow(window.id, table)}
-                                className="hover:text-red-500 ml-1  text-lg leading-none"
+                                className="hover:text-danger ml-1 text-heading leading-none"
                                 title="Quitar mesa"
                               >
                                 ×
@@ -327,7 +328,7 @@ export default function WindowConfigPage() {
             
               <button
                 onClick={handleSaveConfiguration}
-                className="min-h-14 rounded-lg bg-primary px-4 font-semibold text-white flex items-center justify-center gap-2 text-sm px-4 py-2"
+                className="min-h-14 rounded-lg bg-primary px-4 font-semibold text-white flex items-center justify-center gap-2 text-body px-4 py-2"
               >
                 <Save size={16} />
                 Guardar Configuración

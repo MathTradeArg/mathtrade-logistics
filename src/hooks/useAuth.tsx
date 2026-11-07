@@ -120,7 +120,6 @@ interface AuthContextType {
   userId: string | null;
   isAdmin: boolean;
   isLoading: boolean;
-  isDarkMode: boolean;
   /** The volunteer's role in the active edition (null: not chosen yet, or admin). */
   role: VolunteerRole | null;
   /** Tables assigned to this volunteer in the active edition. */
@@ -137,7 +136,6 @@ interface AuthContextType {
   cityAccess: CityAccess;
   login: (token: string, userDetails: UserDetails) => void;
   logout: () => void;
-  toggleDarkMode: () => void;
   clearRoleNotice: () => void;
   /** The user picked a role themselves: store it without a notice. */
   applyRole: (role: VolunteerRole | null) => void;
@@ -168,35 +166,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { execute: fetchMe } = useApi<MeResponse>('logistics/me/');
   const router = useRouter();
   const pathname = usePathname();
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => false);
+  // Dark mode was removed: clear what an older version may have left behind.
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const html = document.documentElement;
-      if (isDarkMode) {
-        html.classList.add('dark');
-      } else {
-        html.classList.remove('dark');
-      }
-    }
-  }, [isDarkMode]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsDarkMode(localStorage.getItem('darkModeEnabled') === 'true');
-    }
-    // eslint-disable-next-line
+    document.documentElement.classList.remove('dark');
+    try { localStorage.removeItem('darkModeEnabled'); } catch {}
   }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const html = document.documentElement;
-      if (isDarkMode) {
-        html.classList.add('dark');
-      } else {
-        html.classList.remove('dark');
-      }
-    }
-  }, [isDarkMode]);
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -237,16 +211,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     setIsLoading(false);
   }, [router, pathname]);
-
-  const toggleDarkMode = useCallback(() => {
-    setIsDarkMode(prev => {
-      const newState = !prev;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('darkModeEnabled', String(newState));
-      }
-      return newState;
-    });
-  }, []);
 
   const login = useCallback((token: string, userDetails: UserDetails) => {
     const name = `${userDetails.first_name} ${userDetails.last_name || ''}`.trim();
@@ -401,7 +365,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     userId,
     isAdmin,
     isLoading,
-    isDarkMode,
     role,
     tables,
     roleKnown,
@@ -411,15 +374,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     cityAccess,
     login,
     logout,
-    toggleDarkMode,
     clearRoleNotice,
     applyRole,
     applyTables,
     refreshMe,
   }), [
-    isAuthenticated, userName, userId, isAdmin, isLoading, isDarkMode, role, tables, roleKnown, roleNotice,
+    isAuthenticated, userName, userId, isAdmin, isLoading, role, tables, roleKnown, roleNotice,
     referrer, localCity, cityAccess,
-    login, logout, toggleDarkMode, clearRoleNotice, applyRole, applyTables, refreshMe,
+    login, logout, clearRoleNotice, applyRole, applyTables, refreshMe,
   ]);
 
   return (

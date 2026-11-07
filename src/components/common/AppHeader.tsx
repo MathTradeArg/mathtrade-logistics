@@ -86,7 +86,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             </div>
             <button
               type="submit"
-              className="staff-btn staff-btn-primary min-h-12 w-auto shrink-0 px-5 text-sm"
+              className="staff-btn staff-btn-primary min-h-12 w-auto shrink-0 px-5 text-body"
             >
               Buscar
             </button>
@@ -114,7 +114,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               <div className="absolute right-0 z-raised mt-2 w-48 rounded-main bg-white py-1 shadow-main">
                 <button
                   onClick={handleLogout}
-                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-danger hover:bg-gray-100"
+                  className="flex w-full items-center gap-2 px-4 py-3 text-left text-body text-danger hover:bg-gray-100"
                 >
                   <SignOut size={16} />
                   Cerrar Sesión

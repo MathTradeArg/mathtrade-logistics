@@ -71,7 +71,7 @@ export default function AddByCodeField({ onSubmit, onIdle, disabled = false }: P
       {result && (
         <p
           role={result.ok ? 'status' : 'alert'}
-          className={result.ok ? 'mt-2 text-body text-green-700 dark:text-green-400' : 'mt-2 text-body text-danger'}
+          className={result.ok ? 'mt-2 text-body text-want-ink' : 'mt-2 text-body text-danger'}
         >
           {result.message}
         </p>

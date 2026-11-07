@@ -156,7 +156,7 @@ export default function CityVolunteersPage() {
                         type="button"
                         onClick={() => handleAdd(candidate)}
                         disabled={addingId !== null}
-                        className="staff-btn staff-btn-primary !min-h-10 !w-auto shrink-0 !px-4 text-body"
+                        className="staff-btn staff-btn-primary staff-btn-sm shrink-0"
                         aria-label={`Agregar a ${fullName(candidate)}`}
                       >
                         Agregar
@@ -201,7 +201,7 @@ export default function CityVolunteersPage() {
                           <button
                             type="button"
                             onClick={() => setToRemove(volunteer)}
-                            className="staff-btn staff-btn-outline !min-h-10 !w-auto !px-4 text-body"
+                            className="staff-btn staff-btn-outline staff-btn-sm"
                             aria-label={`Quitar a ${fullName(volunteer.user)}`}
                           >
                             Quitar

@@ -190,7 +190,7 @@ function LookupPageContent() {
             <div className="mt-6">
               <h2 className="text-heading font-bold">{fullName(member)}</h2>
               {member.comment_on_user && (
-                <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-body text-amber-900">
+                <p className="mt-2 rounded-lg border border-warning/40 bg-warning/20 px-4 py-3 text-body text-gray-900">
                   {member.comment_on_user}
                 </p>
               )}

@@ -150,7 +150,7 @@ export default function IncomingBoxPage() {
         <>
           <p className="text-body text-gray-500">{box.origin_name} → {destLabel}</p>
           {mixed && (
-            <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-body font-medium text-red-800">
+            <p className="mt-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-body font-medium text-red-800">
               Localidades mezcladas ({onwardNames.join(', ')}): hay que abrir esta caja y marcar los juegos como recibidos para separarlos por destino.
             </p>
           )}

@@ -43,7 +43,7 @@ export default function GameRow({
       <div className="min-w-0 flex-1">
         <p className="font-semibold leading-tight">{title}</p>
         {subtitle && (
-          <p className={`mt-0.5 text-sm ${tone === 'danger' ? 'text-danger' : 'text-gray-500'}`}>
+          <p className={`mt-0.5 text-body ${tone === 'danger' ? 'text-danger' : 'text-gray-500'}`}>
             {subtitle}
           </p>
         )}
