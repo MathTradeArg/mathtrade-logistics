@@ -9,6 +9,8 @@ import { triggerHaptic } from '@/utils/haptics';
 import { whatsappLink } from '@/utils/whatsapp';
 import { formatTradeCode } from '@/utils/tradeCode';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import { Card } from '@/components/common/ui/Card';
+import { Chip } from '@/components/common/ui/Chip';
 
 function itemCodeLabel(report: EnrichedReport): string {
   const code = report.itemData?.assigned_trade_code || report.assigned_trade_code;
@@ -104,7 +106,7 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
   });
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5">
+    <Card className="p-5">
       <div className="flex justify-between items-start mb-3">
         <div className="flex-grow min-w-0">
           <div className="flex items-center">
@@ -117,7 +119,7 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
               {report.reportedUserData ? 'Reporte de Usuario:' : report.itemData ? 'Reporte de Ítem:' : 'Reporte General'}
             </h3>
             {report.resolved_at && (
-              <span className="ml-2 rounded-full bg-want/15 px-2 py-0.5 text-xs font-semibold text-want">Solucionado</span>
+              <Chip tone="want" className="ml-2">Solucionado</Chip>
             )}
           </div>
 
@@ -305,6 +307,6 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
         customMessage={`¿Estás seguro de que querés eliminar este reporte? Esta acción no se puede deshacer.`}
         confirmButtonText="Eliminar reporte"
       />
-    </div>
+    </Card>
   );
 }

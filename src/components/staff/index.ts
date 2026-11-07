@@ -5,6 +5,7 @@ export { default as MemberNameSearch } from './MemberNameSearch';
 export { default as StaffChrome } from './StaffChrome';
 export { default as StaffDialog } from './StaffDialog';
 export { StaffBanner, StaffEmpty, StaffError, StaffPage, PhaseBlocked } from './StaffPage';
+export { StaffHeading } from '@/components/common/ui/StaffHeading';
 export { default as StaffSearch } from './StaffSearch';
 export { default as StaffSegmented } from './StaffSegmented';
 export { StaffTitleProvider, useStaffTitle, useStaffTitleValue } from './StaffTitleContext';

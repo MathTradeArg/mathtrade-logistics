@@ -65,17 +65,21 @@
   opacity: 1;
 }
 
-.staff-card {
-  background-color: #fff;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
+/* In the components layer so utilities (cardClass tones, bg-*, border-l-4)
+   override the base card surface. */
+@layer components {
+  .staff-card {
+    background-color: #fff;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
 
-.staff-panel {
-  background-color: #fff;
-  border-radius: var(--radius-main);
-  box-shadow: var(--shadow-main);
+  .staff-panel {
+    background-color: #fff;
+    border-radius: var(--radius-main);
+    box-shadow: var(--shadow-main);
+  }
 }
 
 @media print {
