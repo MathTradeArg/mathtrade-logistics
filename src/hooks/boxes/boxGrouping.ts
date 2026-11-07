@@ -319,10 +319,35 @@ export type DestinationGroup = {
   viaHub: boolean;
 };
 
-/** The event scan flow marks a game packable (status 5) at the hub; boxes
- *  built in a city ignore the status, as the backend does (add_item). */
-export function isPackable(item: Item, requirePackableStatus = true): boolean {
-  return !requirePackableStatus || item.status === 5;
+/** A game that reaches the event in a box from another city and goes on to a
+ *  third one: routed through the event, not delivered in AMBA and not given in
+ *  AMBA. `handedOverAtHub` holds the trades the API lists under origin = hub
+ *  (AMBA residents and attending givers), which are handed over at the event.
+ *  Mirrors the backend's `continues_past_hub`. */
+export function continuesPastHub(
+  item: Item,
+  handedOverAtHub: ReadonlySet<number> = new Set(),
+  eventLocationId = EVENT_LOCATION_ID,
+): boolean {
+  return (
+    isViaAmbaItem(item, eventLocationId) &&
+    item.origin_location != null &&
+    item.origin_location !== eventLocationId &&
+    !handedOverAtHub.has(item.id)
+  );
+}
+
+/** The event scan flow marks a game packable (status 5) at the hub, except a
+ *  game that only passes through the event (`continuesPastHub`): it is repacked
+ *  without the mark. Boxes built in a city ignore the status, as the backend
+ *  does (add_item). */
+export function isPackable(
+  item: Item,
+  requirePackableStatus = true,
+  handedOverAtHub: ReadonlySet<number> = new Set(),
+): boolean {
+  if (!requirePackableStatus || item.status === 5) return true;
+  return continuesPastHub(item, handedOverAtHub);
 }
 
 export function groupPackingDestinations(
@@ -332,6 +357,8 @@ export function groupPackingDestinations(
   /** Where the boxes leave from; from a city, `via_meeting` copies to other
    *  cities group under VIA_AMBA_DESTINATION_ID (-1), apart from direct AMBA (1). */
   origin?: number,
+  /** See `continuesPastHub`. */
+  handedOverAtHub: ReadonlySet<number> = new Set(),
 ): DestinationGroup[] {
   const boxed = boxedTradeIds(boxes);
   const openBoxed = boxedTradeIds(boxes.filter(isBoxOpen));
@@ -370,7 +397,7 @@ export function groupPackingDestinations(
       viaHub: destId === VIA_AMBA_DESTINATION_ID,
     };
     if (destId === VIA_AMBA_DESTINATION_ID) current.viaHub = true;
-    if (isPackable(item, requirePackableStatus) && !boxed.has(item.id)) {
+    if (isPackable(item, requirePackableStatus, handedOverAtHub) && !boxed.has(item.id)) {
       current.readyCount += 1;
     } else if (openBoxed.has(item.id)) {
       current.inOpenCount += 1;

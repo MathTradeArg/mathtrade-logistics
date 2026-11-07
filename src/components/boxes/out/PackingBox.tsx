@@ -24,7 +24,8 @@ export type PackingBoxProps = {
   /** Route prefix of the destination/box screens (`/boxes/out`, `/city/boxes`). */
   basePath: string;
   /** Blocked while the event hasn't started (the event screens only). Also
-   *  requires the event's packable status on the games to add. */
+   *  requires the event's packable status on the games to add, except the
+   *  ones that only pass through the event (`continuesPastHub`). */
   phaseGated: boolean;
   /** Restricts the item list to this origin (city screens). */
   itemsOrigin?: number;
@@ -46,6 +47,7 @@ export default function PackingBox({
   const [box, setBox] = useState<Box | null>(null);
   const [openBoxes, setOpenBoxes] = useState<Box[]>([]);
   const [items, setItems] = useState<Item[]>([]);
+  const [handedOverAtHub, setHandedOverAtHub] = useState<ReadonlySet<number>>(new Set());
   const [mode, setMode] = useState<Mode>('view');
   const [addQuery, setAddQuery] = useState('');
   const [selectedAdds, setSelectedAdds] = useState<Set<number>>(new Set());
@@ -76,11 +78,16 @@ export default function PackingBox({
     setIsLoading(true);
     setError(null);
     try {
-      const [nextBox, nextBoxes, nextItems] = await Promise.all([
+      const needsHubGivers = phaseGated && origin === EVENT_LOCATION_ID;
+      const [nextBox, nextBoxes, nextItems, hubGiven] = await Promise.all([
         getBox(boxId),
         listBoxes({ destination: physicalDestId, origin, status: 'open', as_location: asLocation, mathtrade }),
         listItems({ destination: physicalDestId, origin: itemsOrigin, as_location: asLocation, mathtrade }),
+        needsHubGivers
+          ? listItems({ destination: physicalDestId, origin: EVENT_LOCATION_ID })
+          : Promise.resolve([] as Item[]),
       ]);
+      setHandedOverAtHub(new Set(hubGiven.map((item) => item.id)));
       setBox(nextBox);
       setOpenBoxes(
         nextBoxes.filter(
@@ -97,7 +104,7 @@ export default function PackingBox({
     } finally {
       setIsLoading(false);
     }
-  }, [boxId, destinationId, physicalDestId, origin, itemsOrigin, asLocation, mathtrade]);
+  }, [boxId, destinationId, physicalDestId, origin, itemsOrigin, asLocation, mathtrade, phaseGated]);
 
   useEffect(() => {
     if (!isAuthenticated || blocked) return;
@@ -117,11 +124,11 @@ export default function PackingBox({
     const boxed = boxedTradeIds([box, ...openBoxes]);
     return items.filter(
       (item) =>
-        isPackable(item, phaseGated) &&
+        isPackable(item, phaseGated, handedOverAtHub) &&
         packingDestinationId(item, origin) === effectiveLaneId &&
         !boxed.has(item.id),
     );
-  }, [box, items, openBoxes, phaseGated, origin, effectiveLaneId]);
+  }, [box, items, openBoxes, phaseGated, origin, effectiveLaneId, handedOverAtHub]);
 
   const filteredAvailableItems = useMemo(() => {
     if (!addQuery.trim()) return availableItems;

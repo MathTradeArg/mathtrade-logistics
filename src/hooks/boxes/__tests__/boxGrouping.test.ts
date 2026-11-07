@@ -1,5 +1,5 @@
 import { EVENT_LOCATION_ID } from '@/constants/event';
-import { boxContentsSummary, boxLaneDestination, boxMatchesLane, boxDestinationLabel, boxLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, hasMixedDestinations, boxOnwardDestinations, isTransitBox, splitByRoute, groupPackingDestinations, laneLabel, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
+import { boxContentsSummary, boxLaneDestination, boxMatchesLane, boxDestinationLabel, boxLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, hasMixedDestinations, boxOnwardDestinations, isPackable, isTransitBox, splitByRoute, groupPackingDestinations, laneLabel, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import type { Box, Item } from '@/types';
 
 const box = (overrides: Partial<Box> & Pick<Box, 'id' | 'origin' | 'origin_name'>): Box => ({
@@ -217,6 +217,37 @@ describe('boxGrouping', () => {
       const item = { id: 5, title: 'G', assigned_trade_code: 5, status: 4, location: 8, send_to: 7 } as Item;
       const groups = groupPackingDestinations([item], [closed], true, hub);
       expect(groups.find((g) => g.destinationId === 7)?.closedBoxCount).toBe(1);
+    });
+  });
+
+  describe('packing at the event (hub boxes): games that go on to another city need no "en evento" mark', () => {
+    const hub = EVENT_LOCATION_ID;
+    const MENDOZA = 7;
+    const CORDOBA = 8;
+    // Córdoba -> Mendoza through the event, arrived in a Córdoba box, not marked.
+    const onward = { id: 1, title: 'Onward', assigned_trade_code: 1, status: 4, location: MENDOZA, location_name: 'Mendoza', via_meeting: true, origin_location: CORDOBA } as Item;
+    // Delivered in AMBA: it must be marked received first.
+    const staysInAmba = { id: 2, title: 'Stays', assigned_trade_code: 2, status: 4, location: hub, location_name: 'AMBA', via_meeting: true, origin_location: CORDOBA } as Item;
+    // Shipped straight between cities: it never passes through the event.
+    const direct = { id: 3, title: 'Direct', assigned_trade_code: 3, status: 4, location: MENDOZA, location_name: 'Mendoza', via_meeting: false, origin_location: CORDOBA } as Item;
+    // Given by an AMBA resident: handed over at the event, must be received.
+    const fromAmba = { id: 4, title: 'From AMBA', assigned_trade_code: 4, status: 4, location: MENDOZA, location_name: 'Mendoza', via_meeting: true, origin_location: hub } as Item;
+
+    it('lets an onward game be packed at the hub without status 5', () => {
+      expect(isPackable(onward, true)).toBe(true);
+    });
+
+    it('still requires status 5 for a game that stays in AMBA, a direct one and one given in AMBA', () => {
+      expect(isPackable(staysInAmba, true)).toBe(false);
+      expect(isPackable(direct, true)).toBe(false);
+      expect(isPackable(fromAmba, true)).toBe(false);
+      expect(isPackable({ ...direct, status: 5 }, true)).toBe(true);
+    });
+
+    it('counts unmarked onward games as ready in the hub destinations', () => {
+      const [mendoza] = groupPackingDestinations([onward, direct, fromAmba], [], true, hub);
+      expect(mendoza.destinationId).toBe(MENDOZA);
+      expect(mendoza.readyCount).toBe(1);
     });
   });
 
