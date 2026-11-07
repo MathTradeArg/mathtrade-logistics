@@ -82,6 +82,8 @@ const mockTradesResponse = {
 
 describe('DeliverPage', () => {
   let mockExecute: jest.Mock;
+  let mockFetchGames: jest.Mock;
+  let mockBulkUpdate: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -94,7 +96,14 @@ describe('DeliverPage', () => {
     mockUsePathname.mockReturnValue('/deliver');
     
     mockExecute = jest.fn().mockResolvedValue({ success: true });
-    mockUseApi.mockReturnValue({ execute: mockExecute });
+    mockFetchGames = jest.fn().mockResolvedValue(mockTradesResponse);
+    mockBulkUpdate = jest.fn().mockResolvedValue({ success: true });
+    const executes: Record<string, jest.Mock> = {
+      'logistics/user/': mockFetchGames,
+      'logistics/games/bulk-update-status/': mockBulkUpdate,
+      'logistics/users/update-status/': mockExecute,
+    };
+    mockUseApi.mockImplementation((endpoint: string) => ({ execute: executes[endpoint] }));
   });
 
   it('shows loading spinner while auth is loading', () => {
@@ -116,7 +125,6 @@ describe('DeliverPage', () => {
   });
 
   it('fetches trades and displays GameList on successful scan', async () => {
-    fetchMock.mockResponseOnce(JSON.stringify(mockTradesResponse));
     render(<DeliverPage />);
     
     fireEvent.click(screen.getByRole('button', { name: 'Simulate Scan' }));
@@ -125,7 +133,7 @@ describe('DeliverPage', () => {
       expect(screen.getByTestId('game-list')).toBeInTheDocument();
     });
 
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('games/deliver'), expect.any(Object));
+    expect(mockFetchGames).toHaveBeenCalledWith(undefined, 'user-qr-code/games/deliver/');
     expect(mockExecute).toHaveBeenCalledWith({ user_id: 123, status: 'receiving' });
   });
 
@@ -133,7 +141,6 @@ describe('DeliverPage', () => {
     fetchMock.mockResponseOnce(JSON.stringify([
       { uuid: 'member-uuid-1', first_name: 'Ana', last_name: 'Perez' },
     ]));
-    fetchMock.mockResponseOnce(JSON.stringify(mockTradesResponse));
 
     render(<DeliverPage />);
     fireEvent.change(screen.getByLabelText('Buscar socio por nombre'), { target: { value: 'Ana' } });
@@ -147,15 +154,12 @@ describe('DeliverPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('game-list')).toBeInTheDocument();
     });
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('user/member-uuid-1/games/deliver/'),
-      expect.any(Object),
-    );
+    expect(mockFetchGames).toHaveBeenCalledWith(undefined, 'member-uuid-1/games/deliver/');
   });
 
   it('shows an error message on failed fetch and resets after timeout', async () => {
     jest.useFakeTimers();
-    fetchMock.mockReject(new Error('User not found'));
+    mockFetchGames.mockRejectedValue(new Error('User not found'));
     render(<DeliverPage />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Simulate Scan' }));
@@ -174,7 +178,6 @@ describe('DeliverPage', () => {
   });
 
   it('triggers scan automatically if qr parameter is in URL', async () => {
-    fetchMock.mockResponseOnce(JSON.stringify(mockTradesResponse));
     mockUseSearchParams.mockReturnValue(new URLSearchParams('?qr=url-qr-code'));
 
     render(<DeliverPage />);
@@ -183,13 +186,11 @@ describe('DeliverPage', () => {
       expect(screen.getByTestId('game-list')).toBeInTheDocument();
     });
 
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('url-qr-code'), expect.any(Object));
+    expect(mockFetchGames).toHaveBeenCalledWith(undefined, 'url-qr-code/games/deliver/');
     expect(mockExecute).toHaveBeenCalledWith({ user_id: 123, status: 'receiving' });
   });
 
   it('marks user completed after PATCH when every trade in the list is now delivered', async () => {
-    fetchMock.mockResponseOnce(JSON.stringify(mockTradesResponse)); 
-    fetchMock.mockResponseOnce(JSON.stringify({ success: true })); 
 
     render(<DeliverPage />);
 
@@ -207,11 +208,11 @@ describe('DeliverPage', () => {
     await waitFor(() => {
       expect(mockExecute).toHaveBeenCalledWith({ user_id: 123, status: 'completed' });
     });
+    expect(mockBulkUpdate).toHaveBeenCalledWith({ status: 6, assigned_trade_codes: [101], change_by_id: 1 });
   });
 
   it('does not mark completed when some trades remain undelivered', async () => {
-    fetchMock.mockResponseOnce(JSON.stringify({ games: mockMixedTrades, user: mockUser }));
-    fetchMock.mockResponseOnce(JSON.stringify({ success: true }));
+    mockFetchGames.mockResolvedValue({ games: mockMixedTrades, user: mockUser });
 
     render(<DeliverPage />);
 
@@ -223,17 +224,13 @@ describe('DeliverPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Update First Item' }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('games/bulk-update-status'),
-        expect.any(Object),
-      );
+      expect(mockBulkUpdate).toHaveBeenCalledWith({ status: 6, assigned_trade_codes: [101], change_by_id: 1 });
     });
 
     expect(mockExecute).not.toHaveBeenCalledWith({ user_id: 123, status: 'completed' });
   });
 
   it('resets to scanner view when GameList onFinish is called', async () => {
-    fetchMock.mockResponseOnce(JSON.stringify(mockTradesResponse));
     render(<DeliverPage />);
     fireEvent.click(screen.getByRole('button', { name: 'Simulate Scan' }));
     

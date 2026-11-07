@@ -2,6 +2,7 @@
 
 import { LoadingSpinner } from '@/components/common/ui';
 import QrScanner from '@/components/qr/QrScanner';
+import { StaffBanner } from '@/components/staff';
 import MemberNameSearch from '@/components/staff/MemberNameSearch';
 import { GameList } from '@/components/trades';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
@@ -11,7 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import type { ReceiveTrade, Trade, TradeResponse, User } from '@/types';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { X } from 'phosphor-react';
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 export default function ReceivePage() {
   return (
@@ -28,35 +29,32 @@ function ReceivePageContent() {
   const [games, setGames] = useState<Trade[] | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>('');
+  // scanError replaces the screen and resets to the scanner after 3 s;
+  // updateError is a banner over the list that stays until retried.
+  const [scanError, setScanError] = useState<string>('');
+  const [updateError, setUpdateError] = useState<string>('');
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const lastUpdate = useRef<{ ids: number[]; by: number } | null>(null);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [initialQrProcessed, setInitialQrProcessed] = useState(false);
   const { eventPhase, isLoadingEventPhase } = useEventPhase();
+  const { execute: fetchGames } = useApi<TradeResponse<ReceiveTrade>>('logistics/user/');
+  const { execute: bulkUpdate } = useApi<unknown>('logistics/games/bulk-update-status/', { method: 'PATCH' });
   const { execute: updateUserStatus } = useApi<any>('logistics/users/update-status/', { method: 'PATCH' });
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [userComment, setUserComment] = useState<string>('');
 
   const handleScan = useCallback(async (data: string) => {
-    const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
     if (data && !isLoading) {
       setIsLoading(true);
-      setError('');
+      setScanError('');
+      setUpdateError('');
+      lastUpdate.current = null;
       setQrData(data);
       try {
-
-        const response = await fetch(`${MT_API_HOST}logistics/user/${data}/games/receive/`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `token ${localStorage.getItem('authToken')}`
-          }
-        });
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: `Error ${response.status}` }));
-          throw new Error(errorData.message || `Error ${response.status} al buscar user.`);
-        }
-        const tradesData: TradeResponse<ReceiveTrade> = await response.json();
+        const tradesData = await fetchGames(undefined, `${data}/games/receive/`);
+        if (!tradesData) throw new Error('Ups, algo falló.');
         const games = tradesData.games;
         setGames(games);
         setUser(tradesData.user);
@@ -78,20 +76,20 @@ function ReceivePageContent() {
         }
       } catch (err) {
         if (err instanceof Error) {
-          setError(err.message);
+          setScanError(err.message);
         } else {
-          setError('Ups, algo falló.');
+          setScanError('Ups, algo falló.');
         }
         setTimeout(() => {
           setQrData(null);
           setGames(null);
-          setError('');
+          setScanError('');
         }, 3000);
       } finally {
         setIsLoading(false);
       }
     }
-  }, [isLoading, updateUserStatus]);
+  }, [isLoading, fetchGames, updateUserStatus]);
 
   useEffect(() => {
     if (initialQrProcessed || isLoading || games) return;
@@ -105,8 +103,9 @@ function ReceivePageContent() {
   }, [searchParams, isLoading, games, initialQrProcessed, handleScan, pathname]);
 
   const handleUpdateItems = useCallback(async (itemIds: number[], deliveredByUserId: number) => {
+    setUpdateError('');
     if (!qrData || !games || !deliveredByUserId || games.length === 0) {
-      setError('Faltan datos para la actualización.');
+      setUpdateError('Faltan datos para la actualización.');
       return;
     }
 
@@ -114,25 +113,14 @@ function ReceivePageContent() {
     const idsToUpdate = itemsToUpdate.map(game => game.result.assigned_trade_code);
     if (idsToUpdate.length === 0) return;
 
+    lastUpdate.current = { ids: itemIds, by: deliveredByUserId };
+    setIsUpdating(true);
     try {
-      const MT_API_HOST = process.env.NEXT_PUBLIC_MT_API_HOST;
-      const response = await fetch(`${MT_API_HOST}logistics/games/bulk-update-status/`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `token ${localStorage.getItem('authToken')}`
-        },
-        body: JSON.stringify({
-          status: 5,
-          assigned_trade_codes: itemIds,
-          change_by_id: deliveredByUserId
-        }),
+      await bulkUpdate({
+        status: 5,
+        assigned_trade_codes: itemIds,
+        change_by_id: deliveredByUserId
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Error al actualizar.' }));
-        throw new Error(errorData.message || 'Error al actualizar.');
-      }
 
       const updatedItems = itemsToUpdate.length;
       setSuccess(`${updatedItems} item${updatedItems === 1 ? '' : 's'} marcado${updatedItems === 1 ? '' : 's'} como recibido${updatedItems === 1 ? '' : 's'}`);
@@ -145,13 +133,27 @@ function ReceivePageContent() {
             : game
         );
       });
-      setError('');
+      lastUpdate.current = null;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Falló la actualización.';
-      setError(errorMessage);
+      setUpdateError(errorMessage);
       setActionError(errorMessage);
+    } finally {
+      setIsUpdating(false);
     }
-  }, [qrData, games, setSuccess, setActionError]);
+  }, [qrData, games, bulkUpdate, setSuccess, setActionError]);
+
+  const retryUpdate = useCallback(() => {
+    if (lastUpdate.current) handleUpdateItems(lastUpdate.current.ids, lastUpdate.current.by);
+  }, [handleUpdateItems]);
+
+  const resetToScanner = useCallback(() => {
+    setQrData(null);
+    setGames(null);
+    setScanError('');
+    setUpdateError('');
+    lastUpdate.current = null;
+  }, []);
 
   const isReceivingEnabled = eventPhase !== 0;
 
@@ -167,9 +169,9 @@ function ReceivePageContent() {
     <main className="mx-auto flex w-full max-w-lg flex-col items-center px-4 py-4 text-gray-900">
       <section className="w-full">
         {isLoading && <LoadingSpinner message="Buscando información..." />}
-        {error && <p className="my-4 rounded-lg border border-danger/30 bg-danger/10 p-4 text-center text-danger">{error}</p>}
+        {scanError && <p className="my-4 rounded-lg border border-danger/30 bg-danger/10 p-4 text-center text-danger">{scanError}</p>}
 
-        {!isLoading && !error && isAuthenticated && (
+        {!isLoading && !scanError && isAuthenticated && (
           <>
             {!qrData ? (
               <>
@@ -180,15 +182,22 @@ function ReceivePageContent() {
                 <MemberNameSearch onSelect={(member) => handleScan(member.uuid)} disabled={!isReceivingEnabled} />
               </>
             ) : games && (
-              <GameList
-                trades={games}
-                user={user}
-                onUpdateItems={handleUpdateItems}
-                disabled={!isReceivingEnabled}
-                onFinish={() => { setQrData(null); setGames(null); setError(''); }}
-                mode="receive"
-                deliveredByUserId={userId ? parseInt(userId, 10) : null}
-              />
+              <>
+                {updateError && (
+                  <StaffBanner onRetry={lastUpdate.current ? retryUpdate : undefined} retrying={isUpdating}>
+                    {updateError}
+                  </StaffBanner>
+                )}
+                <GameList
+                  trades={games}
+                  user={user}
+                  onUpdateItems={handleUpdateItems}
+                  disabled={!isReceivingEnabled}
+                  onFinish={resetToScanner}
+                  mode="receive"
+                  deliveredByUserId={userId ? parseInt(userId, 10) : null}
+                />
+              </>
             )}
           </>
         )}
