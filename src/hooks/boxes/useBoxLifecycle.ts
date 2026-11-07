@@ -28,6 +28,7 @@ const BOX_ERROR_ES: Record<string, string> = {
   'Trade is not packable.': 'Ese juego no se puede poner en esta caja.',
   'Cannot add items to a closed box.': 'No se pueden agregar juegos a una caja cerrada.',
   'Trade destination does not match the box.': 'Ese juego no va a este destino.',
+  'Cannot reopen a box that is already in a shipment.': 'Esa caja ya está en un envío y no se puede reabrir.',
 };
 
 function errorMessage(err: unknown): string {

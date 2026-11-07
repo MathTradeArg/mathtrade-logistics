@@ -41,7 +41,7 @@ export default function PackingBox({
   const router = useRouter();
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
   const { eventPhase, isLoadingEventPhase } = useEventPhase();
-  const { inFlight, addItems, removeItem, moveItem, closeBox, deleteBox } = useBoxLifecycle();
+  const { inFlight, addItems, removeItem, moveItem, closeBox, deleteBox, reopenBox } = useBoxLifecycle();
 
   const [box, setBox] = useState<Box | null>(null);
   const [openBoxes, setOpenBoxes] = useState<Box[]>([]);
@@ -53,6 +53,7 @@ export default function PackingBox({
   const [removeTarget, setRemoveTarget] = useState<Item | null>(null);
   const [closedBox, setClosedBox] = useState<Box | null>(null);
   const [showDelete, setShowDelete] = useState(false);
+  const [showReopen, setShowReopen] = useState(false);
   const [addedTitles, setAddedTitles] = useState<string[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -233,6 +234,18 @@ export default function PackingBox({
     await load();
   };
 
+  const handleReopen = async () => {
+    try {
+      const reopened = await reopenBox(boxId);
+      if (reopened) {
+        setShowReopen(false);
+        await load();
+      }
+    } catch {
+      setShowReopen(false); // the error toast comes from the hook
+    }
+  };
+
   if (authIsLoading || isAuthenticated === null || (phaseGated && isLoadingEventPhase)) {
     return <div className="flex min-h-[50dvh] items-center justify-center"><LoadingSpinner message="Cargando..." /></div>;
   }
@@ -243,6 +256,7 @@ export default function PackingBox({
 
   const empty = (box?.math_items.length || 0) === 0;
   const canMutate = !readOnly && (box ? isBoxOpen(box) : false);
+  const canReopen = !readOnly && box != null && !isBoxOpen(box) && !box.tracking;
 
   return (
     <StaffPage className="pb-28">
@@ -405,6 +419,24 @@ export default function PackingBox({
           Cerrar caja
         </ThumbCta>
       )}
+
+      {box && mode === 'view' && canReopen && (
+        <ThumbCta variant="danger" disabled={inFlight} onClick={() => setShowReopen(true)}>
+          Reabrir caja
+        </ThumbCta>
+      )}
+
+      <StaffDialog
+        open={showReopen}
+        title="Reabrir esta caja"
+        confirmLabel="Reabrir"
+        variant="danger"
+        confirmDisabled={inFlight}
+        onConfirm={handleReopen}
+        onCancel={() => setShowReopen(false)}
+      >
+        La caja vuelve a estar abierta y conserva su número. Solo se puede mientras no salió en un envío.
+      </StaffDialog>
 
       <StaffDialog
         open={removeTarget != null}

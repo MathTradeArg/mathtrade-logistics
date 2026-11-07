@@ -1,4 +1,4 @@
-import { ActionStatusProvider } from '@/contexts/ActionStatusContext';
+import { ActionStatusProvider, useActionStatus } from '@/contexts/ActionStatusContext';
 import { BoxApiError } from '@/hooks/boxes/boxApi';
 import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { act, renderHook } from '@testing-library/react';
@@ -113,6 +113,23 @@ describe('useBoxLifecycle', () => {
     expect(String(fetchMock.mock.calls[0][0])).toContain('logistics/boxes/10/reopen/');
     expect(fetchMock.mock.calls[0][1]?.method).toBe('POST');
     expect((fetchMock.mock.calls[0][1]?.headers as Record<string, string>)['Idempotency-Key']).toBeUndefined();
+  });
+
+  it('reopen 409 shows the Spanish message', async () => {
+    // Rule: a closed box can be reopened only while it is not in a shipment;
+    // the backend's 409 reaches the volunteer in Spanish.
+    const detail = 'Cannot reopen a box that is already in a shipment.';
+    fetchMock.mockResponseOnce(JSON.stringify({ detail }), { status: 409 });
+    const { result } = renderHook(
+      () => ({ lifecycle: useBoxLifecycle(), status: useActionStatus() }),
+      { wrapper },
+    );
+
+    await act(async () => {
+      await expect(result.current.lifecycle.reopenBox(10)).rejects.toBeInstanceOf(BoxApiError);
+    });
+
+    expect(result.current.status.actionError).toBe('Esa caja ya está en un envío y no se puede reabrir.');
   });
 
   it('reuses the same close idempotency key until the request succeeds', async () => {

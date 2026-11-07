@@ -31,6 +31,7 @@ const mockGetBox = boxApi.getBox as jest.Mock;
 const mockListBoxes = boxApi.listBoxes as jest.Mock;
 const mockListItems = boxApi.listItems as jest.Mock;
 const mockDeleteBox = jest.fn();
+const mockReopenBox = jest.fn();
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <ActionStatusProvider>{children}</ActionStatusProvider>
@@ -70,6 +71,7 @@ describe('OutgoingBoxPage delete empty', () => {
       moveItem: jest.fn(),
       closeBox: jest.fn(),
       deleteBox: mockDeleteBox,
+      reopenBox: mockReopenBox,
     });
     mockGetBox.mockResolvedValue(emptyBox);
     mockListBoxes.mockResolvedValue([]);
@@ -126,5 +128,54 @@ describe('OutgoingBoxPage delete empty', () => {
 
     expect(screen.queryByText(/Terraforming Mars/)).not.toBeInTheDocument();
     expect(screen.getByText(/Wingspan/)).toBeInTheDocument();
+  });
+});
+
+const closedBox = {
+  ...emptyBox,
+  number: 7,
+  closed_at: '2026-11-06T10:00:00Z',
+  math_items: [{ id: 11, title: 'Catan', assigned_trade_code: 101, status: 5 }],
+};
+
+describe('OutgoingBoxPage reopen: a closed box can be reopened only while it is not in a shipment', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockUseBoxLifecycle.mockReturnValue({
+      inFlight: false,
+      addItems: jest.fn(),
+      removeItem: jest.fn(),
+      moveItem: jest.fn(),
+      closeBox: jest.fn(),
+      deleteBox: mockDeleteBox,
+      reopenBox: mockReopenBox,
+    });
+    mockListBoxes.mockResolvedValue([]);
+    mockListItems.mockResolvedValue([]);
+  });
+
+  it('shows a reopen button for a closed box that is not in a shipment', async () => {
+    mockGetBox.mockResolvedValue({ ...closedBox, tracking: null });
+    render(<OutgoingBoxPage />, { wrapper });
+    expect(await screen.findByRole('button', { name: 'Reabrir caja' })).toBeInTheDocument();
+  });
+
+  it('does not offer reopen once the box is in a shipment', async () => {
+    mockGetBox.mockResolvedValue({ ...closedBox, tracking: 'ABC123' });
+    render(<OutgoingBoxPage />, { wrapper });
+    await screen.findByText(/Catan/);
+    expect(screen.queryByRole('button', { name: 'Reabrir caja' })).not.toBeInTheDocument();
+  });
+
+  it('reopens after confirming and reloads the box', async () => {
+    mockGetBox.mockResolvedValue({ ...closedBox, tracking: null });
+    mockReopenBox.mockResolvedValue({ ...closedBox, closed_at: null });
+    render(<OutgoingBoxPage />, { wrapper });
+    fireEvent.click(await screen.findByRole('button', { name: 'Reabrir caja' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reabrir' }));
+    await waitFor(() => expect(mockReopenBox).toHaveBeenCalledWith(399));
+    await waitFor(() => expect(mockGetBox).toHaveBeenCalledTimes(2));
   });
 });
