@@ -139,12 +139,12 @@ export default function IncomingBoxPage() {
           <p className="text-sm text-gray-500">{box.origin_name} → {destLabel}</p>
           {mixed && (
             <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
-              Localidades mezcladas ({onwardNames.join(', ')}): hay que abrir esta caja y marcar los juegos como recibidos para separarlos por destino.
+              Localidades mezcladas ({onwardNames.join(', ')}): hay que abrir esta caja para separar los juegos por destino. Los que quedan en AMBA se marcan En evento; marcar los que siguen a otras ciudades es opcional.
             </p>
           )}
           {transit && !mixed && (
             <p className="mt-2 text-sm text-gray-600">
-              Todos los juegos declarados van a {destLabel}. Si abrís la caja, marcá los juegos como recibidos para sumarlos al armado del evento.
+              Todos los juegos declarados van a {destLabel}. No hace falta marcarlos para sumarlos a las cajas que salen de AMBA; marcarlos En evento es opcional.
             </p>
           )}
 
