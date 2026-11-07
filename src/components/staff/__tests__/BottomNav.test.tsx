@@ -33,15 +33,15 @@ describe('BottomNav', () => {
     expect(screen.queryByRole('link', { name: 'Entregar' })).not.toBeInTheDocument();
   });
 
-  it('shows deliver / receive / pack / more in phase 2', () => {
+  it('shows deliver / receive / arrive / pack / more in phase 2', () => {
     mockUseEventPhase.mockReturnValue({ eventPhase: 2 });
     render(<BottomNav />);
 
     expect(screen.getByRole('link', { name: 'Entregar' })).toHaveAttribute('href', '/deliver');
     expect(screen.getByRole('link', { name: 'Recibir' })).toHaveAttribute('href', '/receive');
+    expect(screen.getByRole('link', { name: 'Llegan' })).toHaveAttribute('href', '/boxes/in');
     expect(screen.getByRole('link', { name: 'Empacar' })).toHaveAttribute('href', '/boxes/out');
     expect(screen.getByRole('link', { name: 'Más' })).toHaveAttribute('href', '/more');
-    expect(screen.queryByRole('link', { name: 'Llegan' })).not.toBeInTheDocument();
   });
 
   it('disables day slots in phase 0 and keeps Más', () => {

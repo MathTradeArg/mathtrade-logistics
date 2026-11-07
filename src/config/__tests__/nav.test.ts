@@ -10,7 +10,7 @@ describe('getBottomNavSlots', () => {
     ['window', 1, ['Recibir', 'Más']],
     ['window', 2, ['Entregar', 'Recibir', 'Más']],
     ['boxes', 1, ['Llegan', 'Empacar', 'Más']],
-    ['boxes', 2, ['Empacar', 'Más']],
+    ['boxes', 2, ['Llegan', 'Empacar', 'Más']],
     ['tables', 1, ['Mesas', 'Más']],
     ['tables', 2, ['Mesas', 'Más']],
     ['runner', 1, ['Consultar', 'Más']],
@@ -32,7 +32,7 @@ describe('getBottomNavSlots', () => {
 
   it('leaves the admin nav unchanged (and is the default)', () => {
     expect(labels(1, null, true)).toEqual(['Recibir', 'Llegan', 'Empacar', 'Más']);
-    expect(labels(2, 'boxes', true)).toEqual(['Entregar', 'Recibir', 'Empacar', 'Más']);
+    expect(labels(2, 'boxes', true)).toEqual(['Entregar', 'Recibir', 'Llegan', 'Empacar', 'Más']);
     expect(getBottomNavSlots(1)).toEqual(getBottomNavSlots(1, { role: null, isAdmin: true }));
   });
 });

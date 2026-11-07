@@ -22,6 +22,7 @@ function phaseSlots(eventPhase: number | null): NavSlot[] {
     return [
       { id: 'deliver', href: '/deliver', label: 'Entregar' },
       { id: 'receive', href: '/receive', label: 'Recibir' },
+      { id: 'arrive', href: '/boxes/in', label: 'Llegan' },
       { id: 'pack', href: '/boxes/out', label: 'Empacar' },
       { id: 'more', href: '/more', label: 'Más' },
     ];
