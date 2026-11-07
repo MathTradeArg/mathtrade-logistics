@@ -182,7 +182,7 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
       <div className={clsx('flex min-w-[5.5rem] shrink-0 items-center justify-center px-1.5', idBoxClasses)}>
         <span
           className={clsx(
-            'select-all whitespace-nowrap text-center text-base font-extrabold tabular-nums leading-tight sm:text-lg',
+            'select-all whitespace-nowrap text-center text-body-lg font-extrabold tabular-nums leading-tight sm:text-heading',
             finalIsVisuallyInactive && !idBoxClasses.includes('text-white') ? 'opacity-70' : '',
           )}
           title={label}
@@ -196,11 +196,11 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
         })}
       >
         <TextContainerTag htmlFor={isCheckboxInteractive ? `checkbox-item-${id}` : undefined} className={isCheckboxInteractive ? 'cursor-pointer' : ''}>
-          <span className={clsx('block w-full text-base font-medium leading-tight', titleClasses)} title={title}>
+          <span className={clsx('block w-full text-body-lg font-medium leading-tight', titleClasses)} title={title}>
             {title}
           </span>
           {ownerName && (
-            <span className="mt-0.5 block text-sm text-gray-500" title={`De: ${ownerName}`}>
+            <span className="mt-0.5 block text-body text-gray-500" title={`De: ${ownerName}`}>
               De: {ownerName}
             </span>
           )}

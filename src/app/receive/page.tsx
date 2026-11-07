@@ -207,7 +207,7 @@ function ReceivePageContent() {
         <div className="fixed inset-0 z-modal flex items-center justify-center bg-overlay p-4 backdrop-blur-sm">
           <div className="staff-panel w-full max-w-md p-6 text-gray-900">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-lg font-semibold">
+              <h3 className="flex items-center gap-2 text-heading font-semibold">
                 <span className="text-amber-500">⚠️</span>
                 Advertencia
               </h3>
@@ -220,7 +220,7 @@ function ReceivePageContent() {
               </button>
             </div>
             <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-3">
-              <p className="text-sm text-amber-900">{userComment}</p>
+              <p className="text-body text-amber-900">{userComment}</p>
             </div>
             <button
               onClick={() => setShowCommentModal(false)}

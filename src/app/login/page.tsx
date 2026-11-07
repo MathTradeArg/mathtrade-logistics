@@ -166,7 +166,7 @@ function LoginForm({ email, setEmail, password, setPassword, isMounted, isLoadin
           onSubmit={handleSubmit} className="space-y-7"
         >
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-body font-medium text-gray-700">
               Email
             </label>
             <input
@@ -177,7 +177,7 @@ function LoginForm({ email, setEmail, password, setPassword, isMounted, isLoadin
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="password" className="block text-body font-medium text-gray-700">
               Contraseña
             </label>
             <input
@@ -189,7 +189,7 @@ function LoginForm({ email, setEmail, password, setPassword, isMounted, isLoadin
           </div>
 
           {(error || loginError) && (
-            <p className="rounded-lg border border-danger/30 bg-danger/10 p-3 text-center text-sm text-danger">
+            <p className="rounded-lg border border-danger/30 bg-danger/10 p-3 text-center text-body text-danger">
               {loginError || error}
             </p>
           )}

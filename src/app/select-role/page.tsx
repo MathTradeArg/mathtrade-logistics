@@ -42,7 +42,7 @@ export default function SelectRolePage() {
 
   return (
     <StaffPage>
-      <h1 className="text-xl font-bold">¿Qué vas a hacer hoy?</h1>
+      <h1 className="text-heading font-bold">¿Qué vas a hacer hoy?</h1>
       <ul className="mt-6 flex flex-col gap-4">
         {ROLE_ORDER.map((id) => (
           <li key={id}>
@@ -52,9 +52,9 @@ export default function SelectRolePage() {
               disabled={saving !== null}
               className="staff-card flex w-full flex-col items-start gap-1 px-5 py-5 text-left disabled:opacity-60"
             >
-              <span className="text-lg font-bold text-gray-900">{ROLES[id].label}</span>
-              <span className="text-sm text-gray-600">{ROLES[id].description}</span>
-              {saving === id && <span className="text-sm text-gray-500">Guardando...</span>}
+              <span className="text-heading font-bold text-gray-900">{ROLES[id].label}</span>
+              <span className="text-body text-gray-600">{ROLES[id].description}</span>
+              {saving === id && <span className="text-body text-gray-500">Guardando...</span>}
             </button>
           </li>
         ))}

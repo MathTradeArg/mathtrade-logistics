@@ -37,15 +37,15 @@ const LandingPageLink: React.FC<LandingPageLinkProps> = ({ href, icon, title, de
           </div>
         </div>
         <div className="flex-grow flex flex-col justify-center min-w-0 md:flex-grow-0 md:items-center"> 
-          <h2 className={`text-lg font-semibold ${titleClassName || 'text-primary dark:text-sky-400'} mb-1 truncate md:text-xl md:text-center md:truncate-none md:whitespace-normal`}>
+          <h2 className={`text-heading font-semibold ${titleClassName || 'text-primary dark:text-sky-400'} mb-1 truncate md:text-center md:truncate-none md:whitespace-normal`}>
             {title}
           </h2>
           {disabled ? (
-            <p className="text-sm text-orange-600 dark:text-orange-400 font-semibold line-clamp-2 md:text-center md:line-clamp-none md:min-h-[2.5rem]">
+            <p className="text-body text-orange-600 dark:text-orange-400 font-semibold line-clamp-2 md:text-center md:line-clamp-none md:min-h-[2.5rem]">
               {disabledText}
             </p>
           ) : (
-            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 md:text-center md:line-clamp-none md:min-h-[2.5rem]">
+            <p className="text-body text-gray-600 dark:text-gray-400 line-clamp-2 md:text-center md:line-clamp-none md:min-h-[2.5rem]">
               {description}
             </p>
           )}

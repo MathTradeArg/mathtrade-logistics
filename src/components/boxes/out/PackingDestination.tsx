@@ -164,7 +164,7 @@ export default function PackingDestination({
 
       {!isLoading && (
         <>
-          <h2 className="text-sm font-semibold text-gray-500">Cajas abiertas</h2>
+          <h2 className="text-body font-semibold text-gray-500">Cajas abiertas</h2>
           {openBoxes.length === 0 ? (
             <StaffEmpty>{readOnly ? 'No hay cajas abiertas.' : 'No hay cajas abiertas. Creá una para empezar.'}</StaffEmpty>
           ) : (
@@ -181,9 +181,9 @@ export default function PackingDestination({
             </ul>
           )}
 
-          <h2 className="mt-8 text-sm font-semibold text-gray-500">Cerradas</h2>
+          <h2 className="mt-8 text-body font-semibold text-gray-500">Cerradas</h2>
           {closedBoxes.length === 0 ? (
-            <p className="mt-3 text-sm text-gray-500">Todavía no hay cajas cerradas a este destino.</p>
+            <p className="mt-3 text-body text-gray-500">Todavía no hay cajas cerradas a este destino.</p>
           ) : (
             <ul className="mt-3 flex flex-col gap-3">
               {closedBoxes.map((box) => (

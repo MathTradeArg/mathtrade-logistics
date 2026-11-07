@@ -313,7 +313,7 @@ export default function PackingBox({
 
       {box && mode === 'view' && (
         <>
-          <p className="text-sm text-gray-500">
+          <p className="text-body text-gray-500">
             {boxDestLabel} · la abrió {packerName(box)} · {box.math_items.length} juegos
           </p>
 
@@ -378,7 +378,7 @@ export default function PackingBox({
               type="button"
               disabled={inFlight}
               onClick={() => setShowDelete(true)}
-              className="mt-6 flex min-h-14 w-full items-center justify-center text-base font-semibold text-danger"
+              className="mt-6 flex min-h-14 w-full items-center justify-center text-body-lg font-semibold text-danger"
             >
               Borrar caja vacía
             </button>
@@ -394,7 +394,7 @@ export default function PackingBox({
               setAddQuery('');
               setMode('view');
             }}
-            className="mb-4 min-h-14 text-base font-semibold text-gray-600"
+            className="mb-4 min-h-14 text-body-lg font-semibold text-gray-600"
           >
             Volver a la caja
           </button>
@@ -443,11 +443,11 @@ export default function PackingBox({
               setMode('view');
               setMovingTradeId(null);
             }}
-            className="mb-4 min-h-14 text-base font-semibold text-gray-600"
+            className="mb-4 min-h-14 text-body-lg font-semibold text-gray-600"
           >
             Volver a la caja
           </button>
-          <p className="mb-3 text-sm text-gray-600">Elegí otra caja abierta del mismo destino.</p>
+          <p className="mb-3 text-body text-gray-600">Elegí otra caja abierta del mismo destino.</p>
           <ul className="flex flex-col gap-3">
             {openBoxes.map((candidate) => (
               <li key={candidate.id}>

@@ -55,8 +55,8 @@ function TradeCard({
   return (
     <div className="staff-card px-4 py-3 text-gray-900">
       <p className="font-semibold leading-tight">{title || `Código ${formatTradeCode(code)}`}</p>
-      <p className="mt-0.5 text-sm text-gray-500">{formatTradeCode(code)} · {tableText(table)} · {status}</p>
-      <p className="mt-0.5 text-sm text-gray-500">{personLabel}: {personName}</p>
+      <p className="mt-0.5 text-body text-gray-500">{formatTradeCode(code)} · {tableText(table)} · {status}</p>
+      <p className="mt-0.5 text-body text-gray-500">{personLabel}: {personName}</p>
     </div>
   );
 }
@@ -188,14 +188,14 @@ function LookupPageContent() {
 
           {hasMemberResult && (
             <div className="mt-6">
-              <h2 className="text-lg font-bold">{fullName(member)}</h2>
+              <h2 className="text-heading font-bold">{fullName(member)}</h2>
               {member.comment_on_user && (
-                <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-body text-amber-900">
                   {member.comment_on_user}
                 </p>
               )}
 
-              <h3 className="mt-6 text-sm font-semibold text-gray-500">Trae / entrega ({brings.length})</h3>
+              <h3 className="mt-6 text-body font-semibold text-gray-500">Trae / entrega ({brings.length})</h3>
               {brings.length === 0 ? (
                 <StaffEmpty>No trae juegos.</StaffEmpty>
               ) : (
@@ -215,7 +215,7 @@ function LookupPageContent() {
                 </ul>
               )}
 
-              <h3 className="mt-6 text-sm font-semibold text-gray-500">Recibe ({receives.length})</h3>
+              <h3 className="mt-6 text-body font-semibold text-gray-500">Recibe ({receives.length})</h3>
               {receives.length === 0 ? (
                 <StaffEmpty>No recibe juegos.</StaffEmpty>
               ) : (
@@ -256,11 +256,11 @@ function LookupPageContent() {
           {game && (
             <div className="staff-card mt-4 px-4 py-3 text-gray-900">
               <p className="font-semibold leading-tight">{game.item_to?.title || `Código ${formatTradeCode(game.assigned_trade_code)}`}</p>
-              <p className="mt-0.5 text-sm text-gray-500">
+              <p className="mt-0.5 text-body text-gray-500">
                 {formatTradeCode(game.assigned_trade_code)} · {tableText(game.table_number)} · {getGameStatusText(game.status)}
               </p>
-              <p className="mt-0.5 text-sm text-gray-500">Entrega: {fullName(game.membership)}</p>
-              <p className="mt-0.5 text-sm text-gray-500">Recibe: {fullName(game.member_to)}</p>
+              <p className="mt-0.5 text-body text-gray-500">Entrega: {fullName(game.membership)}</p>
+              <p className="mt-0.5 text-body text-gray-500">Recibe: {fullName(game.member_to)}</p>
             </div>
           )}
         </div>
