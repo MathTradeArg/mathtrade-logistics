@@ -1,12 +1,13 @@
 "use client";
 
 import AddByCodeField, { type AddByCodeResult } from '@/components/boxes/AddByCodeField';
+import AddResultDialog from '@/components/boxes/AddResultDialog';
 import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, PhaseBlocked, StaffDialog, StaffEmpty, StaffError, StaffPage, StaffSearch, ThumbCta } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
-import { resolveCodeToAdd } from '@/hooks/boxes/addByCode';
+import { resolveCodeToAdd, summarizeAdd, type AddSummary } from '@/hooks/boxes/addByCode';
 import { addItem as addItemApi, getBox, listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
 import { apiDestinationId, boxDestinationLabel, boxedTradeIds, boxContentsSummary, boxLaneDestination, boxMatchesLane, isBoxOpen, isPackable, matchesSearch, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, receptorName, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import { boxErrorMessage, useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
@@ -57,6 +58,7 @@ export default function PackingBox({
   const [showDelete, setShowDelete] = useState(false);
   const [showReopen, setShowReopen] = useState(false);
   const [addedTitles, setAddedTitles] = useState<string[] | null>(null);
+  const [addSummary, setAddSummary] = useState<AddSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // The box as the last add-by-code POST returned it: the next queued code
@@ -78,8 +80,10 @@ export default function PackingBox({
 
   const physicalDestId = apiDestinationId(destinationId);
 
-  const load = useCallback(async () => {
-    if (!boxId) return;
+  /** Reloads the box and its lists; returns the box, or null if it failed
+   *  (the error is shown on the screen). */
+  const load = useCallback(async (): Promise<Box | null> => {
+    if (!boxId) return null;
     setIsLoading(true);
     setError(null);
     try {
@@ -99,8 +103,10 @@ export default function PackingBox({
         ),
       );
       setItems(nextItems);
+      return nextBox;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo cargar la caja.');
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -162,16 +168,17 @@ export default function PackingBox({
 
   const handleAdd = async () => {
     if (selectedAdds.size === 0) return;
-    try {
-      const updated = await addItems(boxId, Array.from(selectedAdds));
-      if (updated) {
-        setBox(updated);
-        setSelectedAdds(new Set());
-        setMode('view');
-        await load();
-      }
-    } catch {
-      // toast via hook
+    const result = await addItems(boxId, Array.from(selectedAdds));
+    if (!result) return; // another action is running
+    if (result.box) setBox(result.box);
+    // Always reload, also after a failure: the games before it are in the box.
+    const boxAfter = await load();
+    const summary = summarizeAdd(result, boxAfter, items);
+    setSelectedAdds((prev) => new Set(Array.from(prev).filter((id) => !summary.added.includes(id))));
+    if (summary.failed.length === 0) {
+      setMode('view');
+    } else {
+      setAddSummary(summary); // failed games stay selected to retry
     }
   };
 
@@ -503,6 +510,8 @@ export default function PackingBox({
       >
         Solo se puede borrar una caja abierta y vacía.
       </StaffDialog>
+
+      <AddResultDialog summary={addSummary} onClose={() => setAddSummary(null)} />
 
       <StaffDialog
         open={addedTitles != null}

@@ -1,4 +1,4 @@
-import { resolveCodeToAdd } from '../addByCode';
+import { resolveCodeToAdd, summarizeAdd } from '../addByCode';
 import type { Box, Item } from '@/types';
 
 const item = (id: number, code: number, overrides: Partial<Item> = {}): Item => ({
@@ -105,5 +105,53 @@ describe('resolveCodeToAdd: the label code identifies one copy to add to the box
       kind: 'error',
       message: 'Ese código no existe o no es de este destino.',
     });
+  });
+});
+
+// Rule: after a batch the screen trusts the reloaded box: a game whose POST
+// timed out but that is in the box counts as added; each failed game is told
+// by its label code, title and reason.
+describe('summarizeAdd: what the reloaded box says about a batch', () => {
+  const catan = item(21, 101, { title: 'Catan' });
+  const azul = item(22, 102, { title: 'Azul' });
+  const titulo = item(23, 103, { title: 'Titulo' });
+  const items = [catan, azul, titulo];
+
+  it('lists each failed game as "code · title: reason"', () => {
+    const summary = summarizeAdd(
+      { box: null, added: [21, 22], failed: [{ tradeId: 23, reason: 'Ese juego ya está en otra caja.' }] },
+      box(10, null, [catan, azul]),
+      items,
+    );
+    expect(summary).toEqual({
+      added: [21, 22],
+      failed: [{ tradeId: 23, line: '00103 · Titulo: Ese juego ya está en otra caja.' }],
+    });
+  });
+
+  it('a failed game that is in the reloaded box counts as added (its answer was lost)', () => {
+    const summary = summarizeAdd(
+      {
+        box: null,
+        added: [21],
+        failed: [
+          { tradeId: 22, reason: 'No hay conexión o el servidor tardó demasiado. Probá de nuevo.' },
+          { tradeId: 23, reason: 'No se intentó: sin conexión.' },
+        ],
+      },
+      box(10, null, [catan, azul]),
+      items,
+    );
+    expect(summary.added).toEqual([21, 22]);
+    expect(summary.failed).toEqual([{ tradeId: 23, line: '00103 · Titulo: No se intentó: sin conexión.' }]);
+  });
+
+  it('without a reloaded box it keeps what the API answered', () => {
+    const summary = summarizeAdd(
+      { box: null, added: [], failed: [{ tradeId: 99, reason: 'Ese juego no existe.' }] },
+      null,
+      items,
+    );
+    expect(summary).toEqual({ added: [], failed: [{ tradeId: 99, line: 'Juego 99: Ese juego no existe.' }] });
   });
 });

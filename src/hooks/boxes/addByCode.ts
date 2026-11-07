@@ -1,6 +1,7 @@
 import { findBoxForTrade } from '@/hooks/boxes/boxGrouping';
 import type { Box, Item } from '@/types';
-import { parseTradeCodeQuery } from '@/utils/tradeCode';
+import type { AddItemsResult } from '@/hooks/boxes/useBoxLifecycle';
+import { formatTradeCode, parseTradeCodeQuery } from '@/utils/tradeCode';
 
 export type CodeResolution =
   | { kind: 'add'; item: Item }
@@ -65,4 +66,30 @@ export function resolveCodeToAdd(raw: string, ctx: CodeResolutionContext): CodeR
     return { kind: 'error', message: ADD_BY_CODE_ERRORS.notReceived };
   }
   return { kind: 'error', message: ADD_BY_CODE_ERRORS.otherDestination };
+}
+
+export type AddSummary = {
+  /** Trade ids that are in the box after the batch. */
+  added: number[];
+  /** Games that did not go in: "code · title: reason". */
+  failed: { tradeId: number; line: string }[];
+};
+
+/** What a batch did, trusting the box reloaded afterwards: a game whose POST
+ *  failed (e.g. timed out after the server saved it) but that is in the box
+ *  counts as added. */
+export function summarizeAdd(result: AddItemsResult, boxAfter: Box | null, items: Item[]): AddSummary {
+  const inBox = new Set((boxAfter?.math_items ?? []).map((item) => item.id));
+  const added = [...result.added];
+  const failed: AddSummary['failed'] = [];
+  result.failed.forEach(({ tradeId, reason }) => {
+    if (inBox.has(tradeId)) {
+      added.push(tradeId);
+      return;
+    }
+    const item = items.find((candidate) => candidate.id === tradeId);
+    const label = item ? `${formatTradeCode(item.assigned_trade_code)} · ${item.title}` : `Juego ${tradeId}`;
+    failed.push({ tradeId, line: `${label}: ${reason}` });
+  });
+  return { added, failed };
 }

@@ -43,16 +43,19 @@ export default function IncomingBoxPage() {
   const title = box?.number != null ? `#${box.number}` : 'Caja';
   useStaffTitle(box ? `${title}` : 'Caja');
 
-  const load = useCallback(async () => {
-    if (!boxId) return;
+  /** Reloads the box; returns it, or null if it failed (shown as `error`). */
+  const load = useCallback(async (): Promise<Box | null> => {
+    if (!boxId) return null;
     setIsLoading(true);
     setError(null);
     try {
       const next = await getBox(boxId);
       setBox(next);
       setSelected(new Set());
+      return next;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo cargar la caja.');
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +120,9 @@ export default function IncomingBoxPage() {
   }
 
   if (box && canBeRebuilt(box) && isBoxOpen(box)) {
-    return <TransitBoxView box={box} onReload={load} userId={userId} />;
+    return (
+      <TransitBoxView box={box} onReload={load} reloadError={error} reloading={isLoading} userId={userId} />
+    );
   }
 
   const rebuildable = box ? canBeRebuilt(box) : false;

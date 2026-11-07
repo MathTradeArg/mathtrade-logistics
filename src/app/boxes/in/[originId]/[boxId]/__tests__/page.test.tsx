@@ -437,3 +437,102 @@ describe('IncomingBoxPage rebuilt box: add by label code', () => {
     await waitFor(() => expect(boxApi.addItem).toHaveBeenCalledWith(392, 12));
   });
 });
+
+// Rule: in a rebuilt box a batch adds what it can; the screen then shows the
+// real box and which games did not go in and why. Load failures are shown
+// with a way to retry, never swallowed.
+describe('IncomingBoxPage rebuilt box: batch add with a partial failure and visible load errors', () => {
+  const reopened = {
+    id: 392,
+    number: 17,
+    origin: 8,
+    origin_name: 'Salta',
+    destiny: 1,
+    destination_name: 'AMBA',
+    lane_destination: 1,
+    closed_at: null,
+    tracking: 'VC-10',
+    math_items: [] as unknown[],
+  };
+  const loose = (id: number, code: number, title: string) => ({
+    id, item_id: 90 + id, title, assigned_trade_code: code, status: 4,
+    via_meeting: true, location: 3, lane_destination: 3, origin_location: 8,
+  });
+  const catan = loose(21, 101, 'Catan');
+  const azul = loose(22, 102, 'Azul');
+  const titulo = loose(23, 103, 'Titulo');
+  // The automocked module keeps the class prototype, so instanceof works.
+  const boxError = (message: string, status: number) =>
+    Object.assign(Object.create(boxApi.BoxApiError.prototype), { message, status, body: { detail: message } });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, userId: '1' });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockGetBox.mockResolvedValue(reopened);
+    mockListBoxes.mockResolvedValue([reopened]);
+    mockListItems.mockResolvedValue([catan, azul, titulo]);
+  });
+
+  it('shows which game failed and why, reloads the box and keeps only the failed one selected', async () => {
+    mockGetBox.mockResolvedValueOnce(reopened).mockResolvedValue({ ...reopened, math_items: [catan, azul] });
+    (boxApi.addItem as jest.Mock)
+      .mockResolvedValueOnce({ ...reopened, math_items: [catan] })
+      .mockRejectedValueOnce(boxError('Trade is already in another box.', 409))
+      .mockResolvedValueOnce({ ...reopened, math_items: [catan, azul] });
+    // Order of the POSTs follows the selection: Catan, Titulo, Azul.
+
+    render(<IncomingBoxPage />, { wrapper });
+    const add = await screen.findByRole('button', { name: 'Agregar juegos' });
+    await waitFor(() => expect(add).toBeEnabled());
+    fireEvent.click(add);
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Catan/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Titulo/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Azul/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar (3)' }));
+
+    expect(await screen.findByText('Se agregaron 2 juegos. No se pudieron agregar:')).toBeInTheDocument();
+    expect(screen.getByText('00103 · Titulo: Ese juego ya está en otra caja.')).toBeInTheDocument();
+    expect(boxApi.addItem).toHaveBeenCalledTimes(3);
+    expect(mockGetBox).toHaveBeenCalledTimes(2);
+
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+    expect(await screen.findByRole('button', { name: 'Agregar (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Titulo/ })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('if the boxes and games of the destination fail to load, it says so with Reintentar', async () => {
+    mockListBoxes
+      .mockRejectedValueOnce(new Error('No hay conexión o el servidor tardó demasiado. Probá de nuevo.'))
+      .mockResolvedValue([reopened]);
+
+    render(<IncomingBoxPage />, { wrapper });
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('No hay conexión o el servidor tardó demasiado. Probá de nuevo.');
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+    await waitFor(() => expect(mockListBoxes).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+  });
+
+  it('if reloading the box fails, the rebuilt box shows the error with Reintentar', async () => {
+    mockGetBox
+      .mockResolvedValueOnce(reopened)
+      .mockRejectedValueOnce(new Error('No hay conexión o el servidor tardó demasiado. Probá de nuevo.'))
+      .mockResolvedValue({ ...reopened, math_items: [catan] });
+    (boxApi.addItem as jest.Mock).mockResolvedValue({ ...reopened, math_items: [catan] });
+
+    render(<IncomingBoxPage />, { wrapper });
+    const add = await screen.findByRole('button', { name: 'Agregar juegos' });
+    await waitFor(() => expect(add).toBeEnabled());
+    fireEvent.click(add);
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Catan/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar (1)' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('No hay conexión o el servidor tardó demasiado. Probá de nuevo.');
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+    await waitFor(() => expect(mockGetBox).toHaveBeenCalledTimes(3));
+    expect(await screen.findByText(/00101 · Catan/)).toBeInTheDocument();
+  });
+});

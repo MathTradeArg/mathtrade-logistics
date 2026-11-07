@@ -232,3 +232,74 @@ describe('OutgoingBoxPage add by label code: Enter adds the copy and keeps the f
     expect(boxApi.addItem).not.toHaveBeenCalled();
   });
 });
+
+// Rule: in a batch the games that can go in are added; the screen then shows
+// the real box, and which games did not go in and why. Failed games stay
+// selected to retry.
+describe('OutgoingBoxPage batch add: a partial failure reloads the box and lists the games that did not go in', () => {
+  const catan = { id: 21, title: 'Catan', assigned_trade_code: 101, status: 5, location: 2 };
+  const azul = { id: 22, title: 'Azul', assigned_trade_code: 102, status: 5, location: 2 };
+  const titulo = { id: 23, title: 'Titulo', assigned_trade_code: 103, status: 5, location: 2 };
+  const mockAddItems = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockUseBoxLifecycle.mockReturnValue({
+      inFlight: false,
+      addItems: mockAddItems,
+      removeItem: jest.fn(),
+      moveItem: jest.fn(),
+      closeBox: jest.fn(),
+      deleteBox: mockDeleteBox,
+      reopenBox: mockReopenBox,
+    });
+    mockListBoxes.mockResolvedValue([]);
+    mockListItems.mockResolvedValue([catan, azul, titulo]);
+  });
+
+  const pickAllAndAdd = async () => {
+    fireEvent.click(await screen.findByRole('button', { name: 'Agregar juegos' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Catan/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Azul/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Titulo/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar (3)' }));
+  };
+
+  it('shows which game failed and why, reloads the box and keeps only the failed one selected', async () => {
+    const after = { ...emptyBox, math_items: [catan, azul] };
+    mockGetBox.mockResolvedValueOnce(emptyBox).mockResolvedValue(after);
+    mockAddItems.mockResolvedValue({
+      box: after,
+      added: [21, 22],
+      failed: [{ tradeId: 23, reason: 'Ese juego ya está en otra caja.' }],
+    });
+
+    render(<OutgoingBoxPage />, { wrapper });
+    await pickAllAndAdd();
+
+    expect(await screen.findByText('Se agregaron 2 juegos. No se pudieron agregar:')).toBeInTheDocument();
+    expect(screen.getByText('00103 · Titulo: Ese juego ya está en otra caja.')).toBeInTheDocument();
+    expect(mockAddItems).toHaveBeenCalledWith(399, [21, 22, 23]);
+    expect(mockGetBox).toHaveBeenCalledTimes(2);
+
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+    expect(screen.queryByText(/No se pudieron agregar/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Agregar (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Titulo/ })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('a whole batch that went in goes back to the box with no dialog', async () => {
+    const after = { ...emptyBox, math_items: [catan, azul, titulo] };
+    mockGetBox.mockResolvedValueOnce(emptyBox).mockResolvedValue(after);
+    mockAddItems.mockResolvedValue({ box: after, added: [21, 22, 23], failed: [] });
+
+    render(<OutgoingBoxPage />, { wrapper });
+    await pickAllAndAdd();
+
+    expect(await screen.findByRole('button', { name: 'Cerrar caja' })).toBeInTheDocument();
+    expect(screen.queryByText(/No se pudieron agregar/)).not.toBeInTheDocument();
+    expect(mockGetBox).toHaveBeenCalledTimes(2);
+  });
+});

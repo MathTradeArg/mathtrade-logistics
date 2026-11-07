@@ -1,6 +1,6 @@
 import { ActionStatusProvider, useActionStatus } from '@/contexts/ActionStatusContext';
 import { BoxApiError } from '@/hooks/boxes/boxApi';
-import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
+import { boxErrorMessage, useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { act, renderHook } from '@testing-library/react';
 import fetchMock from 'jest-fetch-mock';
 
@@ -192,5 +192,134 @@ describe('useBoxLifecycle', () => {
 
     expect(outcome).toEqual({ status: 'has_items', titles: ['Root'] });
     expect(fetchMock.mock.calls[1][1]?.method).toBe('DELETE');
+  });
+});
+
+// Rule: in a batch the games that can go in are added; at the end the screen
+// knows how many went in and which did not, with the reason in Spanish.
+describe('useBoxLifecycle.addItems: a batch adds what it can and reports each game that failed', () => {
+  const boxWith = (ids: number[]) => ({
+    ...openBox,
+    math_items: ids.map((id) => ({ id, title: `Game ${id}`, assigned_trade_code: 100 + id })),
+  });
+  const postCount = () => fetchMock.mock.calls.filter(([, init]) => init?.method === 'POST').length;
+  const render = () => renderHook(
+    () => ({ lifecycle: useBoxLifecycle(), status: useActionStatus() }),
+    { wrapper },
+  );
+
+  beforeEach(() => {
+    fetchMock.resetMocks();
+    window.localStorage.setItem('authToken', 'test-token');
+  });
+
+  it('a game already in another box does not stop the rest of the batch', async () => {
+    fetchMock.mockResponseOnce(JSON.stringify(boxWith([1])));
+    fetchMock.mockResponseOnce(JSON.stringify({ detail: 'Trade is already in another box.' }), { status: 409 });
+    fetchMock.mockResponseOnce(JSON.stringify(boxWith([1, 3])));
+    const { result } = render();
+
+    let outcome: unknown;
+    await act(async () => {
+      outcome = await result.current.lifecycle.addItems(10, [1, 2, 3]);
+    });
+
+    expect(postCount()).toBe(3);
+    expect(outcome).toEqual({
+      box: boxWith([1, 3]),
+      added: [1, 3],
+      failed: [{ tradeId: 2, reason: 'Ese juego ya está en otra caja.' }],
+    });
+    expect(result.current.status.actionError).toBe('Se agregaron 2 de 3 juegos.');
+  });
+
+  it('a network failure stops the batch and marks the rest as not tried', async () => {
+    fetchMock.mockResponseOnce(JSON.stringify(boxWith([1])));
+    fetchMock.mockRejectOnce(new TypeError('Failed to fetch'));
+    fetchMock.mockResponseOnce(JSON.stringify(boxWith([1, 3])));
+    const { result } = render();
+
+    let outcome: unknown;
+    await act(async () => {
+      outcome = await result.current.lifecycle.addItems(10, [1, 2, 3]);
+    });
+
+    expect(postCount()).toBe(2);
+    expect(outcome).toEqual({
+      box: boxWith([1]),
+      added: [1],
+      failed: [
+        { tradeId: 2, reason: 'No hay conexión o el servidor tardó demasiado. Probá de nuevo.' },
+        { tradeId: 3, reason: 'No se intentó: sin conexión.' },
+      ],
+    });
+    expect(result.current.status.actionError).toBe('Se agregaron 1 de 3 juegos.');
+  });
+
+  it.each([401, 403])('a %p (session or permission) stops the batch too', async (status) => {
+    fetchMock.mockResponseOnce(JSON.stringify({ detail: 'You do not have permission to perform this action.' }), { status });
+    fetchMock.mockResponseOnce(JSON.stringify(boxWith([2])));
+    const { result } = render();
+
+    let outcome: { failed: { tradeId: number; reason: string }[] } | null = null;
+    await act(async () => {
+      outcome = await result.current.lifecycle.addItems(10, [1, 2]);
+    });
+
+    expect(postCount()).toBe(1);
+    expect(outcome!.failed).toEqual([
+      { tradeId: 1, reason: 'No tenés permiso para hacer esto.' },
+      { tradeId: 2, reason: 'No se intentó: sin permiso.' },
+    ]);
+    expect(result.current.status.actionError).toBe('No se pudo agregar ningún juego.');
+  });
+
+  it('a whole batch that goes in says how many were added', async () => {
+    fetchMock.mockResponseOnce(JSON.stringify(boxWith([1])));
+    fetchMock.mockResponseOnce(JSON.stringify(boxWith([1, 2])));
+    fetchMock.mockResponseOnce(JSON.stringify(boxWith([1, 2, 3])));
+    const { result } = render();
+
+    let outcome: unknown;
+    await act(async () => {
+      outcome = await result.current.lifecycle.addItems(10, [1, 2, 3]);
+    });
+
+    expect(outcome).toEqual({ box: boxWith([1, 2, 3]), added: [1, 2, 3], failed: [] });
+    expect(result.current.status.actionSuccess).toBe('3 juegos agregados a la caja.');
+    expect(result.current.status.actionError).toBeNull();
+  });
+
+  it('a single game says it in singular', async () => {
+    fetchMock.mockResponseOnce(JSON.stringify(boxWith([1])));
+    const { result } = render();
+
+    await act(async () => {
+      await result.current.lifecycle.addItems(10, [1]);
+    });
+
+    expect(result.current.status.actionSuccess).toBe('1 juego agregado a la caja.');
+  });
+});
+
+// Rule: every reason the server gives for refusing a box change reaches the
+// volunteer in Spanish.
+describe('boxErrorMessage: server box errors in Spanish', () => {
+  it.each([
+    ['Trade not found.', 'Ese juego no existe.'],
+    ['Trade is not in this box.', 'Ese juego ya no está en esta caja.'],
+    ['Cannot remove items from a closed box.', 'La caja está cerrada: reabrila para sacar juegos.'],
+    ['Cannot move items unless both boxes are open.', 'Las dos cajas tienen que estar abiertas.'],
+    ['Boxes have different destinations.', 'Las cajas tienen distinto destino.'],
+    ['Cannot close an empty box.', 'No se puede cerrar una caja vacía.'],
+    ['Destination box not found.', 'No se encontró la caja de destino.'],
+    ['Only event staff can reopen a box that is already in a shipment.', 'Solo el staff del evento puede reabrir una caja que ya está en un envío.'],
+    ['Cannot delete a closed box.', 'No se puede borrar una caja cerrada.'],
+    ['Not found.', 'No se encontró la caja.'],
+    ['You do not have permission to perform this action.', 'No tenés permiso para hacer esto.'],
+    ['Invalid token.', 'Tu sesión expiró. Volvé a iniciar sesión.'],
+    ['Authentication credentials were not provided.', 'Tu sesión expiró. Volvé a iniciar sesión.'],
+  ])('%p -> %p', (detail, spanish) => {
+    expect(boxErrorMessage(new BoxApiError(detail, 409, { detail }))).toBe(spanish);
   });
 });

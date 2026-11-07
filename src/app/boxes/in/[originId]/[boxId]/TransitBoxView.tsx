@@ -1,10 +1,11 @@
 "use client";
 
 import AddByCodeField, { type AddByCodeResult } from '@/components/boxes/AddByCodeField';
-import { GameRow, StaffDialog, StaffEmpty, StaffPage, ThumbCta } from '@/components/staff';
+import AddResultDialog from '@/components/boxes/AddResultDialog';
+import { GameRow, StaffBanner, StaffDialog, StaffEmpty, StaffPage, ThumbCta } from '@/components/staff';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
-import { resolveCodeToAdd } from '@/hooks/boxes/addByCode';
+import { resolveCodeToAdd, summarizeAdd, type AddSummary } from '@/hooks/boxes/addByCode';
 import { addItem as addItemApi, listBoxes, listItems, markItemsReceived } from '@/hooks/boxes/boxApi';
 import { boxLaneDestination, findBoxForTrade, isBoxOpen, receptorName } from '@/hooks/boxes/boxGrouping';
 import { boxErrorMessage, useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
@@ -32,10 +33,18 @@ function fitsBoxDestination(item: Item, box: Box): boolean {
 export default function TransitBoxView({
   box,
   onReload,
+  reloadError = null,
+  reloading = false,
   userId,
 }: {
   box: Box;
-  onReload: () => Promise<void>;
+  /** The parent's reload: resolves with the box, or null when it failed
+   *  (never rejects; the failure comes back as `reloadError`). */
+  onReload: () => Promise<Box | null>;
+  /** The parent's load error: the parent renders only this view while the
+   *  box is open, so this view shows it. */
+  reloadError?: string | null;
+  reloading?: boolean;
   userId: string | number | null;
 }) {
   const { inFlight, addItems, removeItem, moveItem, closeBox } = useBoxLifecycle();
@@ -49,6 +58,9 @@ export default function TransitBoxView({
   const [movingTradeId, setMovingTradeId] = useState<number | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Item | null>(null);
   const [closedNumber, setClosedNumber] = useState<number | null>(null);
+  const [addSummary, setAddSummary] = useState<AddSummary | null>(null);
+  const [extrasError, setExtrasError] = useState<string | null>(null);
+  const [loadingExtras, setLoadingExtras] = useState(false);
 
   const canMutate = isBoxOpen(box);
   // What the box holds after the last add-by-code POST: the next queued code
@@ -61,20 +73,30 @@ export default function TransitBoxView({
   }
   const addedByCodeRef = useRef(0);
 
+  /** The destination's boxes and games (add list, move targets). Never
+   *  rejects: a failure is kept in `extrasError` and shown with a retry. */
   const loadExtras = useCallback(async () => {
-    const [nextDestBoxes, destItems] = await Promise.all([
-      listBoxes({ destination: box.destiny }),
-      listItems({ destination: box.destiny, origin: box.origin }),
-    ]);
-    setDestBoxes(nextDestBoxes);
-    setOpenSiblings(
-      nextDestBoxes.filter((candidate) => candidate.id !== box.id && isBoxOpen(candidate) && candidate.origin === box.origin),
-    );
-    setItems(destItems);
+    setLoadingExtras(true);
+    setExtrasError(null);
+    try {
+      const [nextDestBoxes, destItems] = await Promise.all([
+        listBoxes({ destination: box.destiny }),
+        listItems({ destination: box.destiny, origin: box.origin }),
+      ]);
+      setDestBoxes(nextDestBoxes);
+      setOpenSiblings(
+        nextDestBoxes.filter((candidate) => candidate.id !== box.id && isBoxOpen(candidate) && candidate.origin === box.origin),
+      );
+      setItems(destItems);
+    } catch (err) {
+      setExtrasError(err instanceof Error ? err.message : 'No se pudieron cargar los juegos de este destino.');
+    } finally {
+      setLoadingExtras(false);
+    }
   }, [box.destiny, box.id, box.origin]);
 
   useEffect(() => {
-    loadExtras().catch(() => undefined);
+    loadExtras();
   }, [loadExtras]);
 
   const availableItems = useMemo(() => {
@@ -120,14 +142,17 @@ export default function TransitBoxView({
 
   const handleAdd = async () => {
     if (selectedAdds.size === 0) return;
-    try {
-      await addItems(box.id, Array.from(selectedAdds));
-      setSelectedAdds(new Set());
+    const result = await addItems(box.id, Array.from(selectedAdds));
+    if (!result) return; // another action is running
+    // Always reload, also after a failure: the games before it are in the box.
+    const boxAfter = (await onReload()) ?? result.box;
+    await loadExtras();
+    const summary = summarizeAdd(result, boxAfter, items);
+    setSelectedAdds((prev) => new Set(Array.from(prev).filter((id) => !summary.added.includes(id))));
+    if (summary.failed.length === 0) {
       setMode('view');
-      await onReload();
-      await loadExtras();
-    } catch {
-      // toast via hook
+    } else {
+      setAddSummary(summary); // failed games stay selected to retry
     }
   };
 
@@ -158,12 +183,8 @@ export default function TransitBoxView({
   const handleAddByCodeIdle = async () => {
     if (addedByCodeRef.current === 0) return;
     addedByCodeRef.current = 0;
-    try {
-      await onReload();
-      await loadExtras();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo recargar la caja.');
-    }
+    await onReload();
+    await loadExtras();
   };
 
   const handleRemove = async () => {
@@ -212,6 +233,13 @@ export default function TransitBoxView({
       <p className="mt-2 text-sm text-gray-600">
         Caja reabierta para rearmar. Marcá todos los juegos como recibidos.
       </p>
+
+      {reloadError && (
+        <StaffBanner onRetry={() => { void onReload(); }} retrying={reloading}>{reloadError}</StaffBanner>
+      )}
+      {extrasError && (
+        <StaffBanner onRetry={() => { void loadExtras(); }} retrying={loadingExtras}>{extrasError}</StaffBanner>
+      )}
 
       {mode === 'view' && (
         <>
@@ -360,13 +388,15 @@ export default function TransitBoxView({
         {removeTarget && `¿Sacar ${removeTarget.title} de esta caja?`}
       </StaffDialog>
 
+      <AddResultDialog summary={addSummary} onClose={() => setAddSummary(null)} />
+
       <StaffDialog
         open={closedNumber != null}
         title="Se cierra con el mismo número"
         confirmLabel="Listo"
         onConfirm={() => {
           setClosedNumber(null);
-          onReload().catch(() => undefined);
+          void onReload(); // never rejects; a failure shows the parent's error
         }}
       >
         {closedNumber != null && (
