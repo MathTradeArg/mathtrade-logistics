@@ -251,7 +251,7 @@ export default function IncomingBoxPage() {
         onConfirm={handleRebuild}
         onCancel={() => setShowRebuild(false)}
       >
-        La caja vuelve a estar abierta para rehacerla y conserva su número{box?.number != null ? ` (#${box.number})` : ''}. Los juegos que siguen a otras ciudades no se marcan como recibidos.
+        La caja vuelve a estar abierta para rehacerla y conserva su número{box?.number != null ? ` (#${box.number})` : ''}. Marcá todos sus juegos como recibidos, también los que siguen a otras ciudades.
       </StaffDialog>
     </StaffPage>
   );

@@ -197,7 +197,7 @@ describe('IncomingBoxPage rebuild of transit boxes', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Rearmar caja' }));
     expect(
-      screen.getByText(/Los juegos que siguen a otras ciudades no se marcan como recibidos/),
+      screen.getByText(/Marcá todos sus juegos como recibidos, también los que siguen a otras ciudades/),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Rearmar' }));
 
@@ -206,29 +206,7 @@ describe('IncomingBoxPage rebuild of transit boxes', () => {
     expect(screen.getByRole('button', { name: 'Sacar' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Agregar juegos' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Marcar recibidos/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Marcar recibido' })).not.toBeInTheDocument();
-  });
-
-  it('in a rebuilt transit box only games that end in AMBA can be marked received; games going on to other cities cannot', async () => {
-    mockGetBox.mockResolvedValue({
-      ...closedTransitBox,
-      closed_at: null,
-      math_items: [
-        { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, location: 3, location_name: 'Córdoba', lane_destination: 3 },
-        { id: 11, item_id: 92, title: 'Brass', assigned_trade_code: 20042, status: 4, location: 1, location_name: 'AMBA', lane_destination: 1 },
-      ],
-    });
-
-    render(<IncomingBoxPage />, { wrapper });
-
-    expect(
-      await screen.findByText(/Los juegos que siguen a otras ciudades no se marcan como recibidos/),
-    ).toBeInTheDocument();
-    const receiveButtons = screen.getAllByRole('button', { name: 'Marcar recibido' });
-    expect(receiveButtons).toHaveLength(1);
-    fireEvent.click(receiveButtons[0]);
-
-    await waitFor(() => expect(boxApi.markItemsReceived).toHaveBeenCalledWith([20042], '1'));
+    expect(screen.getByRole('button', { name: 'Marcar recibido' })).toBeInTheDocument();
   });
 
   it('does not offer rebuilding a box to AMBA that is in a shipment', async () => {
@@ -260,5 +238,60 @@ describe('IncomingBoxPage rebuild of transit boxes', () => {
 
     await screen.findByRole('checkbox', { name: /Wingspan/ });
     expect(screen.queryByRole('button', { name: 'Rearmar caja' })).not.toBeInTheDocument();
+  });
+});
+
+// Rule: every game in a box that is opened at the event is marked "en evento",
+// including the ones that go on to other cities.
+describe('IncomingBoxPage: every game of an opened box is marked en evento, also those going on to other cities', () => {
+  const reopenedTransitBox = {
+    id: 392,
+    number: 16,
+    origin: 8,
+    origin_name: 'Salta',
+    destiny: 3,
+    destination_name: 'Córdoba',
+    closed_at: null,
+    tracking: 'VC-123',
+    math_items: [
+      { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, location: 3, location_name: 'Córdoba', lane_destination: 3 },
+      { id: 11, item_id: 92, title: 'Brass', assigned_trade_code: 20042, status: 4, location: 1, location_name: 'AMBA', lane_destination: 1 },
+    ],
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, userId: '1' });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockListBoxes.mockResolvedValue([]);
+    mockListItems.mockResolvedValue([]);
+    mockGetBox.mockResolvedValue(reopenedTransitBox);
+  });
+
+  it('in a reopened transit box a game going on to another city can be marked received', async () => {
+    render(<IncomingBoxPage />, { wrapper });
+
+    await screen.findByRole('button', { name: 'Cerrar de nuevo' });
+    const receiveButtons = screen.getAllByRole('button', { name: 'Marcar recibido' });
+    expect(receiveButtons).toHaveLength(2);
+    fireEvent.click(receiveButtons[0]);
+
+    await waitFor(() => expect(boxApi.markItemsReceived).toHaveBeenCalledWith([20040], '1'));
+  });
+
+  it('does not tell volunteers that games going on to other cities are not marked', async () => {
+    mockGetBox
+      .mockResolvedValueOnce({ ...reopenedTransitBox, closed_at: '2026-09-01T10:00:00Z' })
+      .mockResolvedValue(reopenedTransitBox);
+    mockReopenBox.mockResolvedValue(reopenedTransitBox);
+
+    render(<IncomingBoxPage />, { wrapper });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Rearmar caja' }));
+    expect(screen.queryByText(/no se marcan como recibidos/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Rearmar' }));
+
+    await screen.findByRole('button', { name: 'Cerrar de nuevo' });
+    expect(screen.queryByText(/no se marcan como recibidos/)).not.toBeInTheDocument();
   });
 });

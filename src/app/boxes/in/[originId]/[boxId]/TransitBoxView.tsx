@@ -1,7 +1,6 @@
 "use client";
 
 import { GameRow, StaffDialog, StaffEmpty, StaffPage, ThumbCta } from '@/components/staff';
-import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { listBoxes, listItems, markItemsReceived } from '@/hooks/boxes/boxApi';
 import { boxLaneDestination, findBoxForTrade, isBoxOpen, receptorName } from '@/hooks/boxes/boxGrouping';
@@ -12,14 +11,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type Mode = 'view' | 'add' | 'move';
 
-/** A game whose trip ends at the event (AMBA, attendees included): it can be
- *  marked received. Games going on to other cities are rebuilt, not received. */
-function endsInAmba(item: Item): boolean {
-  return (item.lane_destination ?? item.location) === EVENT_LOCATION_ID;
-}
-
 /** A transit box reopened at the event to rebuild it: add, remove and move
- *  games, receive the ones that end in AMBA, and close it again. */
+ *  games, mark every game received at the event (also the ones going on to
+ *  other cities), and close it again. */
 export default function TransitBoxView({
   box,
   onReload,
@@ -157,7 +151,7 @@ export default function TransitBoxView({
     <StaffPage className="pb-28">
       <p className="text-sm text-gray-500">{box.origin_name} → {box.destination_name}</p>
       <p className="mt-2 text-sm text-gray-600">
-        Caja reabierta para rearmar. Los juegos que siguen a otras ciudades no se marcan como recibidos.
+        Caja reabierta para rearmar. Marcá todos los juegos como recibidos.
       </p>
 
       {mode === 'view' && (
@@ -174,7 +168,7 @@ export default function TransitBoxView({
                   />
                   {canMutate && (
                     <div className="flex flex-col gap-3 px-4 pb-4">
-                      {endsInAmba(item) && item.status !== 5 && item.status !== 6 && (
+                      {item.status !== 5 && item.status !== 6 && (
                         <button
                           type="button"
                           disabled={inFlight || receivingCode != null}
