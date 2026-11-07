@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from 'react';
+import { apiErrorMessage, fetchWithTimeout } from '@/utils/fetchWithTimeout';
 
 interface UseApiOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -54,15 +55,15 @@ export const useApi = <T>(endpoint: string, options: UseApiOptions = { method: '
         requestBody = JSON.stringify(body);
       }
 
-      const response = await fetch(`${MT_API_HOST}${endpoint}${pathParams}`, {
-        method: method,
-        headers: requestHeaders,
-        body: requestBody,
-      });
+      const response = await fetchWithTimeout(
+        `${MT_API_HOST}${endpoint}${pathParams}`,
+        { method, headers: requestHeaders, body: requestBody },
+        { retries: method === 'GET' ? 2 : 0 },
+      );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: `Request failed with status ${response.status}` }));
-        const error = new Error(errorData.message || errorData.detail || `Error: ${response.statusText}`);
+        const errorData = await response.json().catch(() => null);
+        const error = new Error(apiErrorMessage(errorData, `El servidor respondió con un error (${response.status}).`));
         (error as any).body = errorData;
         (error as any).status = response.status;
         throw error;
