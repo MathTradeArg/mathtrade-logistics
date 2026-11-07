@@ -1,12 +1,16 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, StaffPage } from '@/components/staff';
+import { GameRow, StaffBanner, StaffPage } from '@/components/staff';
 import { ROLES } from '@/config/roles';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useOperationalExport } from '@/hooks/useOperationalExport';
 import Link from 'next/link';
 import { useState } from 'react';
+
+const formatClock = (at: Date) =>
+  `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
 
 const rowClass = 'staff-card flex min-h-14 w-full items-center px-4 text-left font-medium text-gray-900';
 
@@ -14,6 +18,7 @@ export default function MorePage() {
   const { isAuthenticated, isAdmin, isLoading: authIsLoading, role, cityAccess } = useAuth();
   const { eventPhase, isLoadingEventPhase, updateEventPhase } = useEventPhase();
   const [isUpdatingPhase, setIsUpdatingPhase] = useState(false);
+  const operationalExport = useOperationalExport();
 
   const handlePhase = async (phase: number) => {
     const names = ['no iniciado', 'recepción', 'entrega'];
@@ -156,6 +161,22 @@ export default function MorePage() {
               >
                 Tele
               </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                className={`${rowClass} disabled:opacity-60`}
+                disabled={operationalExport.isLoading}
+                onClick={() => operationalExport.download()}
+              >
+                {operationalExport.isLoading ? 'Armando la planilla...' : 'Descargar planilla del evento (Excel)'}
+              </button>
+              {operationalExport.error && <StaffBanner>{operationalExport.error}</StaffBanner>}
+              {operationalExport.lastDownloadedAt && (
+                <p className="mt-2 px-1 text-sm text-gray-500">
+                  Descargada a las {formatClock(operationalExport.lastDownloadedAt)}
+                </p>
+              )}
             </li>
           </ul>
         </div>

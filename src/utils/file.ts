@@ -17,3 +17,17 @@ export const fileToBase64 = (file: File): Promise<string> =>
     };
     reader.onerror = (error) => reject(error);
   });
+
+/** Saves a Blob as a file through a temporary `<a download>`. */
+export function downloadBlob(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  // Revoke on the next tick: some browsers start the download after click() returns.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
