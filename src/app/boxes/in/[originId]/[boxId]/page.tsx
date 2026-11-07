@@ -17,11 +17,13 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import TransitBoxView from './TransitBoxView';
 
-/** Neither end is AMBA (the backend's transit box): it reaches the event
- *  inside its shipment and event staff may reopen it to rebuild it. Boxes to
- *  AMBA, mixed ones included, are received instead. */
+/** Event staff may reopen a box that reached the event to rebuild it: a
+ *  transit box (neither end is AMBA) or a box to AMBA already in a shipment.
+ *  A box leaving AMBA already left; a box to AMBA never shipped keeps the
+ *  receive flow. */
 function canBeRebuilt(box: Box): boolean {
-  return box.origin !== EVENT_LOCATION_ID && box.destiny !== EVENT_LOCATION_ID;
+  if (box.origin === EVENT_LOCATION_ID) return false;
+  return box.destiny !== EVENT_LOCATION_ID || box.tracking != null;
 }
 
 export default function IncomingBoxPage() {

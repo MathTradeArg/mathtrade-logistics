@@ -209,34 +209,100 @@ describe('IncomingBoxPage rebuild of transit boxes', () => {
     expect(screen.getByRole('button', { name: 'Marcar recibido' })).toBeInTheDocument();
   });
 
-  it('does not offer rebuilding a box to AMBA that is in a shipment', async () => {
-    mockGetBox.mockResolvedValue({ ...ambaBox, closed_at: '2026-09-01T10:00:00Z', tracking: 'VC-9' });
-
-    render(<IncomingBoxPage />, { wrapper });
-
-    await screen.findByRole('checkbox', { name: /Catan/ });
-    expect(screen.queryByRole('button', { name: 'Rearmar caja' })).not.toBeInTheDocument();
-  });
-
-  it('does not offer rebuilding a mixed-locality box to AMBA (it is received, not rebuilt)', async () => {
+  it('does not offer rebuilding a box leaving AMBA that is in a shipment (it already left)', async () => {
     mockGetBox.mockResolvedValue({
-      id: 401,
-      number: 17,
-      origin: 8,
-      origin_name: 'Salta',
-      destiny: 1,
-      destination_name: 'AMBA',
-      closed_at: '2026-09-01T10:00:00Z',
-      tracking: 'VC-10',
-      math_items: [
-        { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, via_meeting: true, location: 3, location_name: 'Córdoba' },
-        { id: 10, item_id: 91, title: 'Azul', assigned_trade_code: 20041, status: 4, via_meeting: true, location: 4, location_name: 'Catamarca' },
-      ],
+      ...closedTransitBox,
+      origin: 1,
+      origin_name: 'AMBA',
     });
 
     render(<IncomingBoxPage />, { wrapper });
 
     await screen.findByRole('checkbox', { name: /Wingspan/ });
+    expect(screen.queryByRole('button', { name: 'Rearmar caja' })).not.toBeInTheDocument();
+  });
+});
+
+// Rule: event staff may also rebuild a box that arrived at the event (city ->
+// AMBA) inside a shipment: reopen it, add, take out and move games, and close
+// it again with the same number.
+describe('IncomingBoxPage rebuild of boxes that arrived at AMBA', () => {
+  const closedToAmba = {
+    id: 392,
+    number: 17,
+    origin: 8,
+    origin_name: 'Salta',
+    destiny: 1,
+    destination_name: 'AMBA',
+    lane_destination: 1,
+    closed_at: '2026-09-01T10:00:00Z',
+    tracking: 'VC-10',
+    math_items: [
+      { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, via_meeting: true, location: 3, location_name: 'Córdoba', lane_destination: 3, origin_location: 8 },
+      { id: 10, item_id: 91, title: 'Azul', assigned_trade_code: 20041, status: 4, via_meeting: true, location: 4, location_name: 'Catamarca', lane_destination: 4, origin_location: 8 },
+    ],
+  };
+  const openSibling = {
+    id: 402,
+    number: 18,
+    origin: 8,
+    origin_name: 'Salta',
+    destiny: 1,
+    destination_name: 'AMBA',
+    lane_destination: 1,
+    closed_at: null,
+    tracking: 'VC-10',
+    math_items: [],
+  };
+  // Not boxed yet, from Salta, going on to Córdoba through AMBA.
+  const looseViaAmba = {
+    id: 12, item_id: 93, title: 'Heat', assigned_trade_code: 20043, status: 4,
+    via_meeting: true, location: 3, location_name: 'Córdoba', lane_destination: 3, origin_location: 8,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, userId: '1' });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockListBoxes.mockResolvedValue([openSibling]);
+    mockListItems.mockResolvedValue([looseViaAmba]);
+  });
+
+  it('a box to AMBA in a shipment shows Rearmar caja and, reopened, can be edited and closed again', async () => {
+    const reopened = { ...closedToAmba, closed_at: null };
+    mockGetBox.mockResolvedValueOnce(closedToAmba).mockResolvedValue(reopened);
+    mockReopenBox.mockResolvedValue(reopened);
+    mockListBoxes.mockResolvedValue([reopened, openSibling]);
+
+    render(<IncomingBoxPage />, { wrapper });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Rearmar caja' }));
+    expect(
+      screen.getByText(/Marcá todos sus juegos como recibidos, también los que siguen a otras ciudades/),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Rearmar' }));
+
+    await waitFor(() => expect(mockReopenBox).toHaveBeenCalledWith(392));
+    expect(await screen.findByRole('button', { name: 'Cerrar de nuevo' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Sacar' })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: 'Marcar recibido' })).toHaveLength(2);
+    expect(await screen.findAllByRole('button', { name: 'Mover a otra caja' })).toHaveLength(2);
+
+    const add = screen.getByRole('button', { name: 'Agregar juegos' });
+    await waitFor(() => expect(add).toBeEnabled());
+    fireEvent.click(add);
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Heat/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar (1)' }));
+    await waitFor(() => expect(boxApi.addItem).toHaveBeenCalledWith(392, 12));
+  });
+
+  it('a box to AMBA that was never shipped keeps the receive flow (no rebuild)', async () => {
+    mockGetBox.mockResolvedValue({ ...closedToAmba, closed_at: null, tracking: null, number: null });
+
+    render(<IncomingBoxPage />, { wrapper });
+
+    await screen.findByRole('checkbox', { name: /Wingspan/ });
+    expect(screen.queryByRole('button', { name: 'Cerrar de nuevo' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Rearmar caja' })).not.toBeInTheDocument();
   });
 });

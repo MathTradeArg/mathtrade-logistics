@@ -1,6 +1,7 @@
 "use client";
 
 import { GameRow, StaffDialog, StaffEmpty, StaffPage, ThumbCta } from '@/components/staff';
+import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { listBoxes, listItems, markItemsReceived } from '@/hooks/boxes/boxApi';
 import { boxLaneDestination, findBoxForTrade, isBoxOpen, receptorName } from '@/hooks/boxes/boxGrouping';
@@ -11,7 +12,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type Mode = 'view' | 'add' | 'move';
 
-/** A transit box reopened at the event to rebuild it: add, remove and move
+/** Whether a game fits this box's destination (the API's add rule): a box
+ *  from a city to AMBA takes via_meeting games (they go through the event)
+ *  and games that stay in AMBA; any other box takes games for its lane. */
+function fitsBoxDestination(item: Item, box: Box): boolean {
+  const lane = item.lane_destination ?? item.location;
+  if (box.destiny === EVENT_LOCATION_ID) {
+    return Boolean(item.via_meeting) || lane === EVENT_LOCATION_ID;
+  }
+  return lane === boxLaneDestination(box);
+}
+
+/** A box reopened at the event to rebuild it (transit, or from a city to
+ *  AMBA in a shipment): add, remove and move
  *  games, mark every game received at the event (also the ones going on to
  *  other cities), and close it again. */
 export default function TransitBoxView({
@@ -57,7 +70,7 @@ export default function TransitBoxView({
     const inThisBox = new Set(box.math_items.map((item) => item.id));
     return items.filter((item) => {
       if (!(item.status === 4 || item.status === 5)) return false;
-      if ((item.lane_destination ?? item.location) !== boxLaneDestination(box) || item.origin_location !== box.origin) return false;
+      if (!fitsBoxDestination(item, box) || item.origin_location !== box.origin) return false;
       if (inThisBox.has(item.id)) return false;
       const source = findBoxForTrade(destBoxes, item.id);
       if (!source) return true;
