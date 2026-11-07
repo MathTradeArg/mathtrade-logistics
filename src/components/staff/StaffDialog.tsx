@@ -33,10 +33,10 @@ export default function StaffDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[rgba(213,220,226,0.7)] p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-modal flex items-center justify-center bg-overlay p-4 backdrop-blur-sm">
       <div className="staff-panel w-full max-w-sm p-5 text-gray-900">
-        <h2 className="text-lg font-bold">{title}</h2>
-        {children && <div className="mt-3 text-sm text-gray-600">{children}</div>}
+        <h2 className="text-heading font-bold">{title}</h2>
+        {children && <div className="mt-3 text-body text-gray-600">{children}</div>}
         <div className="mt-6 flex flex-col gap-3">
           {!hideConfirm && (
             <button

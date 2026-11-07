@@ -51,8 +51,8 @@ const AdminSection: React.FC<AdminSectionProps> = ({
 
   const phases = [
     { id: 0, name: 'No iniciado', color: 'bg-gray-500' },
-    { id: 1, name: 'Recepción', color: 'bg-accent-yellow' },
-    { id: 2, name: 'Entrega', color: 'bg-accent-green' },
+    { id: 1, name: 'Recepción', color: 'bg-warning' },
+    { id: 2, name: 'Entrega', color: 'bg-want' },
   ];
 
   return (
@@ -95,7 +95,7 @@ const AdminSection: React.FC<AdminSectionProps> = ({
             <div className="grid grid-cols-1 gap-3">
               <button
                 onClick={handleAdminPanelClick}
-                className="flex items-center gap-2 p-3 bg-secondary-blue hover:bg-primary text-white rounded-lg transition-all duration-150 ease-in-out active:scale-95"
+                className="flex items-center gap-2 p-3 bg-primary hover:bg-primary text-white rounded-lg transition-all duration-150 ease-in-out active:scale-95"
               >
                 <UserFocus size={20} />
                 <span>Administrar usuarios</span>

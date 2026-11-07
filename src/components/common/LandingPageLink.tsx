@@ -37,7 +37,7 @@ const LandingPageLink: React.FC<LandingPageLinkProps> = ({ href, icon, title, de
           </div>
         </div>
         <div className="flex-grow flex flex-col justify-center min-w-0 md:flex-grow-0 md:items-center"> 
-          <h2 className={`text-lg font-semibold ${titleClassName || 'text-secondary-blue dark:text-sky-400'} mb-1 truncate md:text-xl md:text-center md:truncate-none md:whitespace-normal`}>
+          <h2 className={`text-lg font-semibold ${titleClassName || 'text-primary dark:text-sky-400'} mb-1 truncate md:text-xl md:text-center md:truncate-none md:whitespace-normal`}>
             {title}
           </h2>
           {disabled ? (

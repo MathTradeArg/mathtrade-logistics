@@ -221,7 +221,7 @@ function DeliverPageContent() {
       </section>
 
       {showCommentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(213,220,226,0.7)] p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-overlay p-4 backdrop-blur-sm">
           <div className="staff-panel w-full max-w-md p-6 text-gray-900">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-lg font-semibold">

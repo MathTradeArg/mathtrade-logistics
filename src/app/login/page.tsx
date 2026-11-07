@@ -172,7 +172,7 @@ function LoginForm({ email, setEmail, password, setPassword, isMounted, isLoadin
             <input
               id="email" name="email" type="email" autoComplete="email" required
               value={email} onChange={(e) => setEmail(e.target.value)}
-              className="mt-2 block min-h-14 w-full rounded-md border border-stroke bg-white px-4 text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:shadow-[0_0_6px_theme(colors.primary)]"
+              className="mt-2 block min-h-14 w-full rounded-md border border-stroke bg-white px-4 text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
               placeholder="tu@email.com"
             />
           </div>
@@ -183,7 +183,7 @@ function LoginForm({ email, setEmail, password, setPassword, isMounted, isLoadin
             <input
               id="password" name="password" type="password" autoComplete="current-password" required
               value={password} onChange={(e) => setPassword(e.target.value)}
-              className="mt-2 block min-h-14 w-full rounded-md border border-stroke bg-white px-4 text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:shadow-[0_0_6px_theme(colors.primary)]"
+              className="mt-2 block min-h-14 w-full rounded-md border border-stroke bg-white px-4 text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
               placeholder="••••••••"
             />
           </div>

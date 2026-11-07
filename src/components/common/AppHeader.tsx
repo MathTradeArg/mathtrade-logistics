@@ -49,7 +49,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   }
 
   return (
-    <header className="sticky top-0 z-50 flex w-full flex-wrap items-center justify-between bg-white p-3 shadow-main md:flex-nowrap">
+    <header className="sticky top-0 z-nav flex w-full flex-wrap items-center justify-between bg-white p-3 pt-[calc(0.75rem+env(safe-area-inset-top))] shadow-main md:flex-nowrap">
       <div className="flex min-w-0 flex-1 items-center gap-3 overflow-x-hidden">
         {!isMagnifyingGlassVisible && (
           <>
@@ -61,7 +61,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             {pageIcon && React.createElement(pageIcon, { size: 28, className: "text-gray-700" })}
             {pageTitle && (
               <h1
-                className="max-w-[60vw] truncate text-lg font-bold text-gray-900 md:text-xl"
+                className="max-w-[60vw] truncate text-heading font-bold text-gray-900"
                 title={pageTitle}
               >
                 {pageTitle}
@@ -111,7 +111,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               <DotsThreeVertical size={20} />
             </button>
             {isMenuOpen && (
-              <div className="absolute right-0 z-[9999] mt-2 w-48 rounded-main bg-white py-1 shadow-main">
+              <div className="absolute right-0 z-raised mt-2 w-48 rounded-main bg-white py-1 shadow-main">
                 <button
                   onClick={handleLogout}
                   className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-danger hover:bg-gray-100"

@@ -395,9 +395,9 @@ export default function ReadyToPickupPage() {
     };
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(213,220,226,0.7)] p-4">
+      <div className="fixed inset-0 z-modal flex items-center justify-center bg-overlay p-4">
         <div className="rounded-lg bg-white max-w-lg w-full max-h-[90vh] overflow-y-auto">
-          <div className="sticky top-0 rounded-lg bg-white p-4 border-b border-gray-200 dark:border-gray-700 z-10">
+          <div className="sticky top-0 rounded-lg bg-white p-4 border-b border-gray-200 dark:border-gray-700 z-raised">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold ">
                 Información del Usuario
@@ -553,7 +553,7 @@ export default function ReadyToPickupPage() {
           onClick={() => toggleStateExpansion(sectionKey)}
           className={`w-full flex items-center justify-between p-4 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
             expanded 
-              ? 'sticky top-16 z-40 rounded-lg bg-white shadow-lg border-b-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900' 
+              ? 'sticky top-16 z-sticky rounded-lg bg-white shadow-lg border-b-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900' 
               : 'rounded-lg bg-white'
           }`}
         >

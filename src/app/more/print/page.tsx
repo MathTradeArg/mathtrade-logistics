@@ -835,7 +835,7 @@ function PrintPageContent() {
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] font-semibold">
+                    <span className="text-caption font-semibold">
                       (#)
                     </span>
                   </div>

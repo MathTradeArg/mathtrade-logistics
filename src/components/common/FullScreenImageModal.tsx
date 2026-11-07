@@ -17,7 +17,7 @@ const FullScreenImageModal: React.FC<FullScreenImageModalProps> = ({ imageUrl, o
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/80 p-4"
+      className="fixed inset-0 z-modal flex items-center justify-center bg-zinc-900/80 p-4"
       onClick={handleClose}
     >
       <div

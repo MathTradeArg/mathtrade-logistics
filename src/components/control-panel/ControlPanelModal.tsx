@@ -69,7 +69,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
   const actionsDisabledByPhase = (eventPhase ?? 0) === 0;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(213,220,226,0.7)] p-4">
+    <div className="fixed inset-0 z-modal flex items-center justify-center bg-overlay p-4">
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-xl bg-white p-6 text-gray-900">
         <div className="mb-4 flex flex-col gap-2">
           <div className="flex items-center justify-between">

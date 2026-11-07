@@ -36,7 +36,7 @@ No central HTTP client library — a generic `fetch` wrapper hook, `useApi` (`sr
 
 ## Design system
 
-A neumorphic design layer (`src/styles/neumorphism.css`, `.nm-*` utility classes with light/dark variants) plus a secondary glassmorphism layer for modal overlays (`src/styles/glassmorphism.css`). Dark mode is class-driven (`darkMode: "class"` in `tailwind.config.js`), toggled via `useAuth` and persisted to `localStorage`.
+The web-ui design system: tokens (colors, text scale, z-index layers) in `src/app/globals.css` (`@theme` + `@utility z-*`), shared styles in `src/styles/staff.css`, components in `src/components/staff/` and `common/ui/`. Tailwind 4 with no `tailwind.config.js`. Dark mode is still class-driven (`@custom-variant dark` in `globals.css`), toggled via `useAuth` and persisted to `localStorage`.
 
 ## Fork evidence (thin, not confirmed)
 

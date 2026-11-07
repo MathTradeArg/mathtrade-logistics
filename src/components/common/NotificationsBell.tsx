@@ -119,7 +119,7 @@ export default function NotificationsBell() {
       >
         <Bell size={20} />
         {unread > 0 && (
-          <span className="absolute right-1 top-1 min-w-4 rounded-full bg-danger px-1 text-center text-[10px] font-bold leading-4 text-white">
+          <span className="absolute right-1 top-1 min-w-4 rounded-full bg-danger px-1 text-center text-caption font-bold leading-4 text-white">
             {unread > 9 ? '9+' : unread}
           </span>
         )}
@@ -128,11 +128,11 @@ export default function NotificationsBell() {
         <>
           <button
             type="button"
-            className="fixed inset-0 z-[60] bg-transparent"
+            className="fixed inset-0 z-panel bg-transparent"
             aria-label="Cerrar notificaciones"
             onClick={() => setOpen(false)}
           />
-          <div className="fixed inset-x-3 top-[4.5rem] z-[70] flex max-h-[calc(100dvh-8.5rem-env(safe-area-inset-bottom))] w-auto max-w-sm flex-col overflow-hidden rounded-main bg-white shadow-main sm:inset-x-auto sm:right-3">
+          <div className="fixed inset-x-3 top-[4.5rem] z-popover flex max-h-[calc(100dvh-8.5rem-env(safe-area-inset-bottom))] w-auto max-w-sm flex-col overflow-hidden rounded-main bg-white shadow-main sm:inset-x-auto sm:right-3">
             <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-4 py-3">
               <p className="text-sm font-semibold">Notificaciones</p>
               {unread > 0 && (

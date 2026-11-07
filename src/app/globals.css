@@ -16,6 +16,28 @@ html {
   -ms-overflow-style: none;
 }
 
+:root {
+  --z-raised: 10;
+  --z-sticky: 20;
+  --z-loading: 30;
+  --z-nav: 40;
+  --z-panel: 50;
+  --z-modal: 60;
+  --z-popover: 70;
+  --z-toast: 80;
+  --z-tooltip: 90;
+}
+
+@utility z-raised { z-index: var(--z-raised); }
+@utility z-sticky { z-index: var(--z-sticky); }
+@utility z-loading { z-index: var(--z-loading); }
+@utility z-nav { z-index: var(--z-nav); }
+@utility z-panel { z-index: var(--z-panel); }
+@utility z-modal { z-index: var(--z-modal); }
+@utility z-popover { z-index: var(--z-popover); }
+@utility z-toast { z-index: var(--z-toast); }
+@utility z-tooltip { z-index: var(--z-tooltip); }
+
 @theme {
   --color-primary: #009ddb;
   --color-secondary: #d0637c;
@@ -31,4 +53,16 @@ html {
   --radius-main: 16px;
   --shadow-main: 0 2px 16px rgba(0, 0, 0, 0.15);
   --spacing-main: 24px;
+  --color-overlay: rgba(213, 220, 226, 0.7);
+  --color-want-ink: #0a7a4d;
+  --text-caption: 11px;
+  --text-caption--line-height: 14px;
+  --text-body: 13px;
+  --text-body--line-height: 18px;
+  --text-body-lg: 15px;
+  --text-body-lg--line-height: 20px;
+  --text-heading: 19px;
+  --text-heading--line-height: 24px;
+  --text-display: clamp(1.75rem, 1.3rem + 2vw, 2.5rem);
+  --text-display--line-height: 1.15;
 }
