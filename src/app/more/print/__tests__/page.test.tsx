@@ -79,6 +79,11 @@ describe('PrintPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Viaja a localidad del interior/i }));
     expect((await screen.findAllByText(/Ciudad Prueba/)).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Beto Interior/).length).toBeGreaterThan(0);
+    // The receiver block prints DNI, phone and the optional Telegram line
+    // straight from the directory (which no longer carries username).
+    expect(screen.getAllByText(/22222222/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/2200000000/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Telegram: @beto/).length).toBeGreaterThan(0);
     expect(screen.getAllByText('PAGO EN DESTINO').length).toBeGreaterThan(0);
     expect(screen.queryByRole('img', { name: /Círculo/i })).not.toBeInTheDocument();
   });
