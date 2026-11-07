@@ -8,11 +8,21 @@ import { useApi } from '@/hooks/useApi';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { useHapticClick } from '@/hooks/useHapticClick';
 import { getGlobalDisplayConfig, updateGlobalMaxUsers, updateGlobalPollingInterval } from '@/utils/windowStorage';
+import { apiErrorMessage } from '@/components/city/errors';
 
 interface WindowConfig {
+  /** Server id; windows added on screen get a negative list id and `isNew`. */
   id: number;
   name: string;
   tables: string[];
+  isNew?: boolean;
+}
+
+/** Tables the admin can pick: the free ones plus those already in a window,
+ *  so a table can move between windows (or be freed) within one save. */
+function selectableTables(free: string[], windows: WindowConfig[]): string[] {
+  const all = new Set([...free, ...windows.flatMap(w => w.tables)]);
+  return Array.from(all).sort((a, b) => Number(a) - Number(b) || a.localeCompare(b));
 }
 
 export default function WindowConfigPage() {
@@ -47,7 +57,7 @@ export default function WindowConfigPage() {
       
       const tablesData = await fetchAvailableTables();
       if (tablesData) {
-        setAvailableTables(tablesData.available_tables || []);
+        setAvailableTables(selectableTables(tablesData.available_tables || [], configData || []));
       }
     } catch (err) {
       console.error('Error al cargar configuración:', err);
@@ -70,11 +80,12 @@ export default function WindowConfigPage() {
   }, [isAuthenticated, isAdmin, authIsLoading, router]);
 
   const addWindow = () => {
-    const newId = Math.max(...windows.map(w => w.id), 0) + 1;
-    const newWindow = { 
-      id: newId, 
-      name: `Ventanilla ${newId}`, 
-      tables: []
+    const newId = Math.min(0, ...windows.map(w => w.id)) - 1;
+    const newWindow: WindowConfig = {
+      id: newId,
+      name: `Ventanilla ${windows.length + 1}`,
+      tables: [],
+      isNew: true,
     };
     
     setWindows([newWindow, ...windows]);
@@ -129,17 +140,18 @@ export default function WindowConfigPage() {
 
   const saveConfiguration = async () => {
     try {
-      const config = windows.map(w => ({
-        name: w.name,
-        tables: w.tables
-      }));
+      const config = windows.map(w => w.isNew
+        ? { name: w.name, tables: w.tables }
+        : { id: w.id, name: w.name, tables: w.tables });
       await saveWindowConfig(config);
       
       setSuccess('Configuración guardada exitosamente.');
     } catch (err) {
       console.error('Error al guardar configuración:', err);
-      setError(err instanceof Error ? err.message : 'Error al guardar la configuración.');
+      setError(apiErrorMessage(err, 'Error al guardar la configuración.'));
+      return;
     }
+    await loadData();
   };
 
   const handleAddWindow = useHapticClick(addWindow);

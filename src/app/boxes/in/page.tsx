@@ -1,7 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, PhaseBlocked, StaffEmpty, StaffError, StaffPage, StaffSearch, StaffSegmented } from '@/components/staff';
+import { GameRow, PhaseBlocked, StaffBanner, StaffEmpty, StaffPage, StaffSearch, StaffSegmented } from '@/components/staff';
 import Link from 'next/link';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
@@ -57,7 +57,7 @@ function transitOrigins(items: Item[], boxes: Box[]) {
 
 export default function BoxesInPage() {
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
-  const { eventPhase, isLoadingEventPhase } = useEventPhase();
+  const { eventPhase, isLoadingEventPhase, errorEventPhase } = useEventPhase();
   const [segment, setSegment] = useState<Segment>('amba');
   const [query, setQuery] = useState('');
   const [ambaBoxes, setAmbaBoxes] = useState<Box[]>([]);
@@ -99,6 +99,11 @@ export default function BoxesInPage() {
     [items, ambaBoxes, query],
   );
 
+  // Phase unknown because the request failed: StaffChrome shows the retry.
+  if (!authIsLoading && isAuthenticated !== null && eventPhase === null && errorEventPhase && !isLoadingEventPhase) {
+    return null;
+  }
+
   if (authIsLoading || isAuthenticated === null || isLoadingEventPhase || eventPhase === null) {
     return <div className="flex min-h-[50dvh] items-center justify-center"><LoadingSpinner message="Cargando..." /></div>;
   }
@@ -135,7 +140,7 @@ export default function BoxesInPage() {
       </Link>
 
       {isLoading && <div className="mt-8"><LoadingSpinner message="Cargando localidades..." /></div>}
-      {error && <StaffError>{error}</StaffError>}
+      {error && <StaffBanner onRetry={load} retrying={isLoading}>{error}</StaffBanner>}
 
       {!isLoading && !error && segment === 'amba' && (
         ambaOrigins.length === 0 ? (

@@ -2,7 +2,7 @@ import { ActionStatusProvider } from '@/contexts/ActionStatusContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import * as boxApi from '@/hooks/boxes/boxApi';
 import { useAuth } from '@/hooks/useAuth';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import BoxesInOriginPage from '../page';
 
 jest.mock('@/hooks/useAuth');
@@ -70,5 +70,42 @@ describe('BoxesInOriginPage transit', () => {
     const mixedRow = await screen.findByRole('link', { name: /#17/ });
     expect(mixedRow).toHaveAttribute('href', '/boxes/in/8/401');
     expect(mixedRow).toHaveTextContent(/Localidades mezcladas \(Catamarca, Córdoba\) · abrir/);
+  });
+});
+
+describe('a network error in a list can be retried without leaving the screen', () => {
+  const offline = 'No hay conexión o el servidor tardó demasiado. Probá de nuevo.';
+
+  it('shows the error with "Reintentar", and retrying loads the boxes of the origin', async () => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false, errorEventPhase: null });
+    mockListBoxes
+      .mockRejectedValueOnce(new Error(offline))
+      .mockResolvedValue([
+        {
+          id: 400,
+          number: 16,
+          origin: 8,
+          origin_name: 'Salta',
+          destiny: 3,
+          destination_name: 'Córdoba',
+          closed_at: '2026-09-01T10:00:00Z',
+          math_items: [{ id: 9, title: 'Wingspan', assigned_trade_code: 20040, status: 4, location: 3, location_name: 'Córdoba' }],
+        },
+      ]);
+
+    render(
+      <ActionStatusProvider>
+        <BoxesInOriginPage />
+      </ActionStatusProvider>,
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(offline);
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByRole('link', { name: /#16/ })).toBeInTheDocument();
+    expect(mockListBoxes).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

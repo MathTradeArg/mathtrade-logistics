@@ -90,3 +90,28 @@ describe('BoxesOutPage', () => {
     expect(screen.queryByRole('button', { name: /Excel/ })).not.toBeInTheDocument();
   });
 });
+
+describe('a screen whose event phase failed to load does not show an endless spinner', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockListBoxes.mockResolvedValue([]);
+    mockListItems.mockResolvedValue([]);
+  });
+
+  it('renders no "Cargando..." when the phase is unknown because its request failed', () => {
+    mockUseEventPhase.mockReturnValue({
+      eventPhase: null,
+      isLoadingEventPhase: false,
+      errorEventPhase: 'No se pudo cargar la fase del evento.',
+    });
+    render(<BoxesOutPage />, { wrapper });
+    expect(screen.queryByText('Cargando...')).toBeNull();
+  });
+
+  it('guard: still shows the spinner while the phase is unknown and nothing failed', () => {
+    mockUseEventPhase.mockReturnValue({ eventPhase: null, isLoadingEventPhase: false, errorEventPhase: null });
+    render(<BoxesOutPage />, { wrapper });
+    expect(screen.getByText('Cargando...')).toBeInTheDocument();
+  });
+});

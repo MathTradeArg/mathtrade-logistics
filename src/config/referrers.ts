@@ -8,7 +8,6 @@ export type ReferrerContact = {
   dni: string;
   telegram: string;
   phone: string;
-  username?: string;
 };
 
 export type LocationReferrerInfo = {

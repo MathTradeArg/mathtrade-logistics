@@ -1,7 +1,8 @@
 "use client";
 
 import { GameRow, StaffEmpty, StaffSearch } from '@/components/staff';
-import { useCallback, useEffect, useState } from 'react';
+import { apiErrorMessage, fetchWithTimeout } from '@/utils/fetchWithTimeout';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 type MemberHit = {
   uuid: string;
@@ -21,32 +22,41 @@ export default function MemberNameSearch({ onSelect, disabled = false }: MemberN
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const requestId = useRef(0);
+
   const search = useCallback(async (q: string) => {
     if (q.trim().length < 2) {
+      requestId.current += 1;
       setResults([]);
       setError(null);
+      setIsLoading(false);
       return;
     }
+    const id = ++requestId.current;
     const token = localStorage.getItem('authToken');
     const host = process.env.NEXT_PUBLIC_MT_API_HOST || '';
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(
+      const response = await fetchWithTimeout(
         `${host}logistics/members/search/?q=${encodeURIComponent(q.trim())}`,
         { headers: { Authorization: `token ${token}` } },
+        { retries: 1 },
       );
+      if (id !== requestId.current) return;
       if (!response.ok) {
-        const body = await response.json().catch(() => ({ detail: 'No se pudo buscar.' }));
-        throw new Error(body.detail || 'No se pudo buscar.');
+        const body = await response.json().catch(() => null);
+        throw new Error(apiErrorMessage(body, 'No se pudo buscar.'));
       }
       const data: MemberHit[] = await response.json();
+      if (id !== requestId.current) return;
       setResults(Array.isArray(data) ? data : []);
     } catch (err) {
+      if (id !== requestId.current) return;
       setResults([]);
       setError(err instanceof Error ? err.message : 'No se pudo buscar.');
     } finally {
-      setIsLoading(false);
+      if (id === requestId.current) setIsLoading(false);
     }
   }, []);
 

@@ -1,23 +1,55 @@
 "use client";
 
-import { GameRow, StaffDialog, StaffEmpty, StaffPage, ThumbCta } from '@/components/staff';
-import { listBoxes, listItems } from '@/hooks/boxes/boxApi';
+import AddByCodeField, { type AddByCodeResult } from '@/components/boxes/AddByCodeField';
+import AddResultDialog from '@/components/boxes/AddResultDialog';
+import { GameRow, StaffBanner, StaffDialog, StaffEmpty, StaffPage, ThumbCta } from '@/components/staff';
+import { EVENT_LOCATION_ID } from '@/constants/event';
+import { useActionStatus } from '@/contexts/ActionStatusContext';
+import { resolveCodeToAdd, summarizeAdd, type AddSummary } from '@/hooks/boxes/addByCode';
+import { addItem as addItemApi, listBoxes, listItems, markItemsReceived } from '@/hooks/boxes/boxApi';
 import { boxLaneDestination, findBoxForTrade, isBoxOpen, receptorName } from '@/hooks/boxes/boxGrouping';
-import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
+import { boxErrorMessage, useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import type { Box, Item } from '@/types';
 import { formatTradeCode } from '@/utils/tradeCode';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Mode = 'view' | 'add' | 'move';
 
+/** Whether a game fits this box's destination (the API's add rule): a box
+ *  from a city to AMBA takes via_meeting games (they go through the event)
+ *  and games that stay in AMBA; any other box takes games for its lane. */
+function fitsBoxDestination(item: Item, box: Box): boolean {
+  const lane = item.lane_destination ?? item.location;
+  if (box.destiny === EVENT_LOCATION_ID) {
+    return Boolean(item.via_meeting) || lane === EVENT_LOCATION_ID;
+  }
+  return lane === boxLaneDestination(box);
+}
+
+/** A box reopened at the event to rebuild it (transit, or from a city to
+ *  AMBA in a shipment): add, remove and move
+ *  games, mark every game received at the event (also the ones going on to
+ *  other cities), and close it again. */
 export default function TransitBoxView({
   box,
   onReload,
+  reloadError = null,
+  reloading = false,
+  userId,
 }: {
   box: Box;
-  onReload: () => Promise<void>;
+  /** The parent's reload: resolves with the box, or null when it failed
+   *  (never rejects; the failure comes back as `reloadError`). */
+  onReload: () => Promise<Box | null>;
+  /** The parent's load error: the parent renders only this view while the
+   *  box is open, so this view shows it. */
+  reloadError?: string | null;
+  reloading?: boolean;
+  userId: string | number | null;
 }) {
-  const { inFlight, addItems, removeItem, moveItem, closeBox, reopenBox } = useBoxLifecycle();
+  const { inFlight, addItems, removeItem, moveItem, closeBox } = useBoxLifecycle();
+  const { setError } = useActionStatus();
+  const [receivingCode, setReceivingCode] = useState<number | null>(null);
   const [mode, setMode] = useState<Mode>('view');
   const [destBoxes, setDestBoxes] = useState<Box[]>([]);
   const [openSiblings, setOpenSiblings] = useState<Box[]>([]);
@@ -25,32 +57,53 @@ export default function TransitBoxView({
   const [selectedAdds, setSelectedAdds] = useState<Set<number>>(new Set());
   const [movingTradeId, setMovingTradeId] = useState<number | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Item | null>(null);
-  const [showRebuild, setShowRebuild] = useState(false);
   const [closedNumber, setClosedNumber] = useState<number | null>(null);
+  const [addSummary, setAddSummary] = useState<AddSummary | null>(null);
+  const [extrasError, setExtrasError] = useState<string | null>(null);
+  const [loadingExtras, setLoadingExtras] = useState(false);
 
   const canMutate = isBoxOpen(box);
+  // What the box holds after the last add-by-code POST: the next queued code
+  // must see that copy before the parent reloads the box.
+  const boxItemsRef = useRef(box.math_items);
+  const propItemsRef = useRef(box.math_items);
+  if (propItemsRef.current !== box.math_items) {
+    propItemsRef.current = box.math_items;
+    boxItemsRef.current = box.math_items;
+  }
+  const addedByCodeRef = useRef(0);
 
+  /** The destination's boxes and games (add list, move targets). Never
+   *  rejects: a failure is kept in `extrasError` and shown with a retry. */
   const loadExtras = useCallback(async () => {
-    const [nextDestBoxes, destItems] = await Promise.all([
-      listBoxes({ destination: box.destiny }),
-      listItems({ destination: box.destiny, origin: box.origin }),
-    ]);
-    setDestBoxes(nextDestBoxes);
-    setOpenSiblings(
-      nextDestBoxes.filter((candidate) => candidate.id !== box.id && isBoxOpen(candidate) && candidate.origin === box.origin),
-    );
-    setItems(destItems);
+    setLoadingExtras(true);
+    setExtrasError(null);
+    try {
+      const [nextDestBoxes, destItems] = await Promise.all([
+        listBoxes({ destination: box.destiny }),
+        listItems({ destination: box.destiny, origin: box.origin }),
+      ]);
+      setDestBoxes(nextDestBoxes);
+      setOpenSiblings(
+        nextDestBoxes.filter((candidate) => candidate.id !== box.id && isBoxOpen(candidate) && candidate.origin === box.origin),
+      );
+      setItems(destItems);
+    } catch (err) {
+      setExtrasError(err instanceof Error ? err.message : 'No se pudieron cargar los juegos de este destino.');
+    } finally {
+      setLoadingExtras(false);
+    }
   }, [box.destiny, box.id, box.origin]);
 
   useEffect(() => {
-    loadExtras().catch(() => undefined);
+    loadExtras();
   }, [loadExtras]);
 
   const availableItems = useMemo(() => {
     const inThisBox = new Set(box.math_items.map((item) => item.id));
     return items.filter((item) => {
       if (!(item.status === 4 || item.status === 5)) return false;
-      if ((item.lane_destination ?? item.location) !== boxLaneDestination(box) || item.origin_location !== box.origin) return false;
+      if (!fitsBoxDestination(item, box) || item.origin_location !== box.origin) return false;
       if (inThisBox.has(item.id)) return false;
       const source = findBoxForTrade(destBoxes, item.id);
       if (!source) return true;
@@ -74,30 +127,64 @@ export default function TransitBoxView({
     });
   };
 
-  const handleRebuild = async () => {
+  const handleReceive = async (item: Item) => {
+    if (receivingCode != null) return;
+    setReceivingCode(item.assigned_trade_code);
     try {
-      const updated = await reopenBox(box.id);
-      if (updated) {
-        setShowRebuild(false);
-        await onReload();
-        await loadExtras();
-      }
-    } catch {
-      // toast via hook
+      await markItemsReceived([item.assigned_trade_code], userId);
+      await onReload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo marcar el juego.');
+    } finally {
+      setReceivingCode(null);
     }
   };
 
   const handleAdd = async () => {
     if (selectedAdds.size === 0) return;
-    try {
-      await addItems(box.id, Array.from(selectedAdds));
-      setSelectedAdds(new Set());
+    const result = await addItems(box.id, Array.from(selectedAdds));
+    if (!result) return; // another action is running
+    // Always reload, also after a failure: the games before it are in the box.
+    const boxAfter = (await onReload()) ?? result.box;
+    await loadExtras();
+    const summary = summarizeAdd(result, boxAfter, items);
+    setSelectedAdds((prev) => new Set(Array.from(prev).filter((id) => !summary.added.includes(id))));
+    if (summary.failed.length === 0) {
       setMode('view');
-      await onReload();
-      await loadExtras();
-    } catch {
-      // toast via hook
+    } else {
+      setAddSummary(summary); // failed games stay selected to retry
     }
+  };
+
+  const handleAddByCode = async (code: string): Promise<AddByCodeResult> => {
+    const resolution = resolveCodeToAdd(code, {
+      items,
+      available: availableItems,
+      boxItems: boxItemsRef.current,
+      otherBoxes: destBoxes.filter((candidate) => candidate.id !== box.id),
+      requirePackable: false,
+    });
+    if (resolution.kind === 'error') return { ok: false, message: resolution.message };
+    try {
+      // Straight to the API, not lifecycle.addItem: runExclusive drops calls
+      // while another runs, and the field already queues them one by one.
+      const updated = await addItemApi(box.id, resolution.item.id);
+      boxItemsRef.current = updated.math_items;
+      addedByCodeRef.current += 1;
+      return {
+        ok: true,
+        message: `Agregado: ${formatTradeCode(resolution.item.assigned_trade_code)} · ${resolution.item.title}`,
+      };
+    } catch (err) {
+      return { ok: false, message: boxErrorMessage(err) || 'No se pudo agregar el juego.' };
+    }
+  };
+
+  const handleAddByCodeIdle = async () => {
+    if (addedByCodeRef.current === 0) return;
+    addedByCodeRef.current = 0;
+    await onReload();
+    await loadExtras();
   };
 
   const handleRemove = async () => {
@@ -131,8 +218,9 @@ export default function TransitBoxView({
     try {
       const updated = await closeBox(box.id);
       if (updated) {
+        // The parent reloads on "Listo": reloading now would unmount this
+        // view (the box is closed) before the number is shown.
         setClosedNumber(updated.number);
-        await onReload();
       }
     } catch {
       // toast via hook
@@ -143,13 +231,20 @@ export default function TransitBoxView({
     <StaffPage className="pb-28">
       <p className="text-sm text-gray-500">{box.origin_name} → {box.destination_name}</p>
       <p className="mt-2 text-sm text-gray-600">
-        {canMutate
-          ? 'Caja reabierta para rearmar. No marques estos juegos como recibidos.'
-          : 'Esta caja sigue de largo: no hay que abrirla. Consultala o rearma si el físico hay que rehacerlo.'}
+        Caja reabierta para rearmar. Marcá todos los juegos como recibidos.
       </p>
+
+      {reloadError && (
+        <StaffBanner onRetry={() => { void onReload(); }} retrying={reloading}>{reloadError}</StaffBanner>
+      )}
+      {extrasError && (
+        <StaffBanner onRetry={() => { void loadExtras(); }} retrying={loadingExtras}>{extrasError}</StaffBanner>
+      )}
 
       {mode === 'view' && (
         <>
+          {canMutate && <AddByCodeField onSubmit={handleAddByCode} onIdle={handleAddByCodeIdle} />}
+
           {box.math_items.length === 0 ? (
             <StaffEmpty>La caja está vacía.</StaffEmpty>
           ) : (
@@ -162,6 +257,16 @@ export default function TransitBoxView({
                   />
                   {canMutate && (
                     <div className="flex flex-col gap-3 px-4 pb-4">
+                      {item.status !== 5 && item.status !== 6 && (
+                        <button
+                          type="button"
+                          disabled={inFlight || receivingCode != null}
+                          onClick={() => handleReceive(item)}
+                          className="staff-btn staff-btn-outline"
+                        >
+                          Marcar recibido
+                        </button>
+                      )}
                       <button
                         type="button"
                         disabled={inFlight}
@@ -265,29 +370,11 @@ export default function TransitBoxView({
         </>
       )}
 
-      {mode === 'view' && !canMutate && (
-        <ThumbCta variant="danger" disabled={inFlight} onClick={() => setShowRebuild(true)}>
-          Rearmar caja
-        </ThumbCta>
-      )}
-
       {mode === 'view' && canMutate && (
         <ThumbCta variant="primary" disabled={box.math_items.length === 0 || inFlight} onClick={handleClose}>
           Cerrar de nuevo
         </ThumbCta>
       )}
-
-      <StaffDialog
-        open={showRebuild}
-        title="Rearmar esta caja"
-        confirmLabel="Rearmar"
-        variant="danger"
-        confirmDisabled={inFlight}
-        onConfirm={handleRebuild}
-        onCancel={() => setShowRebuild(false)}
-      >
-        Vas a abrir una caja que no debía abrirse. El #{box.number} se conserva. No marques los juegos como recibidos.
-      </StaffDialog>
 
       <StaffDialog
         open={removeTarget != null}
@@ -301,11 +388,16 @@ export default function TransitBoxView({
         {removeTarget && `¿Sacar ${removeTarget.title} de esta caja?`}
       </StaffDialog>
 
+      <AddResultDialog summary={addSummary} onClose={() => setAddSummary(null)} />
+
       <StaffDialog
         open={closedNumber != null}
         title="Se cierra con el mismo número"
         confirmLabel="Listo"
-        onConfirm={() => setClosedNumber(null)}
+        onConfirm={() => {
+          setClosedNumber(null);
+          void onReload(); // never rejects; a failure shows the parent's error
+        }}
       >
         {closedNumber != null && (
           <div className="text-center">

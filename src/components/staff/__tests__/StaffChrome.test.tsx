@@ -2,7 +2,7 @@ import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useAuth } from '@/hooks/useAuth';
 import '@testing-library/jest-dom';
-import { render } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { usePathname } from 'next/navigation';
 import StaffChrome from '../StaffChrome';
 
@@ -147,5 +147,41 @@ describe('StaffChrome role guard', () => {
     render(<StaffChrome><p>page</p></StaffChrome>);
     expect(setSuccess).toHaveBeenCalledWith('Un admin cambió tu rol a Ventanilla.');
     expect(clearRoleNotice).toHaveBeenCalled();
+  });
+});
+
+describe('StaffChrome event phase warnings (a network drop never leaves a false "El evento no empezó")', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUsePathname.mockReturnValue('/more');
+    mockUseActionStatus.mockReturnValue({ setSuccess: jest.fn() });
+    mockUseAuth.mockReturnValue(auth({ isAdmin: true }));
+  });
+
+  it('shows a discreet warning, and keeps the page, when a refresh fails but a phase is known', () => {
+    mockUseEventPhase.mockReturnValue({
+      eventPhase: 1, isLoadingEventPhase: false, errorEventPhase: 'sin red', refetchEventPhase: jest.fn(),
+    });
+    render(<StaffChrome><p>page</p></StaffChrome>);
+    expect(screen.getByText('No se pudo actualizar la fase del evento. Se muestra la última conocida.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+    expect(screen.getByText('page')).toBeInTheDocument();
+  });
+
+  it('offers Reintentar when the phase never loaded', () => {
+    const refetchEventPhase = jest.fn();
+    mockUseEventPhase.mockReturnValue({
+      eventPhase: null, isLoadingEventPhase: false, errorEventPhase: 'sin red', refetchEventPhase,
+    });
+    render(<StaffChrome><p>page</p></StaffChrome>);
+    expect(screen.getByText('No se pudo cargar la fase del evento.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(refetchEventPhase).toHaveBeenCalled();
+  });
+
+  it('shows nothing when the phase loaded fine', () => {
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false, errorEventPhase: null });
+    render(<StaffChrome><p>page</p></StaffChrome>);
+    expect(screen.queryByText(/No se pudo/)).not.toBeInTheDocument();
   });
 });

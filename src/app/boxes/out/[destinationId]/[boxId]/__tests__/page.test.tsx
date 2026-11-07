@@ -31,6 +31,7 @@ const mockGetBox = boxApi.getBox as jest.Mock;
 const mockListBoxes = boxApi.listBoxes as jest.Mock;
 const mockListItems = boxApi.listItems as jest.Mock;
 const mockDeleteBox = jest.fn();
+const mockReopenBox = jest.fn();
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <ActionStatusProvider>{children}</ActionStatusProvider>
@@ -70,6 +71,7 @@ describe('OutgoingBoxPage delete empty', () => {
       moveItem: jest.fn(),
       closeBox: jest.fn(),
       deleteBox: mockDeleteBox,
+      reopenBox: mockReopenBox,
     });
     mockGetBox.mockResolvedValue(emptyBox);
     mockListBoxes.mockResolvedValue([]);
@@ -126,5 +128,211 @@ describe('OutgoingBoxPage delete empty', () => {
 
     expect(screen.queryByText(/Terraforming Mars/)).not.toBeInTheDocument();
     expect(screen.getByText(/Wingspan/)).toBeInTheDocument();
+  });
+});
+
+const closedBox = {
+  ...emptyBox,
+  number: 7,
+  closed_at: '2026-11-06T10:00:00Z',
+  math_items: [{ id: 11, title: 'Catan', assigned_trade_code: 101, status: 5 }],
+};
+
+describe('OutgoingBoxPage reopen: a closed box can be reopened only while it is not in a shipment', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockUseBoxLifecycle.mockReturnValue({
+      inFlight: false,
+      addItems: jest.fn(),
+      removeItem: jest.fn(),
+      moveItem: jest.fn(),
+      closeBox: jest.fn(),
+      deleteBox: mockDeleteBox,
+      reopenBox: mockReopenBox,
+    });
+    mockListBoxes.mockResolvedValue([]);
+    mockListItems.mockResolvedValue([]);
+  });
+
+  it('shows a reopen button for a closed box that is not in a shipment', async () => {
+    mockGetBox.mockResolvedValue({ ...closedBox, tracking: null });
+    render(<OutgoingBoxPage />, { wrapper });
+    expect(await screen.findByRole('button', { name: 'Reabrir caja' })).toBeInTheDocument();
+  });
+
+  it('does not offer reopen once the box is in a shipment', async () => {
+    mockGetBox.mockResolvedValue({ ...closedBox, tracking: 'ABC123' });
+    render(<OutgoingBoxPage />, { wrapper });
+    await screen.findByText(/Catan/);
+    expect(screen.queryByRole('button', { name: 'Reabrir caja' })).not.toBeInTheDocument();
+  });
+
+  it('reopens after confirming and reloads the box', async () => {
+    mockGetBox.mockResolvedValue({ ...closedBox, tracking: null });
+    mockReopenBox.mockResolvedValue({ ...closedBox, closed_at: null });
+    render(<OutgoingBoxPage />, { wrapper });
+    fireEvent.click(await screen.findByRole('button', { name: 'Reabrir caja' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Reabrir' }));
+    await waitFor(() => expect(mockReopenBox).toHaveBeenCalledWith(399));
+    await waitFor(() => expect(mockGetBox).toHaveBeenCalledTimes(2));
+  });
+});
+
+// Rule: at the hub the volunteer with the game in hand types its label code and
+// Enter; that copy goes into the box without the list and the field stays ready.
+describe('OutgoingBoxPage add by label code: Enter adds the copy and keeps the field ready for the next', () => {
+  const terraforming = { id: 21, title: 'Terraforming Mars', assigned_trade_code: 301, status: 5, location: 2 };
+  const wingspan = { id: 22, title: 'Wingspan', assigned_trade_code: 302, status: 5, location: 2 };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockUseBoxLifecycle.mockReturnValue({
+      inFlight: false,
+      addItems: jest.fn(),
+      removeItem: jest.fn(),
+      moveItem: jest.fn(),
+      closeBox: jest.fn(),
+      deleteBox: mockDeleteBox,
+      reopenBox: mockReopenBox,
+    });
+    mockGetBox.mockResolvedValue(emptyBox);
+    mockListBoxes.mockResolvedValue([]);
+    mockListItems.mockResolvedValue([terraforming, wingspan]);
+  });
+
+  it('typing the code of a ready copy and Enter adds it, reloads the box and keeps the focus', async () => {
+    (boxApi.addItem as jest.Mock).mockResolvedValue({ ...emptyBox, math_items: [terraforming] });
+    render(<OutgoingBoxPage />, { wrapper });
+
+    const input = await screen.findByLabelText('Código de la etiqueta');
+    expect(input).not.toHaveFocus();
+    fireEvent.change(input, { target: { value: '00301' } });
+    fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    await waitFor(() => expect(boxApi.addItem).toHaveBeenCalledWith(399, 21));
+    expect(await screen.findByRole('status')).toHaveTextContent('Agregado: 00301 · Terraforming Mars');
+    await waitFor(() => expect(mockGetBox).toHaveBeenCalledTimes(2));
+    expect(screen.getByLabelText('Código de la etiqueta')).toHaveValue('');
+    expect(screen.getByLabelText('Código de la etiqueta')).toHaveFocus();
+  });
+
+  it('a copy already in another open box shows where it is without calling the API', async () => {
+    mockListBoxes.mockResolvedValue([{ ...emptyBox, id: 400, number: 3, math_items: [wingspan] }]);
+    render(<OutgoingBoxPage />, { wrapper });
+
+    const input = await screen.findByLabelText('Código de la etiqueta');
+    fireEvent.change(input, { target: { value: '302' } });
+    fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ese juego ya está en la caja #3.');
+    expect(boxApi.addItem).not.toHaveBeenCalled();
+  });
+});
+
+// Rule: in a batch the games that can go in are added; the screen then shows
+// the real box, and which games did not go in and why. Failed games stay
+// selected to retry.
+describe('OutgoingBoxPage batch add: a partial failure reloads the box and lists the games that did not go in', () => {
+  const catan = { id: 21, title: 'Catan', assigned_trade_code: 101, status: 5, location: 2 };
+  const azul = { id: 22, title: 'Azul', assigned_trade_code: 102, status: 5, location: 2 };
+  const titulo = { id: 23, title: 'Titulo', assigned_trade_code: 103, status: 5, location: 2 };
+  const mockAddItems = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockUseBoxLifecycle.mockReturnValue({
+      inFlight: false,
+      addItems: mockAddItems,
+      removeItem: jest.fn(),
+      moveItem: jest.fn(),
+      closeBox: jest.fn(),
+      deleteBox: mockDeleteBox,
+      reopenBox: mockReopenBox,
+    });
+    mockListBoxes.mockResolvedValue([]);
+    mockListItems.mockResolvedValue([catan, azul, titulo]);
+  });
+
+  const pickAllAndAdd = async () => {
+    fireEvent.click(await screen.findByRole('button', { name: 'Agregar juegos' }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Catan/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Azul/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Titulo/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar (3)' }));
+  };
+
+  it('shows which game failed and why, reloads the box and keeps only the failed one selected', async () => {
+    const after = { ...emptyBox, math_items: [catan, azul] };
+    mockGetBox.mockResolvedValueOnce(emptyBox).mockResolvedValue(after);
+    mockAddItems.mockResolvedValue({
+      box: after,
+      added: [21, 22],
+      failed: [{ tradeId: 23, reason: 'Ese juego ya está en otra caja.' }],
+    });
+
+    render(<OutgoingBoxPage />, { wrapper });
+    await pickAllAndAdd();
+
+    expect(await screen.findByText('Se agregaron 2 juegos. No se pudieron agregar:')).toBeInTheDocument();
+    expect(screen.getByText('00103 · Titulo: Ese juego ya está en otra caja.')).toBeInTheDocument();
+    expect(mockAddItems).toHaveBeenCalledWith(399, [21, 22, 23]);
+    expect(mockGetBox).toHaveBeenCalledTimes(2);
+
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+    expect(screen.queryByText(/No se pudieron agregar/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Agregar (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Titulo/ })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('a whole batch that went in goes back to the box with no dialog', async () => {
+    const after = { ...emptyBox, math_items: [catan, azul, titulo] };
+    mockGetBox.mockResolvedValueOnce(emptyBox).mockResolvedValue(after);
+    mockAddItems.mockResolvedValue({ box: after, added: [21, 22, 23], failed: [] });
+
+    render(<OutgoingBoxPage />, { wrapper });
+    await pickAllAndAdd();
+
+    expect(await screen.findByRole('button', { name: 'Cerrar caja' })).toBeInTheDocument();
+    expect(screen.queryByText(/No se pudieron agregar/)).not.toBeInTheDocument();
+    expect(mockGetBox).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('a network error in a list can be retried without leaving the screen', () => {
+  const offline = 'No hay conexión o el servidor tardó demasiado. Probá de nuevo.';
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false, errorEventPhase: null });
+    mockUseBoxLifecycle.mockReturnValue({
+      inFlight: false,
+      addItems: jest.fn(),
+      removeItem: jest.fn(),
+      moveItem: jest.fn(),
+      closeBox: jest.fn(),
+      deleteBox: mockDeleteBox,
+      reopenBox: mockReopenBox,
+    });
+    mockListBoxes.mockResolvedValue([]);
+    mockListItems.mockResolvedValue([]);
+  });
+
+  it('shows the error with "Reintentar", and retrying loads the box games', async () => {
+    mockGetBox.mockRejectedValueOnce(new Error(offline)).mockResolvedValue(filledBox);
+    render(<OutgoingBoxPage />, { wrapper });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(offline);
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText(/Catan/)).toBeInTheDocument();
+    expect(mockGetBox).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
