@@ -1,7 +1,7 @@
 "use client";
 
 import { useApi } from '@/hooks/useApi';
-import { createContext, useCallback, useContext, useEffect, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface EventPhaseContextType {
@@ -13,6 +13,8 @@ interface EventPhaseContextType {
   updateEventPhase: (newPhase: number) => Promise<{ success: boolean; message: string }>;
 }
 
+const POLL_INTERVAL_MS = 30_000;
+
 const EventPhaseContext = createContext<EventPhaseContextType | undefined>(undefined);
 
 export const EventPhaseProvider = ({ children }: { children: ReactNode }) => {
@@ -21,7 +23,6 @@ export const EventPhaseProvider = ({ children }: { children: ReactNode }) => {
   const {
     data: phaseData,
     isLoading: isLoadingFetch,
-    error: fetchError,
     execute: fetchPhaseApi,
     setData: setPhaseData,
   } = useApi<{ meeting_phase: number; phase_display: string }>('mathtrades/event-phases/');
@@ -30,17 +31,46 @@ export const EventPhaseProvider = ({ children }: { children: ReactNode }) => {
     execute: updatePhaseApi,
     isLoading: isLoadingUpdate,
     error: updateError,
+    clearError: clearUpdateError,
   } = useApi<{ meeting_phase: number; phase_display: string }>('mathtrades/event-phases/', { method: 'PATCH' });
 
-  const refetchEventPhase = useCallback(() => {
-    if (isAuthenticated) {
-      fetchPhaseApi();
+  // Own copy of the last fetch failure: useApi clears its error when a request
+  // starts, which would make the warning blink on every poll while offline.
+  const [fetchFailure, setFetchFailure] = useState<string | null>(null);
+  const inFlightRef = useRef(false);
+
+  const refetchEventPhase = useCallback(async () => {
+    if (!isAuthenticated || inFlightRef.current) return;
+    inFlightRef.current = true;
+    try {
+      await fetchPhaseApi();
+      setFetchFailure(null);
+      clearUpdateError();
+    } catch (err) {
+      // Keep the last phase; the failure is exposed through errorEventPhase.
+      setFetchFailure(err instanceof Error ? err.message : 'No se pudo cargar la fase del evento.');
+    } finally {
+      inFlightRef.current = false;
     }
-  }, [isAuthenticated, fetchPhaseApi]);
+  }, [isAuthenticated, fetchPhaseApi, clearUpdateError]);
 
   useEffect(() => {
     refetchEventPhase();
   }, [refetchEventPhase]);
+
+  // Every 30s and whenever the tab comes back (same pattern as useAuth.refreshMe).
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(refetchEventPhase, POLL_INTERVAL_MS);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refetchEventPhase();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [isAuthenticated, refetchEventPhase]);
 
   const updateEventPhase = useCallback(async (newPhase: number) => {
     if (!isAuthenticated) {
@@ -64,8 +94,10 @@ export const EventPhaseProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     eventPhase: phaseData?.meeting_phase ?? null,
     eventPhaseDisplay: phaseData?.phase_display ?? null,
-    isLoadingEventPhase: isLoadingFetch || isLoadingUpdate,
-    errorEventPhase: fetchError || updateError,
+    // Only the first load (or a retry while no phase is known) shows spinners;
+    // background polls never do.
+    isLoadingEventPhase: (isLoadingFetch && phaseData === null) || isLoadingUpdate,
+    errorEventPhase: fetchFailure || updateError,
     refetchEventPhase,
     updateEventPhase,
   };

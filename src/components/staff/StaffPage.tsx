@@ -1,5 +1,6 @@
 "use client";
 
+import { useEventPhase } from '@/contexts/EventPhaseContext';
 import Link from 'next/link';
 import { ReactNode } from 'react';
 
@@ -38,6 +39,9 @@ export function StaffBanner({ children, onRetry, retrying = false }: {
 }
 
 export function PhaseBlocked() {
+  const { eventPhase, errorEventPhase } = useEventPhase();
+  // Phase unknown because the request failed: StaffChrome shows the retry.
+  if (eventPhase === null && errorEventPhase) return null;
   return (
     <StaffPage className="flex min-h-[60dvh] flex-col items-center justify-center text-center">
       <h1 className="text-xl font-bold">El evento no empezó</h1>
