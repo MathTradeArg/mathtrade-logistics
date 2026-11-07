@@ -361,3 +361,79 @@ describe('IncomingBoxPage: every game of an opened box is marked en evento, also
     expect(screen.queryByText(/no se marcan como recibidos/)).not.toBeInTheDocument();
   });
 });
+
+// Rule: in a rebuilt box the volunteer also adds a copy by typing its label
+// code and Enter; the title list keeps working.
+describe('IncomingBoxPage rebuilt box: add by label code', () => {
+  const reopenedToAmba = {
+    id: 392,
+    number: 17,
+    origin: 8,
+    origin_name: 'Salta',
+    destiny: 1,
+    destination_name: 'AMBA',
+    lane_destination: 1,
+    closed_at: null,
+    tracking: 'VC-10',
+    math_items: [
+      { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, via_meeting: true, location: 3, lane_destination: 3, origin_location: 8 },
+    ],
+  };
+  const otherBox = { ...reopenedToAmba, id: 402, number: 18, math_items: [] as unknown[] };
+  const heat = {
+    id: 12, item_id: 93, title: 'Heat', assigned_trade_code: 20043, status: 4,
+    via_meeting: true, location: 3, lane_destination: 3, origin_location: 8,
+  };
+  const brass = {
+    id: 13, item_id: 94, title: 'Brass', assigned_trade_code: 20044, status: 4,
+    via_meeting: true, location: 3, lane_destination: 3, origin_location: 8,
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, userId: '1' });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockGetBox.mockResolvedValue(reopenedToAmba);
+    mockListBoxes.mockResolvedValue([reopenedToAmba, { ...otherBox, math_items: [brass] }]);
+    mockListItems.mockResolvedValue([heat, brass]);
+  });
+
+  it('typing the code of a loose copy and Enter adds it, reloads and keeps the focus', async () => {
+    (boxApi.addItem as jest.Mock).mockResolvedValue({ ...reopenedToAmba, math_items: [...reopenedToAmba.math_items, heat] });
+    render(<IncomingBoxPage />, { wrapper });
+
+    const input = await screen.findByLabelText('Código de la etiqueta');
+    await waitFor(() => expect(mockListItems).toHaveBeenCalled());
+    fireEvent.change(input, { target: { value: '#20043' } });
+    fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    await waitFor(() => expect(boxApi.addItem).toHaveBeenCalledWith(392, 12));
+    expect(await screen.findByRole('status')).toHaveTextContent('Agregado: 20043 · Heat');
+    await waitFor(() => expect(mockGetBox).toHaveBeenCalledTimes(2));
+    expect(screen.getByLabelText('Código de la etiqueta')).toHaveValue('');
+    expect(screen.getByLabelText('Código de la etiqueta')).toHaveFocus();
+  });
+
+  it('a copy already in another open box shows where it is without calling the API', async () => {
+    render(<IncomingBoxPage />, { wrapper });
+
+    const input = await screen.findByLabelText('Código de la etiqueta');
+    await waitFor(() => expect(mockListItems).toHaveBeenCalled());
+    fireEvent.change(input, { target: { value: '20044' } });
+    fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ese juego ya está en la caja #18.');
+    expect(boxApi.addItem).not.toHaveBeenCalled();
+  });
+
+  it('the title list of Agregar juegos still adds a copy', async () => {
+    render(<IncomingBoxPage />, { wrapper });
+
+    const add = await screen.findByRole('button', { name: 'Agregar juegos' });
+    await waitFor(() => expect(add).toBeEnabled());
+    fireEvent.click(add);
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Heat/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Agregar (1)' }));
+    await waitFor(() => expect(boxApi.addItem).toHaveBeenCalledWith(392, 12));
+  });
+});

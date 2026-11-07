@@ -179,3 +179,56 @@ describe('OutgoingBoxPage reopen: a closed box can be reopened only while it is 
     await waitFor(() => expect(mockGetBox).toHaveBeenCalledTimes(2));
   });
 });
+
+// Rule: at the hub the volunteer with the game in hand types its label code and
+// Enter; that copy goes into the box without the list and the field stays ready.
+describe('OutgoingBoxPage add by label code: Enter adds the copy and keeps the field ready for the next', () => {
+  const terraforming = { id: 21, title: 'Terraforming Mars', assigned_trade_code: 301, status: 5, location: 2 };
+  const wingspan = { id: 22, title: 'Wingspan', assigned_trade_code: 302, status: 5, location: 2 };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockUseBoxLifecycle.mockReturnValue({
+      inFlight: false,
+      addItems: jest.fn(),
+      removeItem: jest.fn(),
+      moveItem: jest.fn(),
+      closeBox: jest.fn(),
+      deleteBox: mockDeleteBox,
+      reopenBox: mockReopenBox,
+    });
+    mockGetBox.mockResolvedValue(emptyBox);
+    mockListBoxes.mockResolvedValue([]);
+    mockListItems.mockResolvedValue([terraforming, wingspan]);
+  });
+
+  it('typing the code of a ready copy and Enter adds it, reloads the box and keeps the focus', async () => {
+    (boxApi.addItem as jest.Mock).mockResolvedValue({ ...emptyBox, math_items: [terraforming] });
+    render(<OutgoingBoxPage />, { wrapper });
+
+    const input = await screen.findByLabelText('Código de la etiqueta');
+    expect(input).not.toHaveFocus();
+    fireEvent.change(input, { target: { value: '00301' } });
+    fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    await waitFor(() => expect(boxApi.addItem).toHaveBeenCalledWith(399, 21));
+    expect(await screen.findByRole('status')).toHaveTextContent('Agregado: 00301 · Terraforming Mars');
+    await waitFor(() => expect(mockGetBox).toHaveBeenCalledTimes(2));
+    expect(screen.getByLabelText('Código de la etiqueta')).toHaveValue('');
+    expect(screen.getByLabelText('Código de la etiqueta')).toHaveFocus();
+  });
+
+  it('a copy already in another open box shows where it is without calling the API', async () => {
+    mockListBoxes.mockResolvedValue([{ ...emptyBox, id: 400, number: 3, math_items: [wingspan] }]);
+    render(<OutgoingBoxPage />, { wrapper });
+
+    const input = await screen.findByLabelText('Código de la etiqueta');
+    fireEvent.change(input, { target: { value: '302' } });
+    fireEvent.submit(input.closest('form') as HTMLFormElement);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ese juego ya está en la caja #3.');
+    expect(boxApi.addItem).not.toHaveBeenCalled();
+  });
+});

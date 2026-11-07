@@ -1,18 +1,20 @@
 "use client";
 
+import AddByCodeField, { type AddByCodeResult } from '@/components/boxes/AddByCodeField';
 import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, PhaseBlocked, StaffDialog, StaffEmpty, StaffError, StaffPage, StaffSearch, ThumbCta } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
-import { getBox, listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
+import { resolveCodeToAdd } from '@/hooks/boxes/addByCode';
+import { addItem as addItemApi, getBox, listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
 import { apiDestinationId, boxDestinationLabel, boxedTradeIds, boxContentsSummary, boxLaneDestination, boxMatchesLane, isBoxOpen, isPackable, matchesSearch, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, receptorName, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
-import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
+import { boxErrorMessage, useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box, Item } from '@/types';
 import { formatTradeCode, tradeCodeSearchText } from '@/utils/tradeCode';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Mode = 'view' | 'add' | 'move';
 
@@ -57,6 +59,11 @@ export default function PackingBox({
   const [addedTitles, setAddedTitles] = useState<string[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // The box as the last add-by-code POST returned it: the next queued code
+  // must see that copy in the box before React re-renders.
+  const boxRef = useRef<Box | null>(null);
+  boxRef.current = box;
+  const addedByCodeRef = useRef(0);
   const blocked = phaseGated && eventPhase === 0;
   // Primitive deps: callers pass a fresh params object each render.
   const asLocation = viewParams?.as_location;
@@ -168,6 +175,39 @@ export default function PackingBox({
     }
   };
 
+  const handleAddByCode = async (code: string): Promise<AddByCodeResult> => {
+    const current = boxRef.current;
+    if (!current) return { ok: false, message: 'No se pudo cargar la caja.' };
+    const resolution = resolveCodeToAdd(code, {
+      items,
+      available: availableItems,
+      boxItems: current.math_items,
+      otherBoxes: openBoxes,
+      requirePackable: phaseGated,
+    });
+    if (resolution.kind === 'error') return { ok: false, message: resolution.message };
+    try {
+      // Straight to the API, not lifecycle.addItem: runExclusive drops calls
+      // while another runs, and the field already queues them one by one.
+      const updated = await addItemApi(boxId, resolution.item.id);
+      boxRef.current = updated;
+      setBox(updated);
+      addedByCodeRef.current += 1;
+      return {
+        ok: true,
+        message: `Agregado: ${formatTradeCode(resolution.item.assigned_trade_code)} · ${resolution.item.title}`,
+      };
+    } catch (err) {
+      return { ok: false, message: boxErrorMessage(err) || 'No se pudo agregar el juego.' };
+    }
+  };
+
+  const handleAddByCodeIdle = () => {
+    if (addedByCodeRef.current === 0) return;
+    addedByCodeRef.current = 0;
+    load();
+  };
+
   const handleRemove = async () => {
     if (!removeTarget) return;
     try {
@@ -269,6 +309,8 @@ export default function PackingBox({
           <p className="text-sm text-gray-500">
             {boxDestLabel} · la abrió {packerName(box)} · {box.math_items.length} juegos
           </p>
+
+          {canMutate && <AddByCodeField onSubmit={handleAddByCode} onIdle={handleAddByCodeIdle} />}
 
           {box.math_items.length === 0 ? (
             <StaffEmpty>La caja está vacía. Agregá juegos listos de este destino.</StaffEmpty>

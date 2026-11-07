@@ -37,6 +37,9 @@ function errorMessage(err: unknown): string {
   return 'Ocurrió un error desconocido.';
 }
 
+/** The server's box error in Spanish (same texts as the lifecycle toasts). */
+export const boxErrorMessage = errorMessage;
+
 export type DeleteBoxResult =
   | { status: 'deleted' }
   | { status: 'has_items'; titles: string[] };

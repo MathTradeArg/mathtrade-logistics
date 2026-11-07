@@ -1,14 +1,16 @@
 "use client";
 
+import AddByCodeField, { type AddByCodeResult } from '@/components/boxes/AddByCodeField';
 import { GameRow, StaffDialog, StaffEmpty, StaffPage, ThumbCta } from '@/components/staff';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
-import { listBoxes, listItems, markItemsReceived } from '@/hooks/boxes/boxApi';
+import { resolveCodeToAdd } from '@/hooks/boxes/addByCode';
+import { addItem as addItemApi, listBoxes, listItems, markItemsReceived } from '@/hooks/boxes/boxApi';
 import { boxLaneDestination, findBoxForTrade, isBoxOpen, receptorName } from '@/hooks/boxes/boxGrouping';
-import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
+import { boxErrorMessage, useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import type { Box, Item } from '@/types';
 import { formatTradeCode } from '@/utils/tradeCode';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Mode = 'view' | 'add' | 'move';
 
@@ -49,6 +51,15 @@ export default function TransitBoxView({
   const [closedNumber, setClosedNumber] = useState<number | null>(null);
 
   const canMutate = isBoxOpen(box);
+  // What the box holds after the last add-by-code POST: the next queued code
+  // must see that copy before the parent reloads the box.
+  const boxItemsRef = useRef(box.math_items);
+  const propItemsRef = useRef(box.math_items);
+  if (propItemsRef.current !== box.math_items) {
+    propItemsRef.current = box.math_items;
+    boxItemsRef.current = box.math_items;
+  }
+  const addedByCodeRef = useRef(0);
 
   const loadExtras = useCallback(async () => {
     const [nextDestBoxes, destItems] = await Promise.all([
@@ -120,6 +131,41 @@ export default function TransitBoxView({
     }
   };
 
+  const handleAddByCode = async (code: string): Promise<AddByCodeResult> => {
+    const resolution = resolveCodeToAdd(code, {
+      items,
+      available: availableItems,
+      boxItems: boxItemsRef.current,
+      otherBoxes: destBoxes.filter((candidate) => candidate.id !== box.id),
+      requirePackable: false,
+    });
+    if (resolution.kind === 'error') return { ok: false, message: resolution.message };
+    try {
+      // Straight to the API, not lifecycle.addItem: runExclusive drops calls
+      // while another runs, and the field already queues them one by one.
+      const updated = await addItemApi(box.id, resolution.item.id);
+      boxItemsRef.current = updated.math_items;
+      addedByCodeRef.current += 1;
+      return {
+        ok: true,
+        message: `Agregado: ${formatTradeCode(resolution.item.assigned_trade_code)} · ${resolution.item.title}`,
+      };
+    } catch (err) {
+      return { ok: false, message: boxErrorMessage(err) || 'No se pudo agregar el juego.' };
+    }
+  };
+
+  const handleAddByCodeIdle = async () => {
+    if (addedByCodeRef.current === 0) return;
+    addedByCodeRef.current = 0;
+    try {
+      await onReload();
+      await loadExtras();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo recargar la caja.');
+    }
+  };
+
   const handleRemove = async () => {
     if (!removeTarget) return;
     try {
@@ -169,6 +215,8 @@ export default function TransitBoxView({
 
       {mode === 'view' && (
         <>
+          {canMutate && <AddByCodeField onSubmit={handleAddByCode} onIdle={handleAddByCodeIdle} />}
+
           {box.math_items.length === 0 ? (
             <StaffEmpty>La caja está vacía.</StaffEmpty>
           ) : (
