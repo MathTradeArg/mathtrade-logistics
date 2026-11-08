@@ -6,6 +6,7 @@ import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { listAmbaPending, markItemsReceived, type AmbaPendingOrigin } from '@/hooks/boxes/boxApi';
 import { useAuth } from '@/hooks/useAuth';
 import { useParams } from 'next/navigation';
+import { CaretRight } from 'phosphor-react';
 import { formatTradeCode } from '@/utils/tradeCode';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -77,30 +78,7 @@ export default function AmbaPendingOriginPage() {
 
       {origin && (
         <>
-          <h2 className="text-body font-semibold text-gray-500">Juegos no recibidos</h2>
-          {origin.trades.length === 0 ? (
-            <StaffEmpty>No hay juegos pendientes a AMBA.</StaffEmpty>
-          ) : (
-            <ul className="mt-3 flex flex-col gap-3">
-              {origin.trades.map((trade) => (
-                <li key={trade.assigned_trade_code}>
-                  <GameRow
-                    title={`${formatTradeCode(trade.assigned_trade_code)} ${trade.title}`}
-                    subtitle={[
-                      `${trade.recipient_first_name} ${trade.recipient_last_name}`.trim(),
-                      trade.box
-                        ? `Caja #${trade.box.number ?? 'abierta'} → ${trade.box.destination_name}`
-                        : 'Sin caja',
-                    ].filter(Boolean).join(' · ')}
-                    onClick={() => toggle(trade.assigned_trade_code)}
-                    selected={selected.has(trade.assigned_trade_code)}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <h2 className="mt-8 text-body font-semibold text-gray-500">Cajas AMBA sin abrir</h2>
+          <h2 className="text-body font-semibold text-gray-500">Cajas AMBA sin abrir</h2>
           {origin.unopened_amba_boxes.length === 0 ? (
             <p className="mt-3 text-body text-gray-500">No hay cajas AMBA pendientes de esta ciudad.</p>
           ) : (
@@ -133,6 +111,34 @@ export default function AmbaPendingOriginPage() {
               ))}
             </ul>
           )}
+
+          <details className="group mt-8">
+            <summary className="flex min-h-14 cursor-pointer list-none items-center gap-2 text-body font-semibold text-gray-500 [&::-webkit-details-marker]:hidden">
+              <CaretRight size={16} weight="bold" aria-hidden className="shrink-0 transition-transform group-open:rotate-90" />
+              Juegos no recibidos ({origin.trades.length})
+            </summary>
+            {origin.trades.length === 0 ? (
+              <StaffEmpty>No hay juegos pendientes a AMBA.</StaffEmpty>
+            ) : (
+              <ul className="mt-3 flex flex-col gap-3">
+                {origin.trades.map((trade) => (
+                  <li key={trade.assigned_trade_code}>
+                    <GameRow
+                      title={`${formatTradeCode(trade.assigned_trade_code)} ${trade.title}`}
+                      subtitle={[
+                        `${trade.recipient_first_name} ${trade.recipient_last_name}`.trim(),
+                        trade.box
+                          ? `Caja #${trade.box.number ?? 'abierta'} → ${trade.box.destination_name}`
+                          : 'Sin caja',
+                      ].filter(Boolean).join(' · ')}
+                      onClick={() => toggle(trade.assigned_trade_code)}
+                      selected={selected.has(trade.assigned_trade_code)}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </details>
         </>
       )}
 
