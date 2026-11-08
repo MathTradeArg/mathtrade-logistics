@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useHapticClick } from '@/hooks/useHapticClick';
 import type { ProcessedUserWithWindow, UserWithWindow } from '@/types/window';
 import { triggerHaptic } from '@/utils/haptics';
+import { Chip, LoadingSpinner } from '@/components/common/ui';
 import { CheckCircle, ChevronDown, ChevronUp, Clock, RefreshCw, Search, Users, UserX, Package } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
@@ -29,25 +30,25 @@ interface ExpandedSection {
 const statusConfig = {
   present: {
     label: 'Listos',
-    color: 'bg-primary/100',
+    color: 'bg-primary',
     icon: Users,
     description: 'Usuarios listos para retirar'
   },
   receiving: {
     label: 'Recibiendo',
-    color: 'bg-yellow-500',
+    color: 'bg-warning',
     icon: Clock,
     description: 'Usuarios recibiendo sus items'
   },
   completed: {
     label: 'Completados',
-    color: 'bg-green-500',
+    color: 'bg-want',
     icon: CheckCircle,
     description: 'Usuarios que completaron el retiro'
   },
   no_show: {
     label: 'No aparecieron',
-    color: 'bg-danger/100',
+    color: 'bg-danger',
     icon: UserX,
     description: 'Usuarios que no se presentaron'
   }
@@ -69,7 +70,7 @@ const getValidTransitions = (currentStatus: UserStatus): UserStatus[] => {
 };
 
 const getStatusColor = (status: UserStatus): string => {
-  return statusConfig[status]?.color || 'bg-gray-500';
+  return statusConfig[status]?.color || 'bg-cancel';
 };
 
 const getStatusLabel = (status: UserStatus): string => {
@@ -308,7 +309,7 @@ export default function ReadyToPickupPage() {
   }, [isAuthenticated, isAdmin, authIsLoading, fetchData]);
 
   if (authIsLoading || isAuthenticated === null) {
-    return <div className="flex justify-center items-center min-h-screen"><p>Cargando...</p></div>;
+    return <div className="flex min-h-[50dvh] items-center justify-center"><LoadingSpinner message="Cargando..." /></div>;
   }
 
   if (isAdmin === false) {
@@ -319,11 +320,11 @@ export default function ReadyToPickupPage() {
     switch (status) {
       case null:
       case 'present':
-        return 'border-l-4 border-emerald-500';
+        return 'border-l-4 border-want';
       case 'receiving':
-        return 'border-l-4 border-blue-500';
+        return 'border-l-4 border-primary';
       case 'completed':
-        return 'border-l-4 border-zinc-400';
+        return 'border-l-4 border-cancel';
       case 'no_show':
         return 'border-l-4 border-danger';
       default:
@@ -335,13 +336,13 @@ export default function ReadyToPickupPage() {
     switch (status) {
       case null:
       case 'present':
-        return <Clock size={16} className="text-green-600 dark:text-green-400" />;
+        return <Clock size={16} className="text-want-ink" />;
       case 'receiving':
-        return <RefreshCw size={16} className="text-primary dark:text-blue-400" />;
+        return <RefreshCw size={16} className="text-primary" />;
       case 'completed':
-        return <CheckCircle size={16} className="text-green-600 dark:text-green-400" />;
+        return <CheckCircle size={16} className="text-want-ink" />;
       case 'no_show':
-        return <UserX size={16} className="text-danger dark:text-red-400" />;
+        return <UserX size={16} className="text-danger" />;
       default:
         return null;
     }
@@ -358,10 +359,10 @@ export default function ReadyToPickupPage() {
       >
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <p className="font-bold text-lg leading-tight">
+            <p className="font-bold text-heading leading-tight">
               {user.first_name} {user.last_name}
             </p>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-body text-gray-500 mt-1">
               {user.username}
               {user.table_number && ` • Mesa ${user.table_number}`}
               {user.window_id && ` • ${user.window_name}`}
@@ -395,11 +396,11 @@ export default function ReadyToPickupPage() {
     };
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(213,220,226,0.7)] p-4">
+      <div className="fixed inset-0 z-modal flex items-center justify-center bg-overlay p-4">
         <div className="rounded-lg bg-white max-w-lg w-full max-h-[90vh] overflow-y-auto">
-          <div className="sticky top-0 rounded-lg bg-white p-4 border-b border-gray-200 dark:border-gray-700 z-10">
+          <div className="sticky top-0 rounded-lg bg-white p-4 border-b border-gray-200 z-raised">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold ">
+              <h2 className="text-heading font-bold ">
                 Información del Usuario
               </h2>
               <button
@@ -415,34 +416,34 @@ export default function ReadyToPickupPage() {
             <div className="space-y-4">
               <div className="rounded-lg bg-white p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
                     <Users size={24} className="text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-lg ">
+                    <h3 className="font-bold text-heading ">
                       {selectedUser.first_name} {selectedUser.last_name}
                     </h3>
-                    <p className="text-sm opacity-75">
+                    <p className="text-body opacity-75">
                       @{selectedUser.username}
                     </p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-4 text-body">
                   <div>
-                    <p className="font-medium text-gray-600 dark:text-gray-400">Mesa</p>
+                    <p className="font-medium text-gray-600">Mesa</p>
                     <p className="font-semibold">
                       {selectedUser.table_number || 'No asignada'}
                     </p>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-600 dark:text-gray-400">Ventanilla</p>
+                    <p className="font-medium text-gray-600">Ventanilla</p>
                     <p className="font-semibold">
                       {selectedUser.window_name || 'No asignada'}
                     </p>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-600 dark:text-gray-400">Estado actual</p>
+                    <p className="font-medium text-gray-600">Estado actual</p>
                     <div className="flex items-center gap-2">
                       {getUserStatusIcon(selectedUser.status)}
                       <span className="font-semibold">
@@ -451,20 +452,20 @@ export default function ReadyToPickupPage() {
                     </div>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-600 dark:text-gray-400">Juegos a retirar</p>
+                    <p className="font-medium text-gray-600">Juegos a retirar</p>
                     <div className="flex items-center gap-2">
-                      <Package size={16} className="text-primary dark:text-blue-400" />
-                      <span className="font-semibold text-lg text-primary dark:text-blue-400">
+                      <Package size={16} className="text-primary" />
+                      <span className="font-semibold text-heading text-primary">
                         {selectedUser.ready_games_count || 0}
                       </span>
                     </div>
                   </div>
                 </div>
                 
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="text-caption text-gray-500">
                     <p className="font-medium mb-1">ID de Usuario</p>
-                    <p className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                    <p className="font-mono bg-gray-100 px-2 py-1 rounded">
                       {selectedUser.id}
                     </p>
                   </div>
@@ -507,11 +508,11 @@ export default function ReadyToPickupPage() {
 
               {validTransitions.length === 0 && (
                 <div className="rounded-lg bg-white p-4 text-center">
-                  <CheckCircle size={48} className="mx-auto mb-3 text-green-500" />
-                  <p className="font-medium text-gray-600 dark:text-gray-400">
+                  <CheckCircle size={48} className="mx-auto mb-3 text-want" />
+                  <p className="font-medium text-gray-600">
                     Este usuario ha completado el proceso
                   </p>
-                  <p className="text-sm opacity-75 mt-1">
+                  <p className="text-body opacity-75 mt-1">
                     No hay transiciones disponibles
                   </p>
                 </div>
@@ -551,9 +552,9 @@ export default function ReadyToPickupPage() {
         <button
           ref={el => { sectionRefs.current[sectionKey] = el; }}
           onClick={() => toggleStateExpansion(sectionKey)}
-          className={`w-full flex items-center justify-between p-4 transition-all duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
+          className={`w-full flex items-center justify-between p-4 transition-all duration-200 hover:bg-gray-50 ${
             expanded 
-              ? 'sticky top-16 z-40 rounded-lg bg-white shadow-lg border-b-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900' 
+              ? 'sticky top-16 z-sticky rounded-lg bg-white shadow-lg border-b-2 border-gray-200' 
               : 'rounded-lg bg-white'
           }`}
         >
@@ -562,7 +563,7 @@ export default function ReadyToPickupPage() {
             <span className="font-medium">{title}</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className={`text-xl font-bold ${iconColor}`}>
+            <span className={`text-heading font-bold ${iconColor}`}>
               {users.length}
             </span>
             {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -581,7 +582,7 @@ export default function ReadyToPickupPage() {
                 <button
                   onClick={() => loadMoreItems(sectionKey)}
                   disabled={isLoadingMore}
-                  className="min-h-14 rounded-lg border border-gray-200 bg-white px-4 font-semibold text-gray-800 px-4 py-2 text-sm disabled:opacity-50 flex items-center gap-2 mx-auto"
+                  className="min-h-14 rounded-lg border border-gray-200 bg-white px-4 font-semibold text-gray-800 px-4 py-2 text-body disabled:opacity-50 flex items-center gap-2 mx-auto"
                 >
                   {isLoadingMore ? (
                     <>
@@ -608,9 +609,9 @@ export default function ReadyToPickupPage() {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 md:mb-6 gap-4">
           <div className="text-center sm:text-left flex-1">
             {lastUpdated && (
-              <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 ">
+              <p className="text-caption md:text-body text-gray-600 ">
                 Última actualización: {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                <span className="ml-2 text-yellow-600 dark:text-yellow-400">• Manual</span>
+                <span className="ml-2 text-orange-800">• Manual</span>
               </p>
             )}
           </div>
@@ -619,7 +620,7 @@ export default function ReadyToPickupPage() {
             <button
               onClick={fetchDataClick}
               disabled={isRefreshing}
-              className="min-h-14 rounded-lg bg-primary px-4 font-semibold text-white flex items-center gap-1 text-sm px-3 py-2 disabled:opacity-50"
+              className="min-h-14 rounded-lg bg-primary px-4 font-semibold text-white flex items-center gap-1 text-body px-3 py-2 disabled:opacity-50"
             >
               <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
               <span className="hidden sm:inline">Actualizar</span>
@@ -649,13 +650,13 @@ export default function ReadyToPickupPage() {
         <div className="flex-1">
           {isLoadingData && mainUsers.length === 0 && (
             <div className="rounded-lg bg-white p-6 md:p-8 text-center">
-              <p className="text-lg md:text-xl lg:text-2xl text-sky-600 dark:text-sky-400 ">Cargando usuarios...</p>
+              <p className="text-heading lg:text-2xl text-primary">Cargando usuarios...</p>
             </div>
           )}
 
           {error && (
-            <div className="rounded-lg bg-white p-4 md:p-6 bg-danger/10 dark:bg-red-900/30 border-2 border-danger text-center mb-4 md:mb-6">
-              <p className="text-sm md:text-lg lg:text-xl text-danger dark:text-red-300 ">
+            <div className="rounded-lg bg-white p-4 md:p-6 bg-danger/10 border-2 border-danger text-center mb-4 md:mb-6">
+              <p className="text-body md:text-heading text-danger">
                 {error}
               </p>
             </div>
@@ -663,7 +664,7 @@ export default function ReadyToPickupPage() {
 
           {!isLoadingData && mainUsers.length === 0 && !error && (
             <div className="rounded-lg bg-white p-6 md:p-8 text-center">
-              <p className="text-gray-600 dark:text-gray-300 text-lg md:text-xl lg:text-2xl ">
+              <p className="text-gray-600 text-heading lg:text-2xl">
                 No hay usuarios para mostrar.
               </p>
             </div>
@@ -673,11 +674,11 @@ export default function ReadyToPickupPage() {
             <div className="space-y-4 md:space-y-6">
               {searchTerm ? (
                 <div className="rounded-lg bg-white p-4">
-                  <h3 className="text-lg font-semibold mb-4 ">
+                  <h3 className="text-heading font-semibold mb-4 ">
                     Resultados de búsqueda ({filteredUsers.length})
                   </h3>
                   {filteredUsers.length === 0 ? (
-                    <p className="text-gray-500 dark:text-gray-400 text-center py-4">
+                    <p className="text-gray-500 text-center py-4">
                       No se encontraron usuarios que coincidan con la búsqueda.
                     </p>
                   ) : (
@@ -694,7 +695,7 @@ export default function ReadyToPickupPage() {
                     sectionKey="present"
                     title="Listos para retirar"
                     icon={Clock}
-                    iconColor="text-green-600 dark:text-green-400"
+                    iconColor="text-want-ink"
                     users={usersByState.present}
                     expanded={expandedSections.present}
                   />
@@ -703,7 +704,7 @@ export default function ReadyToPickupPage() {
                     sectionKey="receiving"
                     title="Recibiendo sus items"
                     icon={RefreshCw}
-                    iconColor="text-primary dark:text-blue-400"
+                    iconColor="text-primary"
                     users={usersByState.receiving}
                     expanded={expandedSections.receiving}
                   />
@@ -712,7 +713,7 @@ export default function ReadyToPickupPage() {
                     sectionKey="completed"
                     title="Completaron el retiro"
                     icon={CheckCircle}
-                    iconColor="text-green-600 dark:text-green-400"
+                    iconColor="text-want-ink"
                     users={usersByState.completed}
                     expanded={expandedSections.completed}
                   />
@@ -721,7 +722,7 @@ export default function ReadyToPickupPage() {
                     sectionKey="no_show"
                     title="No se presentaron"
                     icon={UserX}
-                    iconColor="text-danger dark:text-red-400"
+                    iconColor="text-danger"
                     users={usersByState.no_show}
                     expanded={expandedSections.no_show}
                   />
@@ -732,8 +733,8 @@ export default function ReadyToPickupPage() {
         </div>
 
         {volunteerAndAdminUsers.length > 0 && (
-          <div className="rounded-lg bg-white p-4 mt-8 rounded-xl bg-primary/10 dark:bg-blue-900/20">
-            <h3 className="text-lg font-bold text-blue-700 dark:text-blue-300 mb-3  flex items-center gap-2">
+          <div className="rounded-lg bg-white p-4 mt-8 rounded-xl bg-primary/10">
+            <h3 className="text-heading font-bold text-primary mb-3 flex items-center gap-2">
               <Users size={20} /> Voluntarios y Admins
             </h3>
             <div className="space-y-2">
@@ -746,10 +747,10 @@ export default function ReadyToPickupPage() {
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <p className="font-bold text-lg leading-tight">
+                      <p className="font-bold text-heading leading-tight">
                         {user.first_name} {user.last_name}
                       </p>
-                      <p className="text-sm opacity-75 mt-1">
+                      <p className="text-body opacity-75 mt-1">
                         {(!user.roles || (!user.roles.includes('volunteer') && !user.roles.includes('admin'))) && (
                           <>
                             @{user.username}
@@ -759,10 +760,10 @@ export default function ReadyToPickupPage() {
                         {user.table_number && ` • Mesa ${user.table_number}`}
                         {user.ready_games_count && ` • ${user.ready_games_count} juegos`}
                         {user.roles?.includes('admin') && (
-                          <span className="ml-2 px-2 py-0.5 rounded bg-yellow-300 text-yellow-900 text-xs font-bold">ADMIN</span>
+                          <Chip tone="warning" className="ml-2">ADMIN</Chip>
                         )}
                         {user.roles?.includes('volunteer') && !user.roles?.includes('admin') && (
-                          <span className="ml-2 px-2 py-0.5 rounded bg-green-200 text-green-900 text-xs font-bold">VOL</span>
+                          <Chip tone="good" className="ml-2">VOL</Chip>
                         )}
                       </p>
                     </div>

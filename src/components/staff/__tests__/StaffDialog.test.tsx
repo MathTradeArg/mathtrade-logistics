@@ -18,4 +18,10 @@ describe('StaffDialog', () => {
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument();
     expect(screen.getByText('cuerpo')).toBeInTheDocument();
   });
+
+  it('is announced as a modal dialog named by its title', () => {
+    render(<StaffDialog open title="¿Cerrar la caja?" confirmLabel="Sí" onConfirm={jest.fn()} />);
+    const dialog = screen.getByRole('dialog', { name: '¿Cerrar la caja?' });
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+  });
 });

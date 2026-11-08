@@ -95,7 +95,7 @@ export default function CityUsersPage() {
         aria-label="Buscar usuarios"
       />
       {isReferrer && (
-        <label className="mt-4 flex items-center gap-3 text-sm font-semibold text-gray-700">
+        <label className="mt-4 flex items-center gap-3 text-body font-semibold text-gray-700">
           <input
             type="checkbox"
             checked={onlyCommitted}
@@ -110,8 +110,8 @@ export default function CityUsersPage() {
       {!isLoading && !error && rows.length === 0 && <StaffEmpty>No hay usuarios para mostrar.</StaffEmpty>}
       {rows.length > 0 && (
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-max text-left text-sm text-gray-900">
-            <thead className="text-xs uppercase text-gray-500">
+          <table className="w-full min-w-max text-left text-body text-gray-900">
+            <thead className="text-caption uppercase text-gray-500">
               <tr>
                 <th className="px-3 py-2">Nombre</th>
                 <th className="px-3 py-2">Teléfono</th>
@@ -135,8 +135,8 @@ export default function CityUsersPage() {
                   data-testid="member-row"
                   className={clsx(
                     'border-t border-stroke',
-                    isReferrer && member.paid === true && 'bg-green-50',
-                    isReferrer && member.paid === false && 'bg-red-50',
+                    isReferrer && member.paid === true && 'bg-want/10',
+                    isReferrer && member.paid === false && 'bg-danger/10',
                   )}
                 >
                   <td className="px-3 py-2 font-semibold">{fullName(member)}</td>

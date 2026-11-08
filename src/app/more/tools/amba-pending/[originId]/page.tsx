@@ -77,7 +77,7 @@ export default function AmbaPendingOriginPage() {
 
       {origin && (
         <>
-          <h2 className="text-sm font-semibold text-gray-500">Juegos no recibidos</h2>
+          <h2 className="text-body font-semibold text-gray-500">Juegos no recibidos</h2>
           {origin.trades.length === 0 ? (
             <StaffEmpty>No hay juegos pendientes a AMBA.</StaffEmpty>
           ) : (
@@ -100,9 +100,9 @@ export default function AmbaPendingOriginPage() {
             </ul>
           )}
 
-          <h2 className="mt-8 text-sm font-semibold text-gray-500">Cajas AMBA sin abrir</h2>
+          <h2 className="mt-8 text-body font-semibold text-gray-500">Cajas AMBA sin abrir</h2>
           {origin.unopened_amba_boxes.length === 0 ? (
-            <p className="mt-3 text-sm text-gray-500">No hay cajas AMBA pendientes de esta ciudad.</p>
+            <p className="mt-3 text-body text-gray-500">No hay cajas AMBA pendientes de esta ciudad.</p>
           ) : (
             <ul className="mt-3 flex flex-col gap-3">
               {origin.unopened_amba_boxes.map((box) => (
@@ -117,9 +117,9 @@ export default function AmbaPendingOriginPage() {
             </ul>
           )}
 
-          <h2 className="mt-8 text-sm font-semibold text-gray-500">Cajas de tránsito</h2>
+          <h2 className="mt-8 text-body font-semibold text-gray-500">Cajas de tránsito</h2>
           {origin.transit_boxes.length === 0 ? (
-            <p className="mt-3 text-sm text-gray-500">No hay cajas de tránsito de esta ciudad.</p>
+            <p className="mt-3 text-body text-gray-500">No hay cajas de tránsito de esta ciudad.</p>
           ) : (
             <ul className="mt-3 flex flex-col gap-3">
               {origin.transit_boxes.map((box) => (

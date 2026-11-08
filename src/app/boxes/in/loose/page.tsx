@@ -88,7 +88,7 @@ export default function LooseIncomingPage() {
 
   return (
     <StaffPage className="pb-28">
-      <p className="text-sm text-gray-600">
+      <p className="text-body text-gray-600">
         Buscá por código de etiqueta o por el nombre de quien retira en AMBA. Si el juego venía en una caja, se recibe igual.
       </p>
 

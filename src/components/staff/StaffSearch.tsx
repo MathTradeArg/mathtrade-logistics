@@ -10,8 +10,8 @@ const StaffSearch = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputEl
         ref={ref}
         type="search"
         className={clsx(
-          'min-h-14 w-full rounded-full border border-gray-200 bg-gray-100 px-4 text-base text-gray-900',
-          'placeholder:text-gray-400 focus:border-primary focus:outline-none focus:shadow-[0_0_6px_theme(colors.primary)]',
+          'min-h-14 w-full rounded-full border border-gray-200 bg-gray-100 px-4 text-body-lg text-gray-900',
+          'placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40',
           className,
         )}
         {...props}

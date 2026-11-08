@@ -6,7 +6,7 @@ import { ActionStatusProvider } from "@/contexts/ActionStatusContext";
 import { AuthProvider } from "@/hooks/useAuth";
 import ToastContainer from "@/components/common/ToastContainer";
 import StaffChrome from "@/components/staff/StaffChrome";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from 'next/font/local';
 import "./globals.css";
 
@@ -19,6 +19,8 @@ const mainFont = localFont({
   variable: '--font-main',
   fallback: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
 });
+
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export const metadata: Metadata = {
   title: "Math Trade Argentina - Logística",

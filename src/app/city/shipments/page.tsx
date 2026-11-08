@@ -145,7 +145,7 @@ export default function CityShipmentsPage() {
           )}
           {visibleItems.length > 0 && (
             <>
-              <p className="mt-4 text-sm text-gray-500">{visibleItems.length} ejemplares</p>
+              <p className="mt-4 text-body text-gray-500">{visibleItems.length} ejemplares</p>
               <ul className="mt-3 flex flex-col gap-3">
                 {visibleItems.map((item) => (
                   <li key={item.id}>

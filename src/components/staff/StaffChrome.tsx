@@ -66,7 +66,7 @@ function EventPhaseWarning() {
     );
   }
   return (
-    <p role="status" className="mx-auto mt-2 w-full max-w-lg px-4 text-xs text-amber-700">
+    <p role="status" className="mx-auto mt-2 w-full max-w-lg px-4 text-caption text-orange-800">
       No se pudo actualizar la fase del evento. Se muestra la última conocida.
     </p>
   );

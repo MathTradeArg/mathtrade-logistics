@@ -1,6 +1,7 @@
 "use client";
 
 import { triggerHaptic } from '@/utils/haptics';
+import { cardClass, type CardTone } from '@/components/common/ui/Card';
 import { formatTradeCode } from '@/utils/tradeCode';
 import clsx from 'clsx';
 import { Check, Plus, Trash, X } from 'phosphor-react';
@@ -61,38 +62,42 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
   const TextContainerTag = isCheckboxInteractive ? 'label' : 'div';
   const label = formatTradeCode(id);
 
-  let rowClasses = 'bg-white text-gray-900';
+  let rowTone: CardTone = 'default';
+  let rowClasses = 'text-gray-900';
   let idBoxClasses = 'bg-gray-200 text-gray-800';
   let titleClasses = 'text-gray-900';
   let actionContent = null;
 
   if (showCheckbox) {
     if (disabled) {
-      rowClasses = 'bg-muted text-gray-400 opacity-60';
+      rowTone = 'disabled';
+      rowClasses = 'text-gray-400';
       idBoxClasses = 'bg-gray-300 text-gray-500';
     } else if (isSelected) {
-      rowClasses = 'border-l-4 border-primary bg-primary/10 text-gray-900';
+      rowTone = 'selected';
+      rowClasses = 'border-l-4 text-gray-900';
       idBoxClasses = 'bg-primary text-white';
     } else {
-      rowClasses = 'bg-white text-gray-900';
+      rowClasses = 'text-gray-900';
       idBoxClasses = 'bg-gray-200 text-gray-800';
     }
   } else {
     switch (variant) {
       case 'actionable':
         if (isSelected) {
-          rowClasses = 'border-l-4 border-primary bg-primary/10 text-gray-900';
+          rowTone = 'selected';
+          rowClasses = 'border-l-4 text-gray-900';
           idBoxClasses = 'bg-primary text-white';
           titleClasses = 'text-gray-900';
         } else {
-          rowClasses = 'bg-white text-gray-500';
+          rowClasses = 'text-gray-500';
           idBoxClasses = 'bg-gray-200 text-gray-500';
           titleClasses = 'text-gray-500';
         }
         if (isRowSelectable) rowClasses += ' cursor-pointer';
         break;
       case 'box-item':
-        rowClasses = 'bg-white text-gray-900';
+        rowClasses = 'text-gray-900';
         idBoxClasses = 'bg-primary text-white';
         titleClasses = 'text-gray-900';
         actionContent = hasRemoveButton ? (
@@ -110,7 +115,7 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
         ) : null;
         break;
       case 'add-to-box':
-        rowClasses = 'bg-white text-gray-900';
+        rowClasses = 'text-gray-900';
         idBoxClasses = 'bg-want text-white';
         titleClasses = 'text-gray-900';
         actionContent = hasAddButton ? (
@@ -149,7 +154,7 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
         break;
       case 'default':
       default:
-        rowClasses = 'bg-white text-gray-900';
+        rowClasses = 'text-gray-900';
         idBoxClasses = 'bg-gray-200 text-gray-800';
         titleClasses = 'text-gray-900';
         break;
@@ -168,7 +173,8 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
   return (
     <li
       className={clsx(
-        'flex min-h-14 items-stretch overflow-hidden rounded-lg border border-gray-200 shadow-sm',
+        cardClass({ tone: rowTone }),
+        'flex min-h-14 items-stretch overflow-hidden',
         rowClasses,
       )}
       onClick={handleInternalRowClick}
@@ -176,7 +182,7 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
       <div className={clsx('flex min-w-[5.5rem] shrink-0 items-center justify-center px-1.5', idBoxClasses)}>
         <span
           className={clsx(
-            'select-all whitespace-nowrap text-center text-base font-extrabold tabular-nums leading-tight sm:text-lg',
+            'select-all whitespace-nowrap text-center text-body-lg font-extrabold tabular-nums leading-tight sm:text-heading',
             finalIsVisuallyInactive && !idBoxClasses.includes('text-white') ? 'opacity-70' : '',
           )}
           title={label}
@@ -190,11 +196,11 @@ const GameRowItem: React.FC<GameRowItemProps> = ({
         })}
       >
         <TextContainerTag htmlFor={isCheckboxInteractive ? `checkbox-item-${id}` : undefined} className={isCheckboxInteractive ? 'cursor-pointer' : ''}>
-          <span className={clsx('block w-full text-base font-medium leading-tight', titleClasses)} title={title}>
+          <span className={clsx('block w-full text-body-lg font-medium leading-tight', titleClasses)} title={title}>
             {title}
           </span>
           {ownerName && (
-            <span className="mt-0.5 block text-sm text-gray-500" title={`De: ${ownerName}`}>
+            <span className="mt-0.5 block text-body text-gray-500" title={`De: ${ownerName}`}>
               De: {ownerName}
             </span>
           )}

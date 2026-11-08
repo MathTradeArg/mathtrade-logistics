@@ -1,9 +1,12 @@
 "use client";
 
+import { cardClass } from '@/components/common/ui/Card';
+import { Chip } from '@/components/common/ui/Chip';
 import { useCityView } from '@/contexts/CityViewContext';
+import clsx from 'clsx';
 
 const selectClass =
-  'min-h-12 w-full rounded-xl border border-stroke bg-white px-3 text-base text-gray-900 focus:border-primary focus:outline-none';
+  'min-h-12 w-full rounded-xl border border-stroke bg-white px-3 text-body-lg text-gray-900 focus:border-primary focus:outline-none';
 
 /** Admins only: see /city as any city's referrer, in any edition. Anything
  *  other than the admin's own city in the active edition is read-only. */
@@ -15,8 +18,8 @@ export default function CityViewSelector() {
   if (!isAdmin) return null;
 
   return (
-    <section className="staff-panel mb-6 flex flex-col gap-3 p-4" aria-label="Ver como">
-      <label className="flex flex-col gap-1 text-sm font-semibold text-gray-600">
+    <section className={clsx(cardClass({ panel: true }), 'mb-6 flex flex-col gap-3 p-4')} aria-label="Ver como">
+      <label className="flex flex-col gap-1 text-body font-semibold text-gray-600">
         Ver como
         <select
           className={selectClass}
@@ -31,7 +34,7 @@ export default function CityViewSelector() {
           ))}
         </select>
       </label>
-      <label className="flex flex-col gap-1 text-sm font-semibold text-gray-600">
+      <label className="flex flex-col gap-1 text-body font-semibold text-gray-600">
         Edición
         <select
           className={selectClass}
@@ -47,9 +50,9 @@ export default function CityViewSelector() {
         </select>
       </label>
       {readOnly && (
-        <p className="self-start rounded-full bg-warning/20 px-3 py-1 text-sm font-semibold text-gray-900">
+        <Chip tone="warning" className="self-start">
           Solo lectura
-        </p>
+        </Chip>
       )}
     </section>
   );

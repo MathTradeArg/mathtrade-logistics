@@ -70,13 +70,13 @@ export default function AmbaMissingPage() {
           {visible.map((row) => (
             <li key={row.user_id} className="staff-card p-4">
               <p className="font-semibold text-gray-900">{row.first_name} {row.last_name}</p>
-              <p className="text-sm text-gray-500">
+              <p className="text-body text-gray-500">
                 {row.table_number ? `Mesa ${row.table_number}` : 'Sin mesa'}
                 {` · ${row.items.length} faltante${row.items.length === 1 ? '' : 's'}`}
               </p>
               <ul className="mt-3 flex flex-col gap-2">
                 {row.items.map((item) => (
-                  <li key={item.report_id} className="text-sm text-gray-700">
+                  <li key={item.report_id} className="text-body text-gray-700">
                     {formatTradeCode(item.assigned_trade_code)} · {item.title}
                     {item.box_number != null ? ` · caja #${item.box_number}` : ''}
                     {item.origin_name ? ` ${item.origin_name}` : ''}

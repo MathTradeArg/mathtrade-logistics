@@ -125,13 +125,13 @@ export default function CityVolunteersPage() {
 
   return (
     <StaffPage>
-      <p className="text-sm text-gray-600">
+      <p className="text-body text-gray-600">
         Pueden armar cajas de {cityName} y ver el teléfono y Telegram de sus participantes.
       </p>
 
       {!readOnly && (
       <section className="mt-6">
-        <h2 className="text-sm font-semibold text-gray-500">Agregar voluntario</h2>
+        <h2 className="text-body font-semibold text-gray-500">Agregar voluntario</h2>
         <StaffSearch
           className="mt-3"
           value={query}
@@ -139,7 +139,7 @@ export default function CityVolunteersPage() {
           placeholder={`Participante de ${cityName}`}
           aria-label="Buscar participante para agregar como voluntario"
         />
-        {isSearching && <p className="mt-3 text-center text-sm text-gray-500">Buscando...</p>}
+        {isSearching && <p className="mt-3 text-center text-body text-gray-500">Buscando...</p>}
         {showNoResults && <StaffEmpty>No hay participantes de tu ciudad que coincidan.</StaffEmpty>}
         {candidates.length > 0 && (
           <ul className="mt-3 flex flex-col gap-3">
@@ -150,13 +150,13 @@ export default function CityVolunteersPage() {
                   subtitle={candidate.email}
                   trailing={
                     candidate.is_volunteer ? (
-                      <span className="shrink-0 text-sm text-gray-500">Ya es voluntario</span>
+                      <span className="shrink-0 text-body text-gray-500">Ya es voluntario</span>
                     ) : (
                       <button
                         type="button"
                         onClick={() => handleAdd(candidate)}
                         disabled={addingId !== null}
-                        className="staff-btn staff-btn-primary !min-h-10 !w-auto shrink-0 !px-4 text-sm"
+                        className="staff-btn staff-btn-primary staff-btn-sm shrink-0"
                         aria-label={`Agregar a ${fullName(candidate)}`}
                       >
                         Agregar
@@ -172,7 +172,7 @@ export default function CityVolunteersPage() {
       )}
 
       <section className="mt-10">
-        <h2 className="text-sm font-semibold text-gray-500">Voluntarios ({volunteers.length})</h2>
+        <h2 className="text-body font-semibold text-gray-500">Voluntarios ({volunteers.length})</h2>
         {isLoadingList ? (
           <p className="py-8 text-center text-gray-500">Cargando voluntarios...</p>
         ) : volunteers.length === 0 ? (
@@ -191,17 +191,17 @@ export default function CityVolunteersPage() {
                       <div className="flex shrink-0 items-center gap-2">
                         {wa && (
                           <a href={wa} target="_blank" rel="noopener noreferrer"
-                             className="text-sm font-semibold text-primary">WhatsApp</a>
+                             className="text-body font-semibold text-primary">WhatsApp</a>
                         )}
                         {telegram && (
                           <a href={`https://t.me/${telegram}`} target="_blank" rel="noopener noreferrer"
-                             className="text-sm font-semibold text-primary">Telegram</a>
+                             className="text-body font-semibold text-primary">Telegram</a>
                         )}
                         {!readOnly && (
                           <button
                             type="button"
                             onClick={() => setToRemove(volunteer)}
-                            className="staff-btn staff-btn-outline !min-h-10 !w-auto !px-4 text-sm"
+                            className="staff-btn staff-btn-outline staff-btn-sm"
                             aria-label={`Quitar a ${fullName(volunteer.user)}`}
                           >
                             Quitar

@@ -17,11 +17,11 @@ interface GameDetailsDisplayProps {
 }
 
 const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: React.ReactNode }) => (
-  <div className="flex items-start text-sm">
-    <Icon size={16} className="text-gray-500 dark:text-gray-400 mt-1 mr-3 flex-shrink-0" />
+  <div className="flex items-start text-body">
+    <Icon size={16} className="text-gray-500 mt-1 mr-3 flex-shrink-0" />
     <div className="flex-grow">
-      <span className="font-semibold text-gray-800 dark:text-gray-200">{label}:</span>
-      <span className="ml-2 text-gray-600 dark:text-gray-300">{value}</span>
+      <span className="font-semibold text-gray-800">{label}:</span>
+      <span className="ml-2 text-gray-600">{value}</span>
     </div>
   </div>
 );
@@ -54,7 +54,7 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
 
   return (
     <div className="space-y-4 pt-4">
-      <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">{title}</h3>
+      <h3 className="text-heading font-bold text-gray-800">{title}</h3>
       <div className="space-y-2">
         <DetailItem icon={Tag} label="ID" value={formatTradeCode(assigned_trade_code)} />        
         <DetailItem icon={User} label="De" value={`${owner.first_name} ${owner.last_name}`} />
@@ -70,14 +70,14 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
         const showPendiente = isAdmin && status > 4;
         if (!showEvento && !showEntregado && !showPendiente) return null;
         return (
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 mb-6">
-            <h4 className="text-md font-semibold text-gray-700 dark:text-gray-300 mb-2">Cambiar estado de juego</h4>
+          <div className="pt-4 border-t border-gray-200 mb-6">
+            <h4 className="text-body-lg font-semibold text-gray-700 mb-2">Cambiar estado de juego</h4>
             <div className="mb-2 flex flex-col gap-3">
               {showEvento && (
                   <button
                     onClick={() => handleAction(5)}
                     disabled={isPerformingGameAction || actionsDisabledByPhase || (status === 6 && !isAdmin)}
-                    className="min-h-14 rounded-lg bg-primary px-4 text-sm font-semibold text-white disabled:bg-cancel"
+                    className="min-h-14 rounded-lg bg-primary px-4 text-body font-semibold text-white disabled:bg-cancel"
                   >
                     En evento
                   </button>
@@ -86,7 +86,7 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
                   <button
                     onClick={() => handleAction(6)}
                     disabled={isPerformingGameAction || actionsDisabledByPhase}
-                    className="min-h-14 rounded-lg bg-want px-4 text-sm font-semibold text-white disabled:bg-cancel"
+                    className="min-h-14 rounded-lg bg-want px-4 text-body font-semibold text-white disabled:bg-cancel"
                   >
                     Entregado
                   </button>
@@ -95,15 +95,15 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
                   <button
                     onClick={() => handleAction(4)}
                     disabled={isPerformingGameAction || actionsDisabledByPhase}
-                    className="min-h-14 rounded-lg bg-amber-500 px-4 text-sm font-semibold text-gray-900 disabled:bg-amber-200"
+                    className="min-h-14 rounded-lg bg-warning px-4 text-body font-semibold text-gray-900 disabled:bg-cancel"
                   >
                     Pendiente
                   </button>
               )}
             </div>
-            {isPerformingGameAction && <div className="flex items-center text-sm text-gray-500 mt-2"><LoadingSpinner/> <span className="ml-2">Procesando...</span></div>}
-            {gameActionSuccess && <p className="text-sm text-green-600 dark:text-green-400 mt-2 flex items-center"><CheckCircle size={16} className="mr-1" /> {gameActionSuccess}</p>}
-            {gameActionError && <p className="text-sm text-danger dark:text-red-400 mt-2 flex items-center"><WarningCircle size={16} className="mr-1" /> {gameActionError}</p>}
+            {isPerformingGameAction && <div className="flex items-center text-body text-gray-500 mt-2"><LoadingSpinner/> <span className="ml-2">Procesando...</span></div>}
+            {gameActionSuccess && <p className="text-body text-want-ink mt-2 flex items-center"><CheckCircle size={16} className="mr-1" /> {gameActionSuccess}</p>}
+            {gameActionError && <p className="text-body text-danger mt-2 flex items-center"><WarningCircle size={16} className="mr-1" /> {gameActionError}</p>}
           </div>
         );
       })()}

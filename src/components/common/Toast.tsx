@@ -48,12 +48,12 @@ export default function Toast({ message, type, onClose, duration = 3000 }: Toast
 
   return (
     <div 
-      className={`fixed bottom-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:transform sm:-translate-x-1/2 z-[10000] transition-all duration-300 ease-out ${
+      className={`fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom)+0.75rem)] left-4 right-4 sm:left-1/2 sm:right-auto sm:transform sm:-translate-x-1/2 z-toast transition-all duration-300 ease-out ${
         isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
       }`}
     >
       <div className={`flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4 sm:min-w-[300px] sm:max-w-[90vw] ${
-        type === 'success' ? 'text-emerald-700' : 'text-danger'
+        type === 'success' ? 'text-want-ink' : 'text-danger'
       }`}>
         {type === 'success' ? (
           <CheckCircle size={20} className="flex-shrink-0" />
@@ -61,7 +61,7 @@ export default function Toast({ message, type, onClose, duration = 3000 }: Toast
           <WarningCircle size={20} className="flex-shrink-0" />
         )}
         
-        <span className="flex-grow text-sm">
+        <span className="flex-grow text-body">
           {message}
         </span>
         

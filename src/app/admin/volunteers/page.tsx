@@ -276,11 +276,11 @@ export default function VolunteersPage() {
   return (
     <StaffPage>
       <section>
-        <h2 className="text-sm font-semibold text-gray-500">Agregar voluntario</h2>
+        <h2 className="text-body font-semibold text-gray-500">Agregar voluntario</h2>
         <select
           value={addTarget}
           onChange={(event) => setAddTarget(event.target.value)}
-          className="mt-3 min-h-10 w-full rounded-full border border-gray-200 bg-white px-3 text-sm"
+          className="mt-3 min-h-10 w-full rounded-full border border-gray-200 bg-white px-3 text-body"
           aria-label="Agregar como"
         >
           <option value="">Del evento</option>
@@ -297,7 +297,7 @@ export default function VolunteersPage() {
           placeholder="Nombre, email o usuario"
           aria-label="Buscar usuario para agregar como voluntario"
         />
-        {isSearching && <p className="mt-3 text-center text-sm text-gray-500">Buscando...</p>}
+        {isSearching && <p className="mt-3 text-center text-body text-gray-500">Buscando...</p>}
         {showNoResults && <StaffEmpty>No hay usuarios que coincidan.</StaffEmpty>}
         {candidates.length > 0 && (
           <ul className="mt-3 flex flex-col gap-3">
@@ -308,13 +308,13 @@ export default function VolunteersPage() {
                   subtitle={candidate.email}
                   trailing={
                     candidate.is_volunteer ? (
-                      <span className="shrink-0 text-sm text-gray-500">Ya es voluntario</span>
+                      <span className="shrink-0 text-body text-gray-500">Ya es voluntario</span>
                     ) : (
                       <button
                         type="button"
                         onClick={() => handleAdd(candidate)}
                         disabled={addingId !== null}
-                        className="staff-btn staff-btn-primary !min-h-10 !w-auto shrink-0 !px-4 text-sm"
+                        className="staff-btn staff-btn-primary staff-btn-sm shrink-0"
                         aria-label={`Agregar a ${fullName(candidate)}`}
                       >
                         Agregar
@@ -330,11 +330,11 @@ export default function VolunteersPage() {
 
       <section className="mt-10">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold text-gray-500">Voluntarios ({shown.length})</h2>
+          <h2 className="text-body font-semibold text-gray-500">Voluntarios ({shown.length})</h2>
           <select
             value={cityFilter}
             onChange={(event) => setCityFilter(event.target.value)}
-            className="min-h-10 rounded-full border border-gray-200 bg-white px-3 text-xs"
+            className="min-h-10 rounded-full border border-gray-200 bg-white px-3 text-caption"
             aria-label="Filtrar por ciudad"
           >
             <option value={ALL_FILTER}>Todos</option>
@@ -362,14 +362,14 @@ export default function VolunteersPage() {
                   trailing={
                     <div className="flex shrink-0 items-center gap-2">
                       {volunteer.added_by ? (
-                        <span className="px-3 text-xs text-gray-500">—</span>
+                        <span className="px-3 text-caption text-gray-500">—</span>
                       ) : (
                         <>
                           {(volunteer.role === 'tables' || (volunteer.tables?.length ?? 0) > 0) && (
                             <button
                               type="button"
                               onClick={() => openTablesModal(volunteer)}
-                              className="min-h-10 rounded-full border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700"
+                              className="min-h-10 rounded-full border border-gray-200 bg-white px-3 text-caption font-semibold text-gray-700"
                               aria-label={`Mesas de ${fullName(volunteer.user)}`}
                             >
                               {volunteer.tables && volunteer.tables.length > 0
@@ -381,7 +381,7 @@ export default function VolunteersPage() {
                             value={volunteer.role ?? ''}
                             onChange={(event) => handleRoleChange(volunteer, event.target.value)}
                             disabled={updatingRoleId === volunteer.id}
-                            className={`min-h-10 rounded-full border-0 px-3 text-xs font-semibold ${
+                            className={`min-h-10 rounded-full border-0 px-3 text-caption font-semibold ${
                               volunteer.role ? 'bg-primary/15 text-primary' : 'bg-gray-100 text-gray-500'
                             }`}
                             aria-label={`Rol de ${fullName(volunteer.user)}`}
@@ -396,7 +396,7 @@ export default function VolunteersPage() {
                       <button
                         type="button"
                         onClick={() => setToRemove(volunteer)}
-                        className="staff-btn staff-btn-outline !min-h-10 !w-auto !px-4 text-sm"
+                        className="staff-btn staff-btn-outline staff-btn-sm"
                         aria-label={`Quitar a ${fullName(volunteer.user)}`}
                       >
                         Quitar
@@ -432,7 +432,7 @@ export default function VolunteersPage() {
           if (!savingTables) setEditingTablesVolunteer(null);
         }}
       >
-        <p className="text-sm text-gray-600">
+        <p className="text-body text-gray-600">
           Seleccioná las mesas asignadas a este voluntario:
         </p>
         {selectableTables.length > 0 && (
@@ -444,7 +444,7 @@ export default function VolunteersPage() {
                   key={tbl}
                   type="button"
                   onClick={() => toggleDraftTable(tbl)}
-                  className={`rounded-full px-3.5 py-2 text-sm font-semibold ${
+                  className={`rounded-full px-3.5 py-2 text-body font-semibold ${
                     selected
                       ? 'bg-primary text-white'
                       : 'border border-gray-200 bg-white text-gray-800'
@@ -463,12 +463,12 @@ export default function VolunteersPage() {
             onChange={(e) => setCustomTableInput(e.target.value)}
             placeholder="Ej: 01"
             aria-label="Agregar número de mesa"
-            className="min-h-10 flex-1 rounded-full border border-gray-200 bg-white px-3 text-sm"
+            className="min-h-10 flex-1 rounded-full border border-gray-200 bg-white px-3 text-body"
           />
           <button
             type="button"
             onClick={addCustomTable}
-            className="staff-btn staff-btn-outline !min-h-10 !w-auto !px-4 text-sm"
+            className="staff-btn staff-btn-outline staff-btn-sm"
           >
             Agregar
           </button>

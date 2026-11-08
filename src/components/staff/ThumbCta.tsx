@@ -22,7 +22,7 @@ export default function ThumbCta({
   ...props
 }: ThumbCtaProps) {
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-16 z-40 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+    <div className="pointer-events-none fixed inset-x-0 bottom-16 z-sticky p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
       <button
         type="button"
         className={clsx(

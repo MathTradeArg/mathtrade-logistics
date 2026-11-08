@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import Link from 'next/link';
 import { Check } from 'phosphor-react';
 import { ReactNode } from 'react';
+import { cardClass, type CardTone } from '@/components/common/ui/Card';
 
 interface GameRowProps {
   title: string;
@@ -27,12 +28,14 @@ export default function GameRow({
   tone,
 }: GameRowProps) {
   const selectable = selected !== undefined;
+  let cardTone: CardTone = 'default';
+  if (disabled) cardTone = 'disabled';
+  else if (selectable && selected) cardTone = 'selected';
+  else if (tone === 'danger') cardTone = 'danger';
   const className = clsx(
-    'staff-card flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left text-gray-900',
+    cardClass({ tone: cardTone }),
+    'flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left text-gray-900',
     (onClick || href) && !disabled && 'active:bg-gray-100',
-    disabled && 'bg-muted opacity-45',
-    tone === 'danger' && !selected && 'border-danger/40 bg-danger/5',
-    selectable && selected && 'border-primary bg-primary/10',
   );
 
   const content = (
@@ -40,7 +43,7 @@ export default function GameRow({
       <div className="min-w-0 flex-1">
         <p className="font-semibold leading-tight">{title}</p>
         {subtitle && (
-          <p className={`mt-0.5 text-sm ${tone === 'danger' ? 'text-danger' : 'text-gray-500'}`}>
+          <p className={`mt-0.5 text-body ${tone === 'danger' ? 'text-danger' : 'text-gray-500'}`}>
             {subtitle}
           </p>
         )}

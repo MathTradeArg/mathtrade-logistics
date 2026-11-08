@@ -53,8 +53,6 @@ describe('ControlPanelModal', () => {
   };
 
   const defaultAuthContext = {
-    isDarkMode: false,
-    toggleDarkMode: jest.fn(),
   };
 
   const defaultActionStatusContext = {

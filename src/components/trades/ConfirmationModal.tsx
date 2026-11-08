@@ -36,10 +36,10 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
     : (actionType === 'all' ? `Entregar TODO (${itemsToDeliver.length})` : `Entregar Marcados (${itemsToDeliver.length})`);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(213,220,226,0.7)] p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-modal flex items-center justify-center bg-overlay p-4 backdrop-blur-sm">
       <div className="staff-panel flex w-full max-w-md flex-col p-6 text-gray-900">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="flex items-center text-xl font-bold">
+          <h2 className="flex items-center text-heading font-bold">
             <Warning size={24} className="mr-2 text-warning" />
             {title}
           </h2>
@@ -52,7 +52,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
         <div className="mb-6 max-h-60 space-y-3 overflow-y-auto rounded-lg border border-gray-200 bg-page p-3">
           {itemsToDeliver.length > 0 ? (
             itemsToDeliver.map(item => (
-              <div key={`confirm-${item.result.assigned_trade_code}`} className="flex min-h-14 items-center rounded-lg bg-white px-3 text-sm">
+              <div key={`confirm-${item.result.assigned_trade_code}`} className="flex min-h-14 items-center rounded-lg bg-white px-3 text-body">
                 <span className="mr-2 min-w-20 shrink-0 text-center font-bold tabular-nums text-primary">{formatTradeCode(item.result.assigned_trade_code)}</span>
                 <span className="min-w-0 flex-grow text-gray-800">{item.math_item_exchanged.title}</span>
               </div>

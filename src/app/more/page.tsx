@@ -37,7 +37,7 @@ export default function MorePage() {
   if (!isAdmin && !role && cityAccess) {
     return (
       <StaffPage>
-        <h2 className="text-sm font-semibold text-gray-500">{cityAccess.city.name}</h2>
+        <h2 className="text-body font-semibold text-gray-500">{cityAccess.city.name}</h2>
         <ul className="mt-3 flex flex-col gap-3">
           <li>
             <GameRow title="Mi ciudad" href="/city" />
@@ -114,9 +114,9 @@ export default function MorePage() {
 
       {isAdmin && (
         <div className="mt-10">
-          <h2 className="text-sm font-semibold text-gray-500">Admin</h2>
+          <h2 className="text-body font-semibold text-gray-500">Admin</h2>
           <div className="staff-panel mt-3 p-4">
-            <p className="text-sm font-medium text-gray-700">Fase del evento</p>
+            <p className="text-body font-medium text-gray-700">Fase del evento</p>
             <div className="mt-3 flex flex-col gap-3">
               {[
                 { id: 0, label: 'No iniciado' },
@@ -173,7 +173,7 @@ export default function MorePage() {
               </button>
               {operationalExport.error && <StaffBanner>{operationalExport.error}</StaffBanner>}
               {operationalExport.lastDownloadedAt && (
-                <p className="mt-2 px-1 text-sm text-gray-500">
+                <p className="mt-2 px-1 text-body text-gray-500">
                   Descargada a las {formatClock(operationalExport.lastDownloadedAt)}
                 </p>
               )}

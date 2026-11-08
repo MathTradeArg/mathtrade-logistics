@@ -1,7 +1,10 @@
 "use client";
 
+import { EmptyState } from '@/components/common/ui/EmptyState';
+import { StaffHeading } from '@/components/common/ui/StaffHeading';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import Link from 'next/link';
+import type { Icon } from 'phosphor-react';
 import { ReactNode } from 'react';
 
 export function StaffPage({ children, className = '' }: { children: ReactNode; className?: string }) {
@@ -12,12 +15,17 @@ export function StaffPage({ children, className = '' }: { children: ReactNode; c
   );
 }
 
-export function StaffEmpty({ children }: { children: ReactNode }) {
-  return <p className="py-8 text-center text-gray-500">{children}</p>;
+export function StaffEmpty({ children, icon, ctaText, ctaHref }: {
+  children: ReactNode;
+  icon?: Icon;
+  ctaText?: string;
+  ctaHref?: string;
+}) {
+  return <EmptyState message={children} icon={icon} ctaText={ctaText} ctaHref={ctaHref} />;
 }
 
 export function StaffError({ children }: { children: ReactNode }) {
-  return <p className="py-4 text-center text-danger">{children}</p>;
+  return <p className="py-4 text-center text-body text-danger">{children}</p>;
 }
 
 /** Persistent error banner that leaves the content below it usable. */
@@ -28,9 +36,9 @@ export function StaffBanner({ children, onRetry, retrying = false }: {
 }) {
   return (
     <div role="alert" className="my-4 flex items-center gap-3 rounded-lg border border-danger/30 bg-danger/10 p-3 text-danger">
-      <p className="flex-1 text-sm">{children}</p>
+      <p className="flex-1 text-body">{children}</p>
       {onRetry && (
-        <button type="button" className="staff-btn staff-btn-outline !min-h-10 !w-auto shrink-0 !px-4 text-sm" onClick={onRetry} disabled={retrying}>
+        <button type="button" className="staff-btn staff-btn-outline staff-btn-sm shrink-0" onClick={onRetry} disabled={retrying}>
           Reintentar
         </button>
       )}
@@ -44,7 +52,7 @@ export function PhaseBlocked() {
   if (eventPhase === null && errorEventPhase) return null;
   return (
     <StaffPage className="flex min-h-[60dvh] flex-col items-center justify-center text-center">
-      <h1 className="text-xl font-bold">El evento no empezó</h1>
+      <StaffHeading level={1}>El evento no empezó</StaffHeading>
       <p className="mt-3 max-w-sm text-gray-600">
         Esta tarea está deshabilitada hasta que un admin abra la recepción.
       </p>

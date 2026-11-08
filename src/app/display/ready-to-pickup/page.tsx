@@ -169,7 +169,7 @@ export default function DisplayReadyToPickupPage() {
           <Users size={48} className="mr-4 text-primary" />
           Listos para retirar
         </h1>
-        <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center justify-center gap-2 text-body text-gray-500">
           <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
           {lastUpdated && (
             <span>
@@ -193,7 +193,7 @@ export default function DisplayReadyToPickupPage() {
 
         {error && (
           <div className="mb-8 rounded-lg border-2 border-danger bg-danger/10 p-8 text-center">
-            <p className="text-xl text-danger md:text-2xl">{error}</p>
+            <p className="text-heading text-danger md:text-2xl">{error}</p>
           </div>
         )}
 
@@ -214,10 +214,10 @@ export default function DisplayReadyToPickupPage() {
               return (
                 <section key={window.id} className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
                   <header className="shrink-0 border-b border-gray-200 p-6">
-                    <h2 className="mb-3 text-center text-xl font-bold text-primary md:text-2xl">
+                    <h2 className="mb-3 text-center text-heading font-bold text-primary md:text-2xl">
                       {window.name}
                     </h2>
-                    <p className="text-center text-xs text-gray-500">
+                    <p className="text-center text-caption text-gray-500">
                       Hasta {window.max_users} en Listos / En mesa
                     </p>
                   </header>
@@ -238,7 +238,7 @@ export default function DisplayReadyToPickupPage() {
                       variant="receiving"
                     />
                     {hidden > 0 && (
-                      <p className="mb-4 text-center text-sm text-gray-500">+{hidden} más</p>
+                      <p className="mb-4 text-center text-body text-gray-500">+{hidden} más</p>
                     )}
                     {noShow.length > 0 && (
                       <WindowGroup
@@ -258,10 +258,10 @@ export default function DisplayReadyToPickupPage() {
       </div>
 
       <footer className="mt-8 space-y-2 rounded-lg border border-gray-200 bg-white p-4 text-center">
-        <p className="text-lg text-gray-600 md:text-xl">
+        <p className="text-heading text-gray-600">
           Esta pantalla se actualiza automáticamente cada {pollingInterval} segundos
         </p>
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-6 text-sm">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-6 text-body">
           <StatDot color="bg-want" label="Listos" value={totalStats.ready} />
           <StatDot color="bg-primary" label="En mesa" value={totalStats.attended} />
           <StatDot color="bg-danger" label="No show" value={totalStats.no_show} />
@@ -301,11 +301,11 @@ function WindowGroup({
 
   return (
     <div className={variant === 'no_show' ? 'mt-6 border-t border-gray-200 pt-4' : 'mb-6'}>
-      <h3 className={`mb-3 text-sm font-semibold uppercase tracking-wide ${accent}`}>
+      <h3 className={`mb-3 text-body font-semibold uppercase tracking-wide ${accent}`}>
         {title} ({count})
       </h3>
       {users.length === 0 ? (
-        <p className="text-sm text-gray-400">Nadie</p>
+        <p className="text-body text-gray-400">Nadie</p>
       ) : (
         <div className="flex flex-col gap-3">
           {users.map((user) => (
@@ -342,7 +342,7 @@ function UserRow({
         <p className="flex-1 whitespace-normal break-words text-3xl font-bold leading-tight md:text-4xl lg:text-5xl">
           {displayName(user)}
         </p>
-        <div className="shrink-0 text-right text-xs text-gray-500">
+        <div className="shrink-0 text-right text-caption text-gray-500">
           <p className="leading-tight">{user.username}</p>
           {user.table_number && <p className="leading-tight">Mesa {user.table_number}</p>}
         </div>

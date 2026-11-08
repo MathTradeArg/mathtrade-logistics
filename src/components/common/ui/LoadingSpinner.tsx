@@ -15,7 +15,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ message = "Cargando..."
           </svg>
         </div>
       </div>
-      <p className="text-lg font-semibold text-gray-700 sm:text-xl">{message}</p>
+      <p className="text-heading font-semibold text-gray-700">{message}</p>
     </div>
   );
 };

@@ -2,7 +2,7 @@
 
 import CityViewSelector from '@/components/city/CityViewSelector';
 import NoCity from '@/components/city/NoCity';
-import { GameRow, StaffEmpty, StaffPage } from '@/components/staff';
+import { GameRow, StaffEmpty, StaffHeading, StaffPage } from '@/components/staff';
 import { useCityView } from '@/contexts/CityViewContext';
 
 export default function CityHomePage() {
@@ -18,7 +18,7 @@ export default function CityHomePage() {
         <StaffEmpty>Elegí una ciudad</StaffEmpty>
       ) : (
         <>
-          <h1 className="text-xl font-bold">{cityName}</h1>
+          <StaffHeading level={1}>{cityName}</StaffHeading>
           <ul className="mt-6 flex flex-col gap-3">
             <li>
               <GameRow

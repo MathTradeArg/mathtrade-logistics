@@ -148,14 +148,14 @@ export default function IncomingBoxPage() {
 
       {box && (
         <>
-          <p className="text-sm text-gray-500">{box.origin_name} → {destLabel}</p>
+          <p className="text-body text-gray-500">{box.origin_name} → {destLabel}</p>
           {mixed && (
-            <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+            <p className="mt-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-body font-medium text-red-800">
               Localidades mezcladas ({onwardNames.join(', ')}): hay que abrir esta caja y marcar los juegos como recibidos para separarlos por destino.
             </p>
           )}
           {transit && !mixed && (
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-body text-gray-600">
               Todos los juegos declarados van a {destLabel}. Si abrís la caja, marcá los juegos como recibidos para sumarlos al armado del evento.
             </p>
           )}
@@ -195,12 +195,12 @@ export default function IncomingBoxPage() {
           )}
 
           {received.length > 0 && (
-            <p className="mt-6 text-sm text-gray-500">{received.length} ya recibidos</p>
+            <p className="mt-6 text-body text-gray-500">{received.length} ya recibidos</p>
           )}
 
           <Link
             href="/boxes/in/loose"
-            className="mt-6 flex min-h-14 items-center justify-center rounded-lg border border-gray-200 bg-white text-base font-semibold text-gray-800"
+            className="mt-6 flex min-h-14 items-center justify-center rounded-lg border border-gray-200 bg-white text-body-lg font-semibold text-gray-800"
           >
             No está en la lista
           </Link>
@@ -212,7 +212,7 @@ export default function IncomingBoxPage() {
               originName: box.origin_name,
               items: pending.filter((item) => selected.has(item.assigned_trade_code)),
             })}
-            className={`mt-3 flex min-h-14 items-center justify-center text-base font-semibold ${
+            className={`mt-3 flex min-h-14 items-center justify-center text-body-lg font-semibold ${
               selected.size === 0 ? 'pointer-events-none text-gray-300' : 'text-gray-500'
             }`}
             aria-disabled={selected.size === 0}

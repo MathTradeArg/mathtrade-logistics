@@ -1,6 +1,6 @@
 "use client";
 
-import { LoadingSpinner } from '@/components/common/ui';
+import { Chip, LoadingSpinner } from '@/components/common/ui';
 import {
   StaffDialog,
   StaffEmpty,
@@ -298,15 +298,15 @@ export default function TablesPage() {
     <StaffPage>
       <div className="staff-panel flex flex-wrap items-center justify-between gap-3 p-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <p className="text-caption font-semibold uppercase tracking-wide text-gray-500">
             Mis mesas asignadas
           </p>
           {myAssignedTables.length > 0 ? (
-            <p className="mt-1 text-base font-bold text-gray-900">
+            <p className="mt-1 text-body-lg font-bold text-gray-900">
               {myAssignedTables.map((t) => `Mesa ${t}`).join(' · ')}
             </p>
           ) : (
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-body text-gray-600">
               No tenés mesas asignadas todavía.
             </p>
           )}
@@ -315,7 +315,7 @@ export default function TablesPage() {
           <button
             type="button"
             onClick={openAssignModal}
-            className="staff-btn staff-btn-primary !min-h-10 !w-auto !px-4 text-sm"
+            className="staff-btn staff-btn-primary staff-btn-sm"
           >
             {myAssignedTables.length > 0 ? 'Cambiar mis mesas' : 'Asignarme mesas'}
           </button>
@@ -323,7 +323,7 @@ export default function TablesPage() {
             type="button"
             onClick={loadTables}
             disabled={isLoading}
-            className="staff-btn staff-btn-outline !min-h-10 !w-auto !px-3 text-sm"
+            className="staff-btn staff-btn-outline staff-btn-sm"
           >
             Actualizar
           </button>
@@ -336,7 +336,7 @@ export default function TablesPage() {
             <button
               type="button"
               onClick={() => setTableFilter(MINE_FILTER)}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+              className={`rounded-full px-3 py-1.5 text-caption font-semibold ${
                 effectiveTableFilter === MINE_FILTER
                   ? 'bg-primary text-white'
                   : 'border border-gray-200 bg-white text-gray-700'
@@ -348,7 +348,7 @@ export default function TablesPage() {
           <button
             type="button"
             onClick={() => setTableFilter(ALL_FILTER)}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+            className={`rounded-full px-3 py-1.5 text-caption font-semibold ${
               effectiveTableFilter === ALL_FILTER
                 ? 'bg-primary text-white'
                 : 'border border-gray-200 bg-white text-gray-700'
@@ -361,7 +361,7 @@ export default function TablesPage() {
               key={tbl}
               type="button"
               onClick={() => setTableFilter(tbl)}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+              className={`rounded-full px-3 py-1.5 text-caption font-semibold ${
                 effectiveTableFilter === tbl
                   ? 'bg-primary text-white'
                   : 'border border-gray-200 bg-white text-gray-700'
@@ -375,20 +375,20 @@ export default function TablesPage() {
 
       <div className="mt-4 grid grid-cols-3 gap-2">
         <div className="staff-card p-3 text-center">
-          <p className="text-xs text-gray-500">Listos en mesa</p>
-          <p className="mt-1 text-lg font-bold text-gray-900">
+          <p className="text-caption text-gray-500">Listos en mesa</p>
+          <p className="mt-1 text-heading font-bold text-gray-900">
             {totals.recipients_complete_on_table}/{totals.recipients_total}
           </p>
         </div>
         <div className="staff-card p-3 text-center">
-          <p className="text-xs text-gray-500">Juegos en mesa</p>
-          <p className="mt-1 text-lg font-bold text-emerald-700">
+          <p className="text-caption text-gray-500">Juegos en mesa</p>
+          <p className="mt-1 text-heading font-bold text-want-ink">
             {totals.games_on_table}/{totals.games_total}
           </p>
         </div>
         <div className="staff-card p-3 text-center">
-          <p className="text-xs text-gray-500">Juegos faltantes</p>
-          <p className="mt-1 text-lg font-bold text-amber-700">
+          <p className="text-caption text-gray-500">Juegos faltantes</p>
+          <p className="mt-1 text-heading font-bold text-orange-800">
             {totals.games_missing}
           </p>
         </div>
@@ -426,20 +426,18 @@ export default function TablesPage() {
             {missingGames.map(({ game, recipient }) => (
               <li
                 key={game.trade_id}
-                className="staff-card flex flex-col gap-1 border-l-4 border-amber-500 p-4"
+                className="staff-card flex flex-col gap-1 border-l-4 border-warning p-4"
               >
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-bold text-gray-900">
                     {formatTradeCode(game.assigned_trade_code)} · {game.title}
                   </p>
-                  <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-                    Mesa {recipient.table_number}
-                  </span>
+                  <Chip tone="warning" className="shrink-0">Mesa {recipient.table_number}</Chip>
                 </div>
-                <p className="text-sm font-medium text-gray-800">
+                <p className="text-body font-medium text-gray-800">
                   Receptor: {recipientFullName(recipient)} (@{recipient.username})
                 </p>
-                <p className="text-xs text-gray-600">
+                <p className="text-caption text-gray-600">
                   De: {senderFullName(game)}
                   {game.from_location ? ` (${game.from_location})` : ''} · Estado: {game.status_display}
                 </p>
@@ -468,38 +466,38 @@ export default function TablesPage() {
                     key={`${rec.table_number}-${rec.membership_id}`}
                     className={`staff-card p-4 ${
                       rec.is_ready_to_pickup
-                        ? 'border-l-4 border-emerald-500'
+                        ? 'border-l-4 border-want'
                         : rec.is_table_complete
-                          ? 'border-l-4 border-sky-500'
-                          : 'border-l-4 border-amber-500'
+                          ? 'border-l-4 border-primary'
+                          : 'border-l-4 border-warning'
                     }`}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
-                        <p className="text-base font-bold text-gray-900">
+                        <p className="text-body-lg font-bold text-gray-900">
                           {recipientFullName(rec)}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-caption text-gray-500">
                           @{rec.username} · Mesa {rec.table_number} · {rec.games_ready}/{rec.games_total} en mesa
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         {allDelivered ? (
-                          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
+                          <Chip tone="done">
                             Entregado
-                          </span>
+                          </Chip>
                         ) : rec.is_ready_to_pickup ? (
-                          <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+                          <Chip tone="good">
                             Listo para retirar
-                          </span>
+                          </Chip>
                         ) : rec.is_table_complete ? (
-                          <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-800">
+                          <Chip tone="info">
                             Mesa completa · debe entregar {rec.pending_drop_off_count}
-                          </span>
+                          </Chip>
                         ) : (
-                          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                          <Chip tone="used">
                             Faltan {rec.games_missing} de {rec.games_total}
-                          </span>
+                          </Chip>
                         )}
                       </div>
                     </div>
@@ -511,28 +509,23 @@ export default function TablesPage() {
                         return (
                           <li
                             key={g.trade_id}
-                            className="flex items-center justify-between gap-2 py-2 text-sm"
+                            className="flex items-center justify-between gap-2 py-2 text-body"
                           >
                             <div className="min-w-0">
                               <p className="truncate font-semibold text-gray-900">
                                 {formatTradeCode(g.assigned_trade_code)} · {g.title}
                               </p>
-                              <p className="truncate text-xs text-gray-500">
+                              <p className="truncate text-caption text-gray-500">
                                 De {senderFullName(g)}
                                 {g.from_location ? ` (${g.from_location})` : ''}
                               </p>
                             </div>
-                            <span
-                              className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                isReady
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : isDelivered
-                                    ? 'bg-gray-100 text-gray-600'
-                                    : 'bg-amber-100 text-amber-800'
-                              }`}
+                            <Chip
+                              tone={isReady ? 'good' : isDelivered ? 'none' : 'used'}
+                              className="shrink-0"
                             >
                               {isReady ? 'En mesa' : isDelivered ? 'Entregado' : 'Falta'}
-                            </span>
+                            </Chip>
                           </li>
                         );
                       })}
@@ -555,7 +548,7 @@ export default function TablesPage() {
           if (!savingTables) setAssignModalOpen(false);
         }}
       >
-        <p className="text-sm text-gray-600">
+        <p className="text-body text-gray-600">
           Tocá las mesas que vas a ordenar hoy:
         </p>
         {selectableTables.length > 0 ? (
@@ -567,7 +560,7 @@ export default function TablesPage() {
                   key={tbl}
                   type="button"
                   onClick={() => toggleDraftTable(tbl)}
-                  className={`rounded-full px-3.5 py-2 text-sm font-semibold ${
+                  className={`rounded-full px-3.5 py-2 text-body font-semibold ${
                     selected
                       ? 'bg-primary text-white'
                       : 'border border-gray-200 bg-white text-gray-800'
@@ -579,7 +572,7 @@ export default function TablesPage() {
             })}
           </div>
         ) : (
-          <p className="mt-3 text-sm text-gray-500">
+          <p className="mt-3 text-body text-gray-500">
             Todavía no hay mesas generadas; podés ingresar el número manualmente abajo.
           </p>
         )}
@@ -590,18 +583,18 @@ export default function TablesPage() {
             onChange={(e) => setCustomTableInput(e.target.value)}
             placeholder="Ej: 01"
             aria-label="Agregar número de mesa"
-            className="min-h-10 flex-1 rounded-full border border-gray-200 bg-white px-3 text-sm"
+            className="min-h-10 flex-1 rounded-full border border-gray-200 bg-white px-3 text-body"
           />
           <button
             type="button"
             onClick={addCustomTable}
-            className="staff-btn staff-btn-outline !min-h-10 !w-auto !px-4 text-sm"
+            className="staff-btn staff-btn-outline staff-btn-sm"
           >
             Agregar
           </button>
         </div>
         {isAdmin && (
-          <p className="mt-3 text-xs text-gray-500">
+          <p className="mt-3 text-caption text-gray-500">
             Para asignar mesas a otros voluntarios andá a Admin → Voluntarios.
           </p>
         )}

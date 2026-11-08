@@ -19,16 +19,17 @@ export default function StaffSegmented<T extends string>({
   onChange,
 }: StaffSegmentedProps<T>) {
   return (
-    <div className={clsx('grid gap-3', options.length === 2 ? 'grid-cols-2' : 'grid-cols-3')}>
+    <div role="group" className={clsx('grid gap-3', options.length === 2 ? 'grid-cols-2' : 'grid-cols-3')}>
       {options.map((option) => {
         const active = option.id === value;
         return (
           <button
             key={option.id}
             type="button"
+            aria-pressed={active}
             onClick={() => onChange(option.id)}
             className={clsx(
-              'min-h-14 rounded-full px-3 text-sm font-semibold',
+              'min-h-14 rounded-full px-3 text-body font-semibold',
               active ? 'bg-primary text-white' : 'border border-stroke bg-white text-gray-700',
             )}
           >

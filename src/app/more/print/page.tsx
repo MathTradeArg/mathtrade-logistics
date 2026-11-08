@@ -65,7 +65,7 @@ function BoxCircleSymbol({ fill }: { fill: CircleFill }) {
           strokeWidth="16"
         />
       </svg>
-      <span className="mt-2 print:mt-1 text-sm print:text-xs font-black tracking-wider text-black uppercase">
+      <span className="mt-2 print:mt-1 text-body print:text-caption font-black tracking-wider text-black uppercase">
         {isFilled ? 'CÍRCULO LLENO · FINAL CABA' : 'CÍRCULO VACÍO · VÍA CABA'}
       </span>
     </div>
@@ -345,7 +345,7 @@ function PrintPageContent() {
               key={option.id}
               type="button"
               onClick={() => setTab(option.id)}
-              className={`min-h-12 rounded-lg px-3 py-2 text-sm font-semibold border ${
+              className={`min-h-12 rounded-lg px-3 py-2 text-body font-semibold border ${
                 tab === option.id
                   ? 'border-primary bg-primary text-white'
                   : 'border-gray-200 bg-white text-gray-800'
@@ -361,15 +361,15 @@ function PrintPageContent() {
 
         {tab === 'labels' && (
           <div className="staff-card space-y-4 p-4">
-            <h2 className="text-base font-bold text-gray-900">
+            <h2 className="text-body-lg font-bold text-gray-900">
               Configurar etiquetas de cajas
             </h2>
-            <p className="text-sm text-gray-600">
+            <p className="text-body text-gray-600">
               Podés imprimirlas antes de crear las cajas. Los campos que dejes vacíos salen con línea para completar a mano.
             </p>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-body font-semibold text-gray-700 mb-2">
                 Tipo de caja y código visual
               </label>
               <div className="flex flex-col gap-2">
@@ -383,7 +383,7 @@ function PrintPageContent() {
                   }`}
                 >
                   <span>● Viaja a CABA y TERMINA EN CABA (Círculo lleno)</span>
-                  <span className="text-xs font-semibold uppercase">Pago en destino</span>
+                  <span className="text-caption font-semibold uppercase">Pago en destino</span>
                 </button>
                 <button
                   type="button"
@@ -395,7 +395,7 @@ function PrintPageContent() {
                   }`}
                 >
                   <span>○ Viaja a CABA y SIGUE A OTRA LOCALIDAD · Vía CABA (Círculo vacío)</span>
-                  <span className="text-xs font-semibold uppercase">Pago en destino</span>
+                  <span className="text-caption font-semibold uppercase">Pago en destino</span>
                 </button>
                 <button
                   type="button"
@@ -407,14 +407,14 @@ function PrintPageContent() {
                   }`}
                 >
                   <span>Viaja a localidad del interior (desde el evento o directo)</span>
-                  <span className="text-xs font-semibold uppercase">Pago en destino</span>
+                  <span className="text-caption font-semibold uppercase">Pago en destino</span>
                 </button>
               </div>
             </div>
 
             {routeKind === 'amba_via' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-body font-medium text-gray-700 mb-1">
                   Localidad(es) final(es) a las que sigue (opcional, si lo dejás vacío queda para escribir a mano)
                 </label>
                 <input
@@ -422,7 +422,7 @@ function PrintPageContent() {
                   value={onwardCityText}
                   onChange={(e) => setOnwardCityText(e.target.value)}
                   placeholder="Ej: Catamarca / Salta (o dejalo vacío para rellenar)"
-                  className="min-h-12 w-full rounded-lg border border-gray-300 px-3 text-sm"
+                  className="min-h-12 w-full rounded-lg border border-gray-300 px-3 text-body"
                 />
               </div>
             )}
@@ -430,7 +430,7 @@ function PrintPageContent() {
             {routeKind === 'interior' && (
               <div className="space-y-3 border-t border-gray-200 pt-3">
                 <div className="flex items-center justify-between gap-2">
-                  <label className="text-sm font-semibold text-gray-700">
+                  <label className="text-body font-semibold text-gray-700">
                     Localidades de destino ({selectedLabelDests.size} seleccionadas)
                   </label>
                   <div className="flex gap-2">
@@ -441,14 +441,14 @@ function PrintPageContent() {
                           new Set(interiorDirectory.map((l) => l.locationId)),
                         )
                       }
-                      className="rounded border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-700"
+                      className="rounded border border-gray-300 px-2 py-1 text-caption font-semibold text-gray-700"
                     >
                       Todas
                     </button>
                     <button
                       type="button"
                       onClick={() => setSelectedLabelDests(new Set())}
-                      className="rounded border border-gray-300 px-2 py-1 text-xs font-semibold text-gray-700"
+                      className="rounded border border-gray-300 px-2 py-1 text-caption font-semibold text-gray-700"
                     >
                       Ninguna
                     </button>
@@ -466,7 +466,7 @@ function PrintPageContent() {
                     const refNames = loc.referrers.map((r) => r.name).join(' / ');
                     return (
                       <div key={loc.locationId} className="rounded p-2 hover:bg-gray-50">
-                        <label className="flex cursor-pointer items-start gap-2 text-sm">
+                        <label className="flex cursor-pointer items-start gap-2 text-body">
                           <input
                             type="checkbox"
                             checked={checked}
@@ -476,11 +476,11 @@ function PrintPageContent() {
                           <span className="flex-1">
                             <span className="font-semibold">{loc.city}</span> ({loc.code})
                             {loc.sendAs ? (
-                              <span className="ml-1 text-xs font-normal text-amber-700 bg-amber-50 rounded px-1">
+                              <span className="ml-1 text-caption font-normal text-gray-900 bg-warning/20 rounded px-1">
                                 (vía {findReferrerInfo(directory, loc.sendAs)?.city ?? 'otro'})
                               </span>
                             ) : null} · {refNames}
-                            <span className="block text-xs text-gray-500">
+                            <span className="block text-caption text-gray-500">
                               {customAddresses[loc.locationId] ??
                                 (loc.address || 'Dirección Vía Cargo sin definir (sale línea para rellenar)')}
                             </span>
@@ -497,7 +497,7 @@ function PrintPageContent() {
                               }))
                             }
                             placeholder="Dirección Sucursal Vía Cargo (vacío = línea rellenable)"
-                            className="mt-1 min-h-10 w-full rounded border border-gray-200 px-2 text-xs"
+                            className="mt-1 min-h-10 w-full rounded border border-gray-200 px-2 text-caption"
                           />
                         )}
                       </div>
@@ -509,7 +509,7 @@ function PrintPageContent() {
 
             <div className="grid grid-cols-1 gap-3 border-t border-gray-200 pt-3 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-body font-medium text-gray-700 mb-1">
                   Cantidad de etiquetas por destino
                 </label>
                 <input
@@ -518,11 +518,11 @@ function PrintPageContent() {
                   max={20}
                   value={copiesPerDest}
                   onChange={(e) => setCopiesPerDest(Number(e.target.value) || 1)}
-                  className="min-h-12 w-full rounded-lg border border-gray-300 px-3 text-sm"
+                  className="min-h-12 w-full rounded-lg border border-gray-300 px-3 text-body"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-body font-medium text-gray-700 mb-1">
                   Número de caja (dejalo vacío para rellenar a mano)
                 </label>
                 <input
@@ -530,21 +530,21 @@ function PrintPageContent() {
                   value={boxNumberText}
                   onChange={(e) => setBoxNumberText(e.target.value)}
                   placeholder="Vacío = recuadro rellenable"
-                  className="min-h-12 w-full rounded-lg border border-gray-300 px-3 text-sm"
+                  className="min-h-12 w-full rounded-lg border border-gray-300 px-3 text-body"
                 />
               </div>
             </div>
 
             <div className="space-y-3 border-t border-gray-200 pt-3">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <span className="text-sm font-semibold text-gray-700">
+                <span className="text-body font-semibold text-gray-700">
                   Datos del referente que envía (opcional · vacío = líneas para rellenar a mano)
                 </span>
                 <select
                   value=""
                   onChange={(e) => handleSenderPreset(e.target.value)}
                   aria-label="Pre-cargar remitente por localidad"
-                  className="min-h-10 rounded border border-gray-300 px-2 text-xs"
+                  className="min-h-10 rounded border border-gray-300 px-2 text-caption"
                 >
                   <option value="">Pre-cargar desde una localidad o dejar vacío...</option>
                   <option value={String(ambaInfo.locationId)}>CABA{ambaInfo.referrers[0] ? ` (${ambaInfo.referrers[0].name})` : ''}</option>
@@ -561,28 +561,28 @@ function PrintPageContent() {
                   value={senderCity}
                   onChange={(e) => setSenderCity(e.target.value)}
                   placeholder="Localidad que envía (vacío = rellenable)"
-                  className="min-h-10 rounded border border-gray-300 px-3 text-sm"
+                  className="min-h-10 rounded border border-gray-300 px-3 text-body"
                 />
                 <input
                   type="text"
                   value={senderName}
                   onChange={(e) => setSenderName(e.target.value)}
                   placeholder="Nombre referente que envía (vacío = rellenable)"
-                  className="min-h-10 rounded border border-gray-300 px-3 text-sm"
+                  className="min-h-10 rounded border border-gray-300 px-3 text-body"
                 />
                 <input
                   type="text"
                   value={senderDni}
                   onChange={(e) => setSenderDni(e.target.value)}
                   placeholder="DNI referente que envía (vacío = rellenable)"
-                  className="min-h-10 rounded border border-gray-300 px-3 text-sm"
+                  className="min-h-10 rounded border border-gray-300 px-3 text-body"
                 />
                 <input
                   type="text"
                   value={senderPhone}
                   onChange={(e) => setSenderPhone(e.target.value)}
                   placeholder="Teléfono referente que envía (vacío = rellenable)"
-                  className="min-h-10 rounded border border-gray-300 px-3 text-sm"
+                  className="min-h-10 rounded border border-gray-300 px-3 text-body"
                 />
               </div>
             </div>
@@ -591,7 +591,7 @@ function PrintPageContent() {
 
         {tab === 'sectors' && (
           <div className="staff-card space-y-4 p-4">
-            <h2 className="text-base font-bold text-gray-900">
+            <h2 className="text-body-lg font-bold text-gray-900">
               Carteles para sectores de Armado y Desarmado por localidad
             </h2>
             <div className="flex flex-wrap gap-2">
@@ -604,7 +604,7 @@ function PrintPageContent() {
                   key={opt.id}
                   type="button"
                   onClick={() => setSectorKind(opt.id)}
-                  className={`rounded-lg border px-3 py-2 text-sm font-semibold ${
+                  className={`rounded-lg border px-3 py-2 text-body font-semibold ${
                     sectorKind === opt.id
                       ? 'border-primary bg-primary text-white'
                       : 'border-gray-200 bg-white text-gray-800'
@@ -615,7 +615,7 @@ function PrintPageContent() {
               ))}
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-gray-700">
+              <span className="text-body font-semibold text-gray-700">
                 Localidades ({selectedSectorLocs.size} seleccionadas)
               </span>
               <div className="flex gap-2">
@@ -626,14 +626,14 @@ function PrintPageContent() {
                       new Set(interiorDirectory.map((l) => l.locationId)),
                     )
                   }
-                  className="rounded border border-gray-300 px-2 py-1 text-xs font-semibold"
+                  className="rounded border border-gray-300 px-2 py-1 text-caption font-semibold"
                 >
                   Todas
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedSectorLocs(new Set())}
-                  className="rounded border border-gray-300 px-2 py-1 text-xs font-semibold"
+                  className="rounded border border-gray-300 px-2 py-1 text-caption font-semibold"
                 >
                   Ninguna
                 </button>
@@ -649,7 +649,7 @@ function PrintPageContent() {
               {filteredSectorLocations.map((loc) => (
                 <label
                   key={loc.locationId}
-                  className="flex cursor-pointer items-center gap-2 rounded p-1.5 text-sm hover:bg-gray-50"
+                  className="flex cursor-pointer items-center gap-2 rounded p-1.5 text-body hover:bg-gray-50"
                 >
                   <input
                     type="checkbox"
@@ -668,11 +668,11 @@ function PrintPageContent() {
 
         {tab === 'windows' && (
           <div className="staff-card space-y-4 p-4">
-            <h2 className="text-base font-bold text-gray-900">
+            <h2 className="text-body-lg font-bold text-gray-900">
               Identificaciones para Ventanillas
             </h2>
             <div className="flex items-center gap-3">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-body font-medium text-gray-700">
                 Cantidad de ventanillas:
               </label>
               <input
@@ -681,7 +681,7 @@ function PrintPageContent() {
                 max={30}
                 value={windowCountInput}
                 onChange={(e) => applyWindowCount(Number(e.target.value) || 1)}
-                className="min-h-10 w-24 rounded border border-gray-300 px-3 text-sm"
+                className="min-h-10 w-24 rounded border border-gray-300 px-3 text-body"
               />
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -696,7 +696,7 @@ function PrintPageContent() {
                     )
                   }
                   placeholder={`Ventanilla ${idx + 1}`}
-                  className="min-h-10 rounded border border-gray-300 px-3 text-sm"
+                  className="min-h-10 rounded border border-gray-300 px-3 text-body"
                 />
               ))}
             </div>
@@ -705,12 +705,12 @@ function PrintPageContent() {
 
         {tab === 'tables' && (
           <div className="staff-card space-y-4 p-4">
-            <h2 className="text-base font-bold text-gray-900">
+            <h2 className="text-body-lg font-bold text-gray-900">
               Identificaciones para Mesas
             </h2>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-body font-medium text-gray-700 mb-1">
                   Desde mesa Nº
                 </label>
                 <input
@@ -719,11 +719,11 @@ function PrintPageContent() {
                   max={200}
                   value={tableStart}
                   onChange={(e) => setTableStart(Number(e.target.value) || 1)}
-                  className="min-h-10 w-full rounded border border-gray-300 px-3 text-sm"
+                  className="min-h-10 w-full rounded border border-gray-300 px-3 text-body"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-body font-medium text-gray-700 mb-1">
                   Hasta mesa Nº
                 </label>
                 <input
@@ -732,7 +732,7 @@ function PrintPageContent() {
                   max={200}
                   value={tableEnd}
                   onChange={(e) => setTableEnd(Number(e.target.value) || 1)}
-                  className="min-h-10 w-full rounded border border-gray-300 px-3 text-sm"
+                  className="min-h-10 w-full rounded border border-gray-300 px-3 text-body"
                 />
               </div>
             </div>
@@ -773,7 +773,7 @@ function PrintPageContent() {
                     }`}
                   >
                     <div>
-                      <p className="text-xs font-bold tracking-widest uppercase">
+                      <p className="text-caption font-bold tracking-widest uppercase">
                         DESTINO DEL ENVÍO
                       </p>
                       <h2 className="mt-1 text-5xl print:text-4xl font-black uppercase leading-none">
@@ -781,21 +781,21 @@ function PrintPageContent() {
                       </h2>
                       {item.clusterCity && (
                         <div className="mt-3 rounded-lg border-2 border-black bg-gray-100 p-2">
-                          <p className="text-xs font-bold uppercase">
+                          <p className="text-caption font-bold uppercase">
                             PASA POR {item.destInfo.city} · SIGUE A:
                           </p>
-                          <p className="mt-1 text-xl font-black uppercase">
+                          <p className="mt-1 text-heading font-black uppercase">
                             {item.clusterCity}
                           </p>
                         </div>
                       )}
                       {item.isViaCabaOnward && (
                         <div className="mt-3 rounded-lg border-2 border-black bg-gray-100 p-2">
-                          <p className="text-xs font-bold uppercase">
+                          <p className="text-caption font-bold uppercase">
                             PASA POR CABA · SIGUE A LOCALIDAD(ES):
                           </p>
                           {onwardCityText.trim() ? (
-                            <p className="mt-1 text-xl font-black uppercase">
+                            <p className="mt-1 text-heading font-black uppercase">
                               {onwardCityText}
                             </p>
                           ) : (
@@ -823,19 +823,19 @@ function PrintPageContent() {
                       item.circleFill ? 'sm:col-span-3' : 'sm:col-span-4'
                     } flex flex-col justify-between rounded-xl border-4 border-black p-3 text-center`}
                   >
-                    <span className="text-xs font-black tracking-wider uppercase">
+                    <span className="text-caption font-black tracking-wider uppercase">
                       CAJA Nº
                     </span>
                     <div className="my-auto flex min-h-24 items-center justify-center">
                       {boxNumberText.trim() ? (
                         <span className="text-4xl font-black">{boxNumberText}</span>
                       ) : (
-                        <span className="text-xs text-gray-400 print:hidden">
+                        <span className="text-caption text-gray-400 print:hidden">
                           (Rellenar a mano)
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] font-semibold">
+                    <span className="text-caption font-semibold">
                       (#)
                     </span>
                   </div>
@@ -844,11 +844,11 @@ function PrintPageContent() {
                 {/* Middle: Destination Address & Recipient Referrer */}
                 <div className="mt-4 print:mt-2 grid grid-cols-1 gap-4 border-b-4 border-black pb-4 print:pb-2 sm:grid-cols-2">
                   <div>
-                    <p className="text-xs font-black tracking-wider uppercase">
+                    <p className="text-caption font-black tracking-wider uppercase">
                       DIRECCIÓN / SUCURSAL VÍA CARGO DESTINO
                     </p>
                     {address && address.trim() ? (
-                      <p className="mt-1 text-lg font-bold leading-snug">{address}</p>
+                      <p className="mt-1 text-heading font-bold leading-snug">{address}</p>
                     ) : (
                       <div className="mt-6 space-y-5">
                         <div className="border-b-2 border-dashed border-black" />
@@ -858,13 +858,13 @@ function PrintPageContent() {
                   </div>
 
                   <div>
-                    <p className="text-xs font-black tracking-wider uppercase">
+                    <p className="text-caption font-black tracking-wider uppercase">
                       RECIBE (REFERENTE DESTINO)
                     </p>
                     <div className="mt-1 space-y-2">
                       {item.destInfo.referrers.map((ref, rIdx) => (
-                        <div key={rIdx} className="text-sm leading-snug">
-                          <p className="text-lg font-extrabold">{ref.name}</p>
+                        <div key={rIdx} className="text-body leading-snug">
+                          <p className="text-heading font-extrabold">{ref.name}</p>
                           <p className="font-semibold">
                             DNI:{' '}
                             {ref.dni ? (
@@ -880,7 +880,7 @@ function PrintPageContent() {
                             )}
                           </p>
                           {ref.telegram && (
-                            <p className="text-xs font-medium">Telegram: {ref.telegram}</p>
+                            <p className="text-caption font-medium">Telegram: {ref.telegram}</p>
                           )}
                         </div>
                       ))}
@@ -890,14 +890,14 @@ function PrintPageContent() {
 
                 {/* Bottom: Fillable Sender Referrer Info */}
                 <div className="mt-4 print:mt-2">
-                  <p className="text-xs font-black tracking-wider uppercase">
+                  <p className="text-caption font-black tracking-wider uppercase">
                     ENVÍA (DATOS DEL REFERENTE REMITENTE)
                   </p>
                   <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="flex items-end gap-2">
-                      <span className="text-sm font-bold whitespace-nowrap">Localidad origen:</span>
+                      <span className="text-body font-bold whitespace-nowrap">Localidad origen:</span>
                       {senderCity.trim() ? (
-                        <span className="flex-1 border-b-2 border-black px-1 text-base font-bold">
+                        <span className="flex-1 border-b-2 border-black px-1 text-body-lg font-bold">
                           {senderCity}
                         </span>
                       ) : (
@@ -905,9 +905,9 @@ function PrintPageContent() {
                       )}
                     </div>
                     <div className="flex items-end gap-2">
-                      <span className="text-sm font-bold whitespace-nowrap">Nombre y Apellido:</span>
+                      <span className="text-body font-bold whitespace-nowrap">Nombre y Apellido:</span>
                       {senderName.trim() ? (
-                        <span className="flex-1 border-b-2 border-black px-1 text-base font-bold">
+                        <span className="flex-1 border-b-2 border-black px-1 text-body-lg font-bold">
                           {senderName}
                         </span>
                       ) : (
@@ -915,9 +915,9 @@ function PrintPageContent() {
                       )}
                     </div>
                     <div className="flex items-end gap-2">
-                      <span className="text-sm font-bold whitespace-nowrap">DNI:</span>
+                      <span className="text-body font-bold whitespace-nowrap">DNI:</span>
                       {senderDni.trim() ? (
-                        <span className="flex-1 border-b-2 border-black px-1 text-base font-bold">
+                        <span className="flex-1 border-b-2 border-black px-1 text-body-lg font-bold">
                           {senderDni}
                         </span>
                       ) : (
@@ -925,9 +925,9 @@ function PrintPageContent() {
                       )}
                     </div>
                     <div className="flex items-end gap-2">
-                      <span className="text-sm font-bold whitespace-nowrap">Teléfono:</span>
+                      <span className="text-body font-bold whitespace-nowrap">Teléfono:</span>
                       {senderPhone.trim() ? (
-                        <span className="flex-1 border-b-2 border-black px-1 text-base font-bold">
+                        <span className="flex-1 border-b-2 border-black px-1 text-body-lg font-bold">
                           {senderPhone}
                         </span>
                       ) : (
@@ -984,7 +984,7 @@ function PrintPageContent() {
                 <p className="text-3xl print:text-2xl font-black uppercase">
                   Acercate con tu QR
                 </p>
-                <p className="mt-2 text-2xl print:text-xl font-bold uppercase">
+                <p className="mt-2 text-2xl print:text-heading font-bold uppercase">
                   Para retirar: cuando hagamos las entregas, esperá a aparecer en pantalla
                 </p>
               </div>

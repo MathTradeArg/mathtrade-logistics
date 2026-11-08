@@ -229,8 +229,8 @@ export default function TransitBoxView({
 
   return (
     <StaffPage className="pb-28">
-      <p className="text-sm text-gray-500">{box.origin_name} → {box.destination_name}</p>
-      <p className="mt-2 text-sm text-gray-600">
+      <p className="text-body text-gray-500">{box.origin_name} → {box.destination_name}</p>
+      <p className="mt-2 text-body text-gray-600">
         Caja reabierta para rearmar. Marcá todos los juegos como recibidos.
       </p>
 
@@ -313,7 +313,7 @@ export default function TransitBoxView({
           <button
             type="button"
             onClick={() => setMode('view')}
-            className="mb-4 min-h-14 text-base font-semibold text-gray-600"
+            className="mb-4 min-h-14 text-body-lg font-semibold text-gray-600"
           >
             Volver a la caja
           </button>
@@ -350,11 +350,11 @@ export default function TransitBoxView({
               setMode('view');
               setMovingTradeId(null);
             }}
-            className="mb-4 min-h-14 text-base font-semibold text-gray-600"
+            className="mb-4 min-h-14 text-body-lg font-semibold text-gray-600"
           >
             Volver a la caja
           </button>
-          <p className="mb-3 text-sm text-gray-600">Elegí otra caja abierta del mismo origen y destino.</p>
+          <p className="mb-3 text-body text-gray-600">Elegí otra caja abierta del mismo origen y destino.</p>
           <ul className="flex flex-col gap-3">
             {openSiblings.map((candidate) => (
               <li key={candidate.id}>

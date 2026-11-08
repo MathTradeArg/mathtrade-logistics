@@ -28,7 +28,7 @@ No central HTTP client library — a generic `fetch` wrapper hook, `useApi` (`sr
 - `ActionStatusContext` — global toast-style success/error state (auto-clears after 3-5s).
 - `ControlPanelContext` — state for the floating admin "control panel" (game search + status mutation).
 - `EventPhaseContext` — session-wide event phase (0=not started, 1=receiving, 2=delivering), gates most of the UI, refetched on auth change.
-- Auth/session state (`isAuthenticated`, `userName`, `userId`, `isAdmin`, dark-mode) actually lives in the `useAuth` hook, not in `src/contexts/`, despite being structurally the same kind of provider.
+- Auth/session state (`isAuthenticated`, `userName`, `userId`, `isAdmin`, role, tables, city access) actually lives in the `useAuth` hook, not in `src/contexts/`, despite being structurally the same kind of provider.
 
 ## QR / event-day workflow
 
@@ -36,7 +36,16 @@ No central HTTP client library — a generic `fetch` wrapper hook, `useApi` (`sr
 
 ## Design system
 
-A neumorphic design layer (`src/styles/neumorphism.css`, `.nm-*` utility classes with light/dark variants) plus a secondary glassmorphism layer for modal overlays (`src/styles/glassmorphism.css`). Dark mode is class-driven (`darkMode: "class"` in `tailwind.config.js`), toggled via `useAuth` and persisted to `localStorage`.
+Adapted from the `mathtrade-web-ui` design system. Tailwind 4, no `tailwind.config.js`.
+
+- **Tokens** live in `src/app/globals.css` (`@theme`): colors (`primary`, `want`, `want-ink`, `danger`, `warning`, `cancel`, `stroke`, `muted`, `page`, `overlay`), `shadow-main`, `rounded-main`. `src/styles/staff.css` reads the same variables (`var(--color-*)`); its `.staff-card`/`.staff-panel` are in `@layer components`, `.staff-btn*` are unlayered (overrides on a `.staff-btn` need `!`, or use `staff-btn-sm` for the compact 40px button).
+- **Text scale** (size + line-height only): `text-caption` 11px, `text-body` 13px, `text-body-lg` 15px, `text-heading` 19px, `text-display` (clamp, page titles). Weight is always explicit with `font-*` (Tailwind 4 doesn't order a weight embedded in `text-*` against `font-*`). `text-2xl` and up stay for big numbers and the TV view. Don't use `text-xs/sm/base/lg/xl` or `text-[..]` (only exception: the label number in `/more/print`).
+- **Layers**: named z-index utilities defined with `@utility z-*` (values in `:root`): `z-raised` 10 < `z-sticky` 20 < `z-loading` 30 < `z-nav` 40 < `z-panel` 50 < `z-modal` 60 < `z-popover` 70 < `z-toast` 80 < `z-tooltip` 90. No `z-[..]` or numeric `z-*`.
+- **Components**: `common/ui/` `Chip` (tones `neutral|alert|good|used|none|want|done|warning|info`, fixed size), `Card`/`cardClass` (one tone: `default|danger|selected|disabled`, `panel` for `staff-panel`), `EmptyState`, `StaffHeading` (`level`, `variant` display/heading/body-lg); staff kit in `src/components/staff/` (`StaffPage`, `StaffEmpty` = `EmptyState`, `StaffDialog` with `role="dialog"`, `StaffSegmented` with `aria-pressed`, `GameRow`, `BottomNav`, `ThumbCta`). Loaders: `LoadingSpinner` inside `flex min-h-[50dvh] items-center justify-center`.
+- **Status colors** use tokens or `Chip` tones, not the default palette (`emerald/sky/amber/...`). Allowed leftovers: Chip/inline-error inks (`text-red-800`, `text-orange-800`, `text-green-800`) and a few orange icon accents (`ReportCard`, `LandingPageLink`).
+- **Differences vs web-ui**: weight explicit next to the text size; no `cardKind` (no base/expansion data here); staff kit classes instead of web-ui's components.
+- **No dark mode.** `useAuth` only clears a leftover `dark` class and `localStorage.darkModeEnabled` on mount. Don't add `dark:` classes.
+- **Print labels** (`/more/print`) follow the text scale but stay black & white (`border-black bg-white text-black`); screen colors only inside `no-print`.
 
 ## Fork evidence (thin, not confirmed)
 
@@ -53,7 +62,7 @@ Jest + Testing Library configured (`jest.config.mjs`). 24 test files vs. 72 non-
 ## Known gaps
 
 Facts observed during research — not a prescribed fix list:
-- Orphaned/unused: `useWindowManagement.ts` hook (fully built, never imported — the pages that need it reimplement the logic inline instead), `useAssembleBox.ts`, `WindowSystemSummary.tsx`, root-level `ReportCard.tsx` (superseded by `common/ReportCard.tsx`), `ThemeManager.tsx` (exported but never rendered — dark-mode toggling is duplicated directly inside `useAuth.tsx` instead).
+- Orphaned/unused: `useWindowManagement.ts` hook (fully built, never imported — the pages that need it reimplement the logic inline instead), `useAssembleBox.ts`, `WindowSystemSummary.tsx`, root-level `ReportCard.tsx` (superseded by `common/ReportCard.tsx`).
 - A commented-out "Cajas Creadas" tab remains half-wired in `src/app/boxes/page.tsx:125-133` (its logic is still active elsewhere in the same file).
 - Three `console.log('[DEBUG] ...')` statements left in the public `/display/ready-to-pickup` polling loop.
 - `vite.config.ts` exists at the repo root but is unused — the app builds exclusively via Next.js.

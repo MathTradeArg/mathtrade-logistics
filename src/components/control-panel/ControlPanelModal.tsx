@@ -69,11 +69,11 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
   const actionsDisabledByPhase = (eventPhase ?? 0) === 0;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(213,220,226,0.7)] p-4">
+    <div className="fixed inset-0 z-modal flex items-center justify-center bg-overlay p-4">
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-xl bg-white p-6 text-gray-900">
         <div className="mb-4 flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">Detalle del juego</h2>
+            <h2 className="text-heading font-bold">Detalle del juego</h2>
             <button onClick={handleModalClose} className="rounded-full p-1 hover:bg-gray-100">
               <X size={24} className="text-gray-500" />
             </button>
@@ -99,13 +99,13 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
 
         <div className="overflow-y-auto flex-grow">
           {isSearching && <div className="flex justify-center items-center p-4"><LoadingSpinner message="Buscando juego..." /></div>}
-          {searchError && <p className="text-sm text-red-500 dark:text-red-400 mb-3 p-2 bg-danger/10 dark:bg-red-900/20 rounded-md">{searchError}</p>}
+          {searchError && <p className="text-body text-danger mb-3 p-2 bg-danger/10 rounded-md">{searchError}</p>}
 
           {gameDetail && !isSearching && (
             <>
               <button
                 onClick={handleClearGameDetail}
-                className="mb-4 flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 text-sm font-medium shadow transition-all"
+                className="mb-4 flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-body font-medium shadow transition-all"
                 aria-label="Volver al panel principal"
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/></svg>

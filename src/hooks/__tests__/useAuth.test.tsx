@@ -278,7 +278,6 @@ describe('useAuth city state', () => {
     fetchMock.mockReturnValue(new Promise(() => {}));
     const seed = () => {
       sessionStorage.setItem('logisticsCityView', JSON.stringify({ asLocation: 3, mathtradeId: 5 }));
-      localStorage.setItem('darkModeEnabled', 'true');
       localStorage.setItem('windowStorage', 'x');
     };
     seed();
@@ -287,7 +286,6 @@ describe('useAuth city state', () => {
       fireEvent.click(screen.getByText('logout'));
     });
     expect(sessionStorage.getItem('logisticsCityView')).toBeNull();
-    expect(localStorage.getItem('darkModeEnabled')).toBe('true');
     expect(localStorage.getItem('windowStorage')).toBe('x');
 
     seed();
@@ -295,6 +293,14 @@ describe('useAuth city state', () => {
       fireEvent.click(screen.getByText('login'));
     });
     expect(sessionStorage.getItem('logisticsCityView')).toBeNull();
+  });
+
+  it('mounting clears the removed dark mode (class and stored flag)', () => {
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('darkModeEnabled', 'true');
+    render(<AuthProvider><CityProbe /></AuthProvider>);
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+    expect(localStorage.getItem('darkModeEnabled')).toBeNull();
   });
 
   it('mounting without a token drops a stale "Ver como" pick', async () => {

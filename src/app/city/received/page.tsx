@@ -38,11 +38,11 @@ function TrackingCard({ tracking, onOpenImage }: { tracking: Tracking; onOpenIma
           aria-expanded={open}
           className="min-w-0 flex-1 text-left"
         >
-          <p className="text-base font-semibold text-gray-900">{origin} · {tracking.tracking_code}</p>
-          <p className="text-sm text-gray-700">
+          <p className="text-body-lg font-semibold text-gray-900">{origin} · {tracking.tracking_code}</p>
+          <p className="text-body text-gray-700">
             Cajas: {tracking.boxes.map(boxLabel).join(', ') || '—'} · {count} juegos
           </p>
-          <p className="text-sm text-gray-700">
+          <p className="text-body text-gray-700">
             {formatMoney(tracking.price)} en total ·{' '}
             {pricePerItem(tracking.price, count)} por juego
           </p>
@@ -63,9 +63,9 @@ function TrackingCard({ tracking, onOpenImage }: { tracking: Tracking; onOpenIma
         <div className="mt-3 flex flex-col gap-3 border-t border-stroke pt-3">
           {tracking.boxes.map((box) => (
             <div key={box.id}>
-              <p className="text-sm font-semibold text-gray-900">Caja {boxLabel(box)}</p>
-              {box.comment && <p className="text-sm text-gray-600">{box.comment}</p>}
-              <ul className="mt-1 text-sm text-gray-700">
+              <p className="text-body font-semibold text-gray-900">Caja {boxLabel(box)}</p>
+              {box.comment && <p className="text-body text-gray-600">{box.comment}</p>}
+              <ul className="mt-1 text-body text-gray-700">
                 {box.math_items.map((item) => (
                   <li key={item.id}>
                     {formatTradeCode(item.assigned_trade_code)} · {item.title} → {receiverName(item)}
@@ -164,7 +164,7 @@ export default function CityReceivedPage() {
               aria-label="Origen"
               value={originFilter}
               onChange={(event) => setOriginFilter(event.target.value)}
-              className="min-h-12 w-full rounded-xl border border-stroke bg-white px-3 text-base text-gray-900"
+              className="min-h-12 w-full rounded-xl border border-stroke bg-white px-3 text-body-lg text-gray-900"
             >
               <option value="">Todos los orígenes</option>
               {origins.map((origin) => (
@@ -173,7 +173,7 @@ export default function CityReceivedPage() {
                 </option>
               ))}
             </select>
-            <label className="flex items-center gap-3 text-sm font-semibold text-gray-700">
+            <label className="flex items-center gap-3 text-body font-semibold text-gray-700">
               <input
                 type="checkbox"
                 checked={viaMeeting}
@@ -188,7 +188,7 @@ export default function CityReceivedPage() {
           )}
           {visibleItems.length > 0 && (
             <>
-              <p className="mt-4 text-sm text-gray-500">{visibleItems.length} ejemplares</p>
+              <p className="mt-4 text-body text-gray-500">{visibleItems.length} ejemplares</p>
               <ul className="mt-3 flex flex-col gap-3">
                 {visibleItems.map((item) => (
                   <li key={item.id}>

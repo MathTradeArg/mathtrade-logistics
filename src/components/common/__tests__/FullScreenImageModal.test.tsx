@@ -62,7 +62,7 @@ describe('FullScreenImageModal', () => {
     render(<FullScreenImageModal imageUrl={imageUrl} onClose={mockOnClose} />);
     const image = screen.getByRole('img');
     const modalBackground = image.parentElement?.parentElement as HTMLElement;
-    expect(modalBackground).toHaveClass('fixed', 'inset-0', 'z-50');
+    expect(modalBackground).toHaveClass('fixed', 'inset-0', 'z-modal');
     const modalContent = image.parentElement as HTMLElement;
     expect(modalContent).toHaveClass('relative', 'w-full', 'h-full');
   });

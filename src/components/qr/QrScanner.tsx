@@ -51,9 +51,9 @@ const QrScanner: React.FC<QrScannerProps> = ({ onScan, disabled = false, disable
           )}
         </div>
       )}
-      {scanError && <p className="mt-4 text-center text-sm text-danger">{scanError}</p>}
+      {scanError && <p className="mt-4 text-center text-body text-danger">{scanError}</p>}
       {!disabled && (
-        <p className="mt-2 text-center text-sm text-gray-500">Apuntá al QR</p>
+        <p className="mt-2 text-center text-body text-gray-500">Apuntá al QR</p>
       )}
     </div>
   );

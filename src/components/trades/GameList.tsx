@@ -1,6 +1,7 @@
 "use client";
 
 import { GameRowItem } from "@/components/common";
+import { EmptyState } from "@/components/common/ui";
 import { formatTradeCode } from '@/utils/tradeCode';
 import { ConfirmationModal } from '@/components/trades';
 import { useHapticClick } from '@/hooks/useHapticClick';
@@ -162,12 +163,12 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
           {user?.first_name} {user?.last_name}
         </h2>
         {mode === 'deliver' && trades[0]?.result.table_number && (
-          <p className="mt-1 text-base text-gray-500">Mesa: <span className="font-semibold text-gray-800">{trades[0].result.table_number}</span></p>
+          <p className="mt-1 text-body-lg text-gray-500">Mesa: <span className="font-semibold text-gray-800">{trades[0].result.table_number}</span></p>
         )}
       </div>
 
       <div className="staff-panel mb-6 p-4">
-        <p className="text-lg font-semibold text-gray-800">
+        <p className="text-heading font-semibold text-gray-800">
           Resumen: {pendingItems.length} {pendingItems.length === 1 ? config.texts.pendingSingular : config.texts.pendingPlural} de {trades.length} en total:
         </p>
         {pendingItems.length > 0 && (
@@ -182,7 +183,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
                   }`}
                   onClick={() => setExpandedIndex(isExpanded ? null : idx)}
                 >
-                  <span className="mr-3 min-w-20 shrink-0 text-center text-lg font-bold tabular-nums text-primary">
+                  <span className="mr-3 min-w-20 shrink-0 text-center text-heading font-bold tabular-nums text-primary">
                     {formatTradeCode(trade.result.assigned_trade_code)}
                   </span>
                   <span className={`flex-1 text-gray-800 ${isExpanded ? 'whitespace-normal break-words' : 'truncate'}`}>
@@ -194,7 +195,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
           </ul>
         )}
         {completedItemsCount > 0 && (
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-body text-gray-500">
             ({completedItemsCount} ya {completedItemsCount === 1 ? config.texts.completedSingular : config.texts.completedPlural})
           </p>
         )}
@@ -212,7 +213,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
       )}
 
       {trades.length === 0 && (
-        <p className="staff-card my-8 p-4 text-center text-gray-500">{config.texts.noItems}</p>
+        <EmptyState message={config.texts.noItems} />
       )}
       <ul className="flex flex-col gap-3">
         {sortedTrades.map((trade: Trade) => (

@@ -195,7 +195,7 @@ export default function PackingDestinations({
           {exportFileName && (
             <button
               type="button"
-              className="staff-btn staff-btn-outline !min-h-12 text-sm"
+              className="staff-btn staff-btn-outline !min-h-12 text-body"
               disabled={isLoading || exportItems.length === 0}
               onClick={() => runExport(() => buildBoxesExport(exportItems, origin), exportFileName)}
             >
@@ -205,7 +205,7 @@ export default function PackingDestinations({
           {intraExportFileName && (
             <button
               type="button"
-              className="staff-btn staff-btn-outline !min-h-12 text-sm"
+              className="staff-btn staff-btn-outline !min-h-12 text-body"
               disabled={isLoading || intraItems.length === 0}
               onClick={() => runExport(() => buildIntraExport(intraItems, origin), intraExportFileName)}
             >
@@ -220,7 +220,7 @@ export default function PackingDestinations({
 
       {!isLoading && itemHits.length > 0 && (
         <section className="mt-6">
-          <h2 className="mb-3 text-sm font-semibold text-gray-500">Juegos</h2>
+          <h2 className="mb-3 text-body font-semibold text-gray-500">Juegos</h2>
           <ul className="flex flex-col gap-3">
             {itemHits.map((item) => {
               const box = findBoxForTrade(boxes, item.id);
@@ -255,7 +255,7 @@ export default function PackingDestinations({
         sections.map((section) => (
           <section key={section.key} aria-label={section.title ?? undefined}>
             {section.title && (
-              <h2 className="mt-6 text-sm font-semibold text-gray-500">{section.title}</h2>
+              <h2 className="mt-6 text-body font-semibold text-gray-500">{section.title}</h2>
             )}
             <ul className={`${section.title ? 'mt-3' : 'mt-4'} flex flex-col gap-3`}>
               {section.entries.map((dest) => (

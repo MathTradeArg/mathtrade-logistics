@@ -221,11 +221,11 @@ function DeliverPageContent() {
       </section>
 
       {showCommentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(213,220,226,0.7)] p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-overlay p-4 backdrop-blur-sm">
           <div className="staff-panel w-full max-w-md p-6 text-gray-900">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-lg font-semibold">
-                <span className="text-amber-500">⚠️</span>
+              <h3 className="flex items-center gap-2 text-heading font-semibold">
+                <span className="text-warning">⚠️</span>
                 Advertencia
               </h3>
               <button
@@ -236,8 +236,8 @@ function DeliverPageContent() {
                 <X size={20} />
               </button>
             </div>
-            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-3">
-              <p className="text-sm text-amber-900">{userComment}</p>
+            <div className="mb-6 rounded-lg border border-warning/40 bg-warning/20 p-3">
+              <p className="text-body text-gray-900">{userComment}</p>
             </div>
             <button
               onClick={() => setShowCommentModal(false)}

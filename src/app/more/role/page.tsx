@@ -73,12 +73,12 @@ export default function MyRolePage() {
   return (
     <StaffPage>
       <div className="staff-panel p-4">
-        <p className="text-sm text-gray-500">Tu rol actual</p>
-        <p className="text-lg font-bold text-gray-900">{ROLES[role].label}</p>
-        <p className="mt-1 text-sm text-gray-600">{ROLES[role].description}</p>
+        <p className="text-body text-gray-500">Tu rol actual</p>
+        <p className="text-heading font-bold text-gray-900">{ROLES[role].label}</p>
+        <p className="mt-1 text-body text-gray-600">{ROLES[role].description}</p>
       </div>
 
-      <h2 className="mt-8 text-sm font-semibold text-gray-500">Cambiar a</h2>
+      <h2 className="mt-8 text-body font-semibold text-gray-500">Cambiar a</h2>
       <ul className="mt-3 flex flex-col gap-4">
         {ROLE_ORDER.filter((id) => id !== role).map((id) => (
           <li key={id}>
@@ -87,8 +87,8 @@ export default function MyRolePage() {
               onClick={() => setTarget(id)}
               className="staff-card flex w-full flex-col items-start gap-1 px-5 py-5 text-left"
             >
-              <span className="text-lg font-bold text-gray-900">{ROLES[id].label}</span>
-              <span className="text-sm text-gray-600">{ROLES[id].description}</span>
+              <span className="text-heading font-bold text-gray-900">{ROLES[id].label}</span>
+              <span className="text-body text-gray-600">{ROLES[id].description}</span>
             </button>
           </li>
         ))}

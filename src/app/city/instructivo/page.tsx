@@ -12,7 +12,7 @@ const IMAGES = [
 export default function CityInstructivoPage() {
   return (
     <StaffPage>
-      <h1 className="text-center text-lg font-semibold text-gray-700">
+      <h1 className="text-center text-heading font-semibold text-gray-700">
         Reglas para preparar las cajas para los envíos
       </h1>
       <div className="mt-4 flex flex-col overflow-hidden rounded-xl border border-gray-300 bg-white">

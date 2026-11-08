@@ -76,8 +76,8 @@ export default function MemberNameSearch({ onSelect, disabled = false }: MemberN
         aria-label="Buscar socio por nombre"
         disabled={disabled}
       />
-      {isLoading && <p className="mt-3 text-center text-sm text-gray-500">Buscando...</p>}
-      {error && <p className="mt-3 text-center text-sm text-danger">{error}</p>}
+      {isLoading && <p className="mt-3 text-center text-body text-gray-500">Buscando...</p>}
+      {error && <p className="mt-3 text-center text-body text-danger">{error}</p>}
       {!isLoading && !error && query.trim().length >= 2 && results.length === 0 && (
         <StaffEmpty>No hay socios que coincidan.</StaffEmpty>
       )}

@@ -117,7 +117,7 @@ export default function HoldToConfirm({
         />
         <span className="relative">{label}</span>
       </button>
-      <p id={helperId} className="mt-2 text-center text-xs text-gray-500">
+      <p id={helperId} className="mt-2 text-center text-caption text-gray-500">
         Mantené apretado
       </p>
     </div>
