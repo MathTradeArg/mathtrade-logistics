@@ -29,7 +29,7 @@ interface Item {
   assigned_trade_code: number;
 }
 
-type ReportStep = 'initial' | 'find_item' | 'find_user' | 'take_photo' | 'describe_problem' | 'submitted';
+type ReportStep = 'find_item' | 'find_user' | 'take_photo' | 'describe_problem' | 'submitted';
 
 function NewReportContent() {
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
@@ -38,8 +38,13 @@ function NewReportContent() {
   const preloadedBoxId = Number(searchParams.get('box') || 0) || null;
   const preloadedItems = parseMissingItems(searchParams);
   const isMissing = searchParams.get('kind') === 'missing' || Boolean(preloadedBoxId);
-  const [currentStep, setCurrentStep] = useState<ReportStep>(isMissing ? 'describe_problem' : 'initial');
-  const [reportType, setReportType] = useState<'item' | 'user' | null>(isMissing ? 'item' : null);
+  // A broken game is always an item. The user report is only reachable with
+  // ?kind=user (no link points to it).
+  const isUserReport = !isMissing && searchParams.get('kind') === 'user';
+  const startStep: ReportStep = isUserReport ? 'find_user' : 'find_item';
+  const startType: 'item' | 'user' = isUserReport ? 'user' : 'item';
+  const [currentStep, setCurrentStep] = useState<ReportStep>(isMissing ? 'describe_problem' : startStep);
+  const [reportType, setReportType] = useState<'item' | 'user'>(isMissing ? 'item' : startType);
   const [searchTermItems, setSearchTermItems] = useState('');
   const [selectedItem, setSelectedItem] = useState<Item | null>(() => {
     const first = preloadedItems[0];
@@ -78,8 +83,8 @@ function NewReportContent() {
   const { execute: submitReportApi, clearError: clearSubmitReportError } = useApi<any>('reports/', { method: 'POST' });
 
   const resetForm = () => {
-    setCurrentStep('initial');
-    setReportType(null);
+    setCurrentStep(startStep);
+    setReportType(startType);
     setSearchTermItems('');
     setSelectedItem(null);
     setSelectedUser(null);
@@ -93,7 +98,7 @@ function NewReportContent() {
     setProcessingMessage('');
     clearUploadImageError();
     clearSubmitReportError();
-    router.replace('/more/report');
+    router.replace(isUserReport ? '/more/report?kind=user' : '/more/report');
   };
 
   useEffect(() => {
@@ -263,13 +268,7 @@ function NewReportContent() {
 
   return (
     <StaffPage>
-      <ProblemHeader id={isMissing ? 'missing-in-box' : 'broken'} />
-      {currentStep === 'initial' && (
-        <div className="flex flex-col gap-3">
-          <button type="button" onClick={() => { setReportType('item'); setCurrentStep('find_item'); }} className="min-h-14 rounded-lg bg-white px-4 text-left font-medium">Un ítem</button>
-          <button type="button" onClick={() => { setReportType('user'); setCurrentStep('find_user'); }} className="min-h-14 rounded-lg bg-white px-4 text-left font-medium">Un usuario</button>
-        </div>
-      )}
+      {!isUserReport && <ProblemHeader id={isMissing ? 'missing-in-box' : 'broken'} />}
 
       {currentStep === 'find_item' && (
         <form onSubmit={handleFindSubmit} className="space-y-4">

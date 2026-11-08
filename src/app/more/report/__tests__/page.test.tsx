@@ -73,3 +73,53 @@ describe('NewReportPage multi missing', () => {
     expect(screen.queryByText('¿Falta un juego en una caja?')).not.toBeInTheDocument();
   });
 });
+
+describe('NewReportPage broken game', () => {
+  const mockFetchItems = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockQuery = '';
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockSubmit.mockResolvedValue({ id: 1 });
+    mockUseApi.mockImplementation((endpoint: string) => ({
+      data: endpoint === 'logistics/items' ? [{ item_id: 7, id: 7, title: 'Azul', assigned_trade_code: 301 }] : null,
+      isLoading: false,
+      error: null,
+      execute: endpoint === 'reports/' ? mockSubmit : endpoint === 'logistics/items' ? mockFetchItems : jest.fn(),
+      clearError: jest.fn(),
+    }));
+  });
+
+  it('starts at the item search without asking item or user', async () => {
+    render(<NewReportPage />);
+
+    expect(await screen.findByPlaceholderText('Título o número de etiqueta')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Un ítem' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Un usuario' })).not.toBeInTheDocument();
+  });
+
+  it('reports the selected item', async () => {
+    render(<NewReportPage />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Azul/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Siguiente' }));
+    expect(await screen.findByText(/Juego id 7/)).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText('Describí el problema'), { target: { value: 'Caja rota' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar reporte' }));
+
+    await waitFor(() => expect(mockSubmit).toHaveBeenCalledTimes(1));
+    expect(mockSubmit.mock.calls[0][0]).toMatchObject({ item: 7, comment: 'Caja rota', source: 'logistics' });
+    expect(mockSubmit.mock.calls[0][0]).not.toHaveProperty('reported_user');
+  });
+
+  it('starts at the user search only with kind=user', async () => {
+    mockQuery = 'kind=user';
+    render(<NewReportPage />);
+
+    expect(await screen.findByLabelText('Buscar participante por nombre')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Título o número de etiqueta')).not.toBeInTheDocument();
+    expect(screen.queryByText('¿Vino roto?')).not.toBeInTheDocument();
+  });
+});
