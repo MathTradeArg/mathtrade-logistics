@@ -67,4 +67,18 @@ describe('CityBoxesDestinationPage', () => {
     await screen.findByRole('button', { name: 'Nueva caja' });
     expect(boxApi.listItems).toHaveBeenCalledWith(expect.not.objectContaining({ includeSendAs: true }));
   });
+
+  // Rule: a closed box of the own city opens its page, where it can be reopened.
+  it('opens a closed box of the city', async () => {
+    (boxApi.listBoxes as jest.Mock).mockResolvedValue([
+      {
+        id: 61, number: 4, closed_at: '2026-11-07T10:00:00Z', origin: 7, destiny: 1, origin_name: 'Mendoza',
+        destination_name: 'AMBA', created_by_username: 'r', created_by_first_name: 'R',
+        created_by_last_name: null, math_items: [{ id: 1, title: 'Catan', assigned_trade_code: 101, status: 2 }],
+      },
+    ]);
+    render(<CityBoxesDestinationPage />, { wrapper });
+    fireEvent.click(await screen.findByRole('button', { name: /#4/ }));
+    expect(mockPush).toHaveBeenCalledWith('/city/boxes/1/61');
+  });
 });

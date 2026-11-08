@@ -197,8 +197,9 @@ export default function PackingDestination({
                         ? `${box.origin_number}-${box.number}`
                         : `#${box.number}`
                     }
-                    subtitle={`${box.math_items.length} juegos`}
-                    disabled
+                    subtitle={`${box.math_items.length} juegos${box.tracking ? ' · en un envío' : ''}`}
+                    onClick={readOnly ? undefined : () => router.push(`${basePath}/${destinationId}/${box.id}`)}
+                    disabled={readOnly}
                   />
                 </li>
               ))}

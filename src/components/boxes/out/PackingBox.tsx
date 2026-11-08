@@ -472,6 +472,12 @@ export default function PackingBox({
         </ThumbCta>
       )}
 
+      {box && mode === 'view' && !readOnly && !isBoxOpen(box) && box.tracking && (
+        <p className="mt-6 text-body text-gray-500">
+          Esta caja ya está en el envío {box.tracking} y no se puede reabrir. Si hace falta, eliminá el envío (las cajas quedan cerradas y sin envío).
+        </p>
+      )}
+
       {box && mode === 'view' && canReopen && (
         <ThumbCta variant="danger" disabled={inFlight} onClick={() => setShowReopen(true)}>
           Reabrir caja

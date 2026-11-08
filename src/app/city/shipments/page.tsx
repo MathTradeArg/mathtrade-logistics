@@ -74,7 +74,7 @@ export default function CityShipmentsPage() {
     return () => {
       cancelled = true;
     };
-  }, [cityId, activeTab, asLocation, mathtrade]);
+  }, [cityId, activeTab, isReferrer, asLocation, mathtrade]);
 
   const visibleItems = useMemo(
     () => items.filter((item) => matchesSearch(
