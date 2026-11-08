@@ -86,7 +86,7 @@ function WhereIsBlock({ game }: { game: GameDetail }) {
             return (
               <li key={box.id} className="flex flex-col gap-1">
                 <p className="text-body text-gray-900">
-                  Caja #{box.number ?? 'en armado'} de {box.origin_name} a {box.destination_name}
+                  Caja {box.number == null ? 'en armado' : `#${box.number}`} de {box.origin_name} a {box.destination_name}
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <Chip tone={chip.tone}>{chip.label}</Chip>

@@ -357,7 +357,7 @@ describe('LookupPage', () => {
       }
     });
 
-    it('lists every box and names an unnumbered one "en armado"', async () => {
+    it('lists every box and names an unnumbered one "Caja en armado" (no #)', async () => {
       routeGame({
         ...game,
         giver_attends_event: false,
@@ -372,7 +372,8 @@ describe('LookupPage', () => {
 
       expect(await screen.findByText('Caja #12 de Córdoba a AMBA')).toBeInTheDocument();
       expect(screen.getByText('Ya se abrió')).toBeInTheDocument();
-      expect(screen.getByText('Caja #en armado de AMBA a Córdoba')).toBeInTheDocument();
+      expect(screen.getByText('Caja en armado de AMBA a Córdoba')).toBeInTheDocument();
+      expect(screen.queryByText(/#en armado/)).not.toBeInTheDocument();
       expect(screen.getByText('En armado')).toBeInTheDocument();
     });
 
