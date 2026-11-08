@@ -208,7 +208,7 @@ describe('DeliverPage', () => {
     await waitFor(() => {
       expect(mockExecute).toHaveBeenCalledWith({ user_id: 123, status: 'completed' });
     });
-    expect(mockBulkUpdate).toHaveBeenCalledWith({ status: 6, assigned_trade_codes: [101], change_by_id: 1 });
+    expect(mockBulkUpdate).toHaveBeenCalledWith({ status: 6, assigned_trade_codes: [101], user_uuid: 'user-qr-code' });
   });
 
   it('does not mark completed when some trades remain undelivered', async () => {
@@ -224,7 +224,7 @@ describe('DeliverPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Update First Item' }));
 
     await waitFor(() => {
-      expect(mockBulkUpdate).toHaveBeenCalledWith({ status: 6, assigned_trade_codes: [101], change_by_id: 1 });
+      expect(mockBulkUpdate).toHaveBeenCalledWith({ status: 6, assigned_trade_codes: [101], user_uuid: 'user-qr-code' });
     });
 
     expect(mockExecute).not.toHaveBeenCalledWith({ user_id: 123, status: 'completed' });

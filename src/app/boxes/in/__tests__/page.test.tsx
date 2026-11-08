@@ -72,6 +72,33 @@ describe('BoxesInPage', () => {
   });
 });
 
+describe('opening boxes during the delivery phase', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, userId: '1' });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 2, isLoadingEventPhase: false, errorEventPhase: null });
+    mockListBoxes.mockResolvedValue([
+      {
+        id: 11,
+        number: 3,
+        origin: 8,
+        origin_name: 'Córdoba',
+        destiny: 1,
+        destination_name: 'AMBA',
+        closed_at: '2026-09-01T10:00:00Z',
+        math_items: [{ id: 1, title: 'Catan', assigned_trade_code: 101, status: 4 }],
+      },
+    ]);
+    mockListItems.mockResolvedValue([]);
+  });
+
+  it('lists origins in phase 2 and does not block the screen', async () => {
+    render(<BoxesInPage />, { wrapper });
+    expect(await screen.findByRole('link', { name: /Córdoba/ })).toHaveAttribute('href', '/boxes/in/8');
+    expect(screen.queryByText('El evento no empezó')).not.toBeInTheDocument();
+  });
+});
+
 describe('a screen whose event phase failed to load does not show an endless spinner', () => {
   beforeEach(() => {
     jest.clearAllMocks();

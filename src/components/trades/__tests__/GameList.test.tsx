@@ -187,6 +187,46 @@ describe('GameList', () => {
       expect(screen.getByRole('button', { name: /Todo entregado. Siguiente QR/i })).toBeInTheDocument();
     });
 
+    describe('games that have not arrived yet (deliver mode)', () => {
+      const withStatus = (statuses: string[]) =>
+        statuses.map((status_display, i) => ({
+          result: { assigned_trade_code: 201 + i, status_display, table_number: 'A1' },
+          math_item_exchanged: { title: `Juego ${i}` },
+          to_member: { first_name: 'Juan', last_name: 'Perez' },
+        }) as unknown as Trade);
+      const renderDeliver = (trades: Trade[]) =>
+        render(<GameList user={mockUser} trades={trades} onUpdateItems={mockOnUpdateItems} onFinish={mockOnFinish} deliveredByUserId={1} mode="deliver" />);
+
+      it('warns how many games are still to arrive when some are In Event and others in transit', () => {
+        renderDeliver(withStatus(['In Event', 'Received by Org', 'Received by Org']));
+        expect(screen.getByText('Faltan 2 juegos por llegar')).toBeInTheDocument();
+      });
+
+      it('uses the singular when one game is missing', () => {
+        renderDeliver(withStatus(['In Event', 'Received by Org']));
+        expect(screen.getByText('Faltan 1 juego por llegar')).toBeInTheDocument();
+      });
+
+      it('does not say "Todo entregado" when the only games are in transit', () => {
+        renderDeliver(withStatus(['Received by Org']));
+        expect(screen.getByText('Faltan 1 juego por llegar')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Todo entregado/i })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Escanear otro QR/i })).toBeInTheDocument();
+      });
+
+      it('does not warn nor change the button when nothing is missing', () => {
+        renderDeliver(withStatus(['In Event', 'Delivered']));
+        expect(screen.queryByText(/por llegar/i)).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Escanear otro QR/i })).toBeInTheDocument();
+      });
+
+      it('keeps "Todo entregado" and no warning when everything was delivered', () => {
+        renderDeliver(withStatus(['Delivered', 'Delivered']));
+        expect(screen.queryByText(/por llegar/i)).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Todo entregado. Siguiente QR/i })).toBeInTheDocument();
+      });
+    });
+
     it('disables action buttons when disabled prop is true', () => {
       render(<GameList user={mockUser} trades={mockTrades} onUpdateItems={mockOnUpdateItems} onFinish={mockOnFinish} deliveredByUserId={1} mode="deliver" disabled={true} />);
       expect(screen.getByRole('button', { name: /Entregar TODO lo listo/i })).toBeDisabled();

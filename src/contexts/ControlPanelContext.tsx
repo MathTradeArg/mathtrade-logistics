@@ -41,7 +41,7 @@ export const ControlPanelProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const updateGameStatus = useCallback(async (gameId: number, newStatus: GameStatusCode) => {
-    await executeGameAction({ assigned_trade_codes: [gameId], status: newStatus, change_by_id: userId });
+    await executeGameAction({ assigned_trade_codes: [gameId], status: newStatus });
     setGameDetail(prev => {
       if (!prev) return null;
       const updatedDetails = { ...prev, status: newStatus };

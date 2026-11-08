@@ -73,6 +73,10 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
   }, [mode, user]);
 
   const pendingItems = useMemo(() => trades.filter(config.isPending), [trades, config]);
+  const notArrivedCount = useMemo(
+    () => (mode === 'deliver' ? trades.filter(config.isUnavailable).length : 0),
+    [trades, config, mode],
+  );
   const completedItemsCount = useMemo(() => trades.filter(config.isCompleted).length, [trades, config]);
 
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
@@ -194,6 +198,11 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
             })}
           </ul>
         )}
+        {notArrivedCount > 0 && (
+          <p role="status" className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+            Faltan {notArrivedCount} {notArrivedCount === 1 ? 'juego' : 'juegos'} por llegar
+          </p>
+        )}
         {completedItemsCount > 0 && (
           <p className="mt-2 text-body text-gray-500">
             ({completedItemsCount} ya {completedItemsCount === 1 ? config.texts.completedSingular : config.texts.completedPlural})
@@ -289,7 +298,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
         id="finish-button"
         className="staff-btn staff-btn-want mt-3"
       >
-        {pendingItems.length === 0 && trades.length > 0 ? config.texts.finishButtonCompleted : config.texts.finishButtonIdle}
+        {pendingItems.length === 0 && notArrivedCount === 0 && trades.length > 0 ? config.texts.finishButtonCompleted : config.texts.finishButtonIdle}
       </button>
 
       <ConfirmationModal
