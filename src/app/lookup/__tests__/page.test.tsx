@@ -162,4 +162,29 @@ describe('LookupPage', () => {
 
     expect(await screen.findByText('Trade con el código asignado no encontrado.')).toBeInTheDocument();
   });
+
+  it('opens in Juego with its question when ?mode=game', () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams('mode=game'));
+    render(<LookupPage />);
+
+    expect(screen.getByRole('heading', { level: 1, name: '¿Dónde está un juego?' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Juego' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('Buscar juego por código')).toBeInTheDocument();
+  });
+
+  it('opens in Participante with its question when ?mode=participant', () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams('mode=participant'));
+    render(<LookupPage />);
+
+    expect(screen.getByRole('heading', { level: 1, name: '¿No tiene etiqueta o no se lee?' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Participante' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Elegir Ana' })).toBeInTheDocument();
+  });
+
+  it('shows no question header without ?mode=', () => {
+    render(<LookupPage />);
+
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Participante' })).toHaveAttribute('aria-pressed', 'true');
+  });
 });

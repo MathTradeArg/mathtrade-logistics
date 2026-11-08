@@ -6,6 +6,7 @@ import { useHapticClick } from '@/hooks/useHapticClick';
 import type { ProcessedUserWithWindow, UserWithWindow } from '@/types/window';
 import { triggerHaptic } from '@/utils/haptics';
 import { Chip, LoadingSpinner } from '@/components/common/ui';
+import ProblemHeader from '@/components/staff/ProblemHeader';
 import { CheckCircle, ChevronDown, ChevronUp, Clock, RefreshCw, Search, Users, UserX, Package } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
@@ -606,6 +607,7 @@ export default function ReadyToPickupPage() {
   return (
     <div className="w-full text-gray-900">
       <main className="w-full p-3 md:p-4 lg:p-6 flex flex-col">
+        <ProblemHeader id="no-show" />
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 md:mb-6 gap-4">
           <div className="text-center sm:text-left flex-1">
             {lastUpdated && (

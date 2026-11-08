@@ -4,7 +4,7 @@
 import { FullScreenImageModal } from '@/components/common';
 import { LoadingSpinner } from '@/components/common/ui';
 import MemberNameSearch from '@/components/staff/MemberNameSearch';
-import { StaffPage } from '@/components/staff';
+import { ProblemHeader, StaffPage } from '@/components/staff';
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
 import { generateHashedFilename } from '@/utils/file';
@@ -263,6 +263,7 @@ function NewReportContent() {
 
   return (
     <StaffPage>
+      <ProblemHeader id="broken" />
       {currentStep === 'initial' && (
         <div className="flex flex-col gap-3">
           <button type="button" onClick={() => { setReportType('item'); setCurrentStep('find_item'); }} className="min-h-14 rounded-lg bg-white px-4 text-left font-medium">Un ítem</button>

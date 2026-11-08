@@ -2,7 +2,7 @@
 
 import { LoadingSpinner } from '@/components/common/ui';
 import QrScanner from '@/components/qr/QrScanner';
-import { StaffEmpty, StaffError, StaffPage, StaffSearch, StaffSegmented } from '@/components/staff';
+import { ProblemHeader, StaffEmpty, StaffError, StaffPage, StaffSearch, StaffSegmented } from '@/components/staff';
 import MemberNameSearch from '@/components/staff/MemberNameSearch';
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +20,9 @@ import { formatTradeCode, parseTradeCodeQuery } from '@/utils/tradeCode';
 import { FormEvent, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 type LookupMode = 'member' | 'game';
+
+const presetMode = (value: string | null): LookupMode | null =>
+  value === 'participant' ? 'member' : value === 'game' ? 'game' : null;
 
 type PersonName = { first_name?: string; last_name?: string } | null | undefined;
 
@@ -77,7 +80,8 @@ function LookupPageContent() {
   const { execute: fetchReceives } = useApi<TradeResponse<DeliverTrade>>('logistics/user/');
   const { execute: fetchGame } = useApi<GameDetail>('logistics/game/');
 
-  const [mode, setMode] = useState<LookupMode>('member');
+  const preset = presetMode(searchParams.get('mode'));
+  const [mode, setMode] = useState<LookupMode>(preset ?? 'member');
 
   const [showScanner, setShowScanner] = useState(false);
   const [member, setMember] = useState<User | null>(null);
@@ -158,6 +162,7 @@ function LookupPageContent() {
 
   return (
     <StaffPage className="pb-8">
+      {preset && <ProblemHeader id={preset === 'member' ? 'no-label' : 'where-is-game'} />}
       <StaffSegmented
         value={mode}
         onChange={setMode}

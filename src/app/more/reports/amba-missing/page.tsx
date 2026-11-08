@@ -1,7 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
+import { ProblemHeader, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
 import { useEffect, useMemo, useState } from 'react';
@@ -57,10 +57,11 @@ export default function AmbaMissingPage() {
 
   return (
     <StaffPage>
+      <ProblemHeader id="participant-missing" />
       <StaffSearch
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Buscar socio, mesa o etiqueta"
+        placeholder="Buscar participante, mesa o etiqueta"
         aria-label="Buscar destinatarios con faltantes"
       />
       {visible.length === 0 ? (

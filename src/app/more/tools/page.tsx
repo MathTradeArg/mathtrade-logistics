@@ -1,7 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { StaffDialog, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
+import { ProblemHeader, StaffDialog, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { bulkUpdateTradeStatus } from '@/hooks/boxes/boxApi';
 import { useApi } from '@/hooks/useApi';
@@ -79,6 +79,7 @@ export default function ToolsPage() {
 
   return (
     <StaffPage className="pb-8">
+      <ProblemHeader id="wrong-state" />
       <p className="rounded-lg bg-warning/20 px-4 py-3 text-body text-gray-900">
         Avisá si no estás seguro. Estas acciones fuerzan estados y se ven en la tele.
       </p>
