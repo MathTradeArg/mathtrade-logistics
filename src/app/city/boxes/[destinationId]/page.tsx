@@ -7,7 +7,7 @@ import { useParams } from 'next/navigation';
 
 export default function CityBoxesDestinationPage() {
   const routeParams = useParams<{ destinationId: string }>();
-  const { cityId, params, readOnly } = useCityView();
+  const { cityId, kind, params, readOnly } = useCityView();
   if (cityId === null) return <NoCity />;
 
   return (
@@ -17,6 +17,7 @@ export default function CityBoxesDestinationPage() {
       basePath="/city/boxes"
       phaseGated={false}
       itemsOrigin={cityId}
+      includeSendAs={kind === 'referrer'}
       readOnly={readOnly}
       viewParams={params}
     />

@@ -49,12 +49,22 @@ describe('CityBoxesDestinationPage', () => {
     const btn = await screen.findByRole('button', { name: 'Nueva caja' });
     await waitFor(() => expect(btn).not.toBeDisabled());
     expect(boxApi.listBoxes).toHaveBeenCalledWith({ destination: 1, origin: 7 });
-    expect(boxApi.listItems).toHaveBeenCalledWith({ destination: 1, origin: 7 });
+    expect(boxApi.listItems).toHaveBeenCalledWith({ destination: 1, origin: 7, includeSendAs: true });
 
     await act(async () => {
       fireEvent.click(btn);
     });
     await waitFor(() => expect(boxApi.openBox).toHaveBeenCalledWith(1, 7, expect.any(String)));
     expect(mockPush).toHaveBeenCalledWith('/city/boxes/1/55');
+  });
+
+  it('does not ask for the send_as cities when the user is a local volunteer', async () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true, isLoading: false,
+      cityAccess: { kind: 'local', city: { id: 7, name: 'Mendoza' } },
+    });
+    render(<CityBoxesDestinationPage />, { wrapper });
+    await screen.findByRole('button', { name: 'Nueva caja' });
+    expect(boxApi.listItems).toHaveBeenCalledWith(expect.not.objectContaining({ includeSendAs: true }));
   });
 });

@@ -77,7 +77,7 @@ describe('city shipments', () => {
     render(<CityShipmentsPage />);
     fireEvent.click(await screen.findByRole('button', { name: 'Ejemplares' }));
     expect(await screen.findByText('00012 · Catan')).toBeInTheDocument();
-    expect(boxApi.listItems).toHaveBeenCalledWith({ origin: 7 });
+    expect(boxApi.listItems).toHaveBeenCalledWith({ origin: 7, includeSendAs: true });
     expect(screen.getByText('Ana Paz · Caja 2 · AMBA')).toBeInTheDocument();
     expect(screen.getByText('00006 · Azul')).toBeInTheDocument();
     expect(screen.queryByText(/Carcassonne/)).not.toBeInTheDocument();
@@ -102,6 +102,7 @@ describe('city shipments', () => {
     expect(screen.queryByRole('button', { name: 'Envíos' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Nuevo envío' })).not.toBeInTheDocument();
     expect(cityApi.listTrackings).not.toHaveBeenCalled();
+    expect(boxApi.listItems).toHaveBeenCalledWith(expect.not.objectContaining({ includeSendAs: true }));
   });
 
   it('deletes a shipment after confirming', async () => {

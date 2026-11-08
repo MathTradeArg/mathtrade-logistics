@@ -27,11 +27,14 @@ export type PackingDestinationProps = {
   readOnly?: boolean;
   /** Admin "Ver como" params for the lists (city screens). */
   viewParams?: CityViewParams;
+  /** Also list the games of the cities that ship as `itemsOrigin` (send_as):
+   *  the referrer packs them from their own table. */
+  includeSendAs?: boolean;
 };
 
 /** Open and closed boxes from `origin` to one destination, and "Nueva caja". */
 export default function PackingDestination({
-  origin, destinationId, basePath, phaseGated, itemsOrigin, readOnly = false, viewParams,
+  origin, destinationId, basePath, phaseGated, itemsOrigin, readOnly = false, viewParams, includeSendAs,
 }: PackingDestinationProps) {
   const router = useRouter();
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
@@ -73,7 +76,7 @@ export default function PackingDestination({
   const fetchData = useCallback(async (): Promise<Box[]> => {
     const [nextBoxes, nextItems] = await Promise.all([
       listBoxes({ destination: physicalDestId, origin, as_location: asLocation, mathtrade }),
-      listItems({ destination: physicalDestId, origin: itemsOrigin, as_location: asLocation, mathtrade }),
+      listItems({ destination: physicalDestId, origin: itemsOrigin, includeSendAs, as_location: asLocation, mathtrade }),
     ]);
     const laneBoxes =
       origin !== EVENT_LOCATION_ID
@@ -82,7 +85,7 @@ export default function PackingDestination({
     setBoxes(laneBoxes);
     setItems(nextItems);
     return laneBoxes;
-  }, [destinationId, physicalDestId, origin, itemsOrigin, asLocation, mathtrade]);
+  }, [destinationId, physicalDestId, origin, itemsOrigin, includeSendAs, asLocation, mathtrade]);
 
   const load = useCallback(async () => {
     if (!destinationId) return;
