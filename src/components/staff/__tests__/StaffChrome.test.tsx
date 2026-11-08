@@ -142,10 +142,10 @@ describe('StaffChrome role guard', () => {
   it('shows a roleNotice as a success toast and clears it', () => {
     const clearRoleNotice = jest.fn();
     mockUseAuth.mockReturnValue(auth({
-      role: 'window', roleNotice: 'Un admin cambió tu rol a Ventanilla.', clearRoleNotice,
+      role: 'window', roleNotice: 'Un organizador cambió tu rol a Ventanilla.', clearRoleNotice,
     }));
     render(<StaffChrome><p>page</p></StaffChrome>);
-    expect(setSuccess).toHaveBeenCalledWith('Un admin cambió tu rol a Ventanilla.');
+    expect(setSuccess).toHaveBeenCalledWith('Un organizador cambió tu rol a Ventanilla.');
     expect(clearRoleNotice).toHaveBeenCalled();
   });
 });

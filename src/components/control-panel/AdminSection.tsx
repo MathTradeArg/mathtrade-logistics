@@ -60,7 +60,7 @@ const AdminSection: React.FC<AdminSectionProps> = ({
       {!hideAdminActions && (
         <div>
           <h3 className="text-heading font-semibold text-gray-800 mb-4">
-            Acciones de Administrador
+            Acciones de organizador
           </h3>
           
           <div className="space-y-3">

@@ -737,7 +737,7 @@ export default function ReadyToPickupPage() {
         {volunteerAndAdminUsers.length > 0 && (
           <div className="rounded-lg bg-white p-4 mt-8 rounded-xl bg-primary/10">
             <h3 className="text-heading font-bold text-primary mb-3 flex items-center gap-2">
-              <Users size={20} /> Voluntarios y Admins
+              <Users size={20} /> Voluntarios y organizadores
             </h3>
             <div className="space-y-2">
               {volunteerAndAdminUsers.map(user => (
@@ -762,7 +762,7 @@ export default function ReadyToPickupPage() {
                         {user.table_number && ` • Mesa ${user.table_number}`}
                         {user.ready_games_count && ` • ${user.ready_games_count} juegos`}
                         {user.roles?.includes('admin') && (
-                          <Chip tone="warning" className="ml-2">ADMIN</Chip>
+                          <Chip tone="warning" className="ml-2">ORGANIZADOR</Chip>
                         )}
                         {user.roles?.includes('volunteer') && !user.roles?.includes('admin') && (
                           <Chip tone="good" className="ml-2">VOL</Chip>

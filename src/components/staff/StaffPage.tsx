@@ -54,7 +54,7 @@ export function PhaseBlocked() {
     <StaffPage className="flex min-h-[60dvh] flex-col items-center justify-center text-center">
       <StaffHeading level={1}>El evento no empezó</StaffHeading>
       <p className="mt-3 max-w-sm text-gray-600">
-        Esta tarea está deshabilitada hasta que un admin abra la recepción.
+        Esta tarea está deshabilitada hasta que un organizador abra la recepción.
       </p>
       <Link
         href="/more"

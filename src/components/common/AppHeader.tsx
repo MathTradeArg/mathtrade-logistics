@@ -104,7 +104,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           <div className="relative">
             <button onClick={handleToggleMenu} className="flex items-center gap-1 rounded-full p-2 hover:bg-gray-100" aria-label="Menú">
               {isAdmin && (
-                <span className="rounded-full bg-warning p-1" title="Administrador">
+                <span className="rounded-full bg-warning p-1" title="Organizador">
                   <Crown size={12} className="text-gray-800" />
                 </span>
               )}
