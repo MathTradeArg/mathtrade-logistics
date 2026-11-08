@@ -6,14 +6,14 @@ import NewReportPage from '../page';
 
 jest.mock('@/hooks/useAuth');
 jest.mock('@/hooks/useApi');
+const MISSING_QUERY = 'kind=missing&box=392&boxNumber=16&origin=Salta&items=' + encodeURIComponent(JSON.stringify([
+  { item_id: 88, title: 'Catan', assigned_trade_code: 501 },
+  { item_id: 89, title: 'Earth', assigned_trade_code: 502 },
+]));
+let mockQuery = MISSING_QUERY;
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
-  useSearchParams: () => new URLSearchParams(
-    'kind=missing&box=392&boxNumber=16&origin=Salta&items=' + encodeURIComponent(JSON.stringify([
-      { item_id: 88, title: 'Catan', assigned_trade_code: 501 },
-      { item_id: 89, title: 'Earth', assigned_trade_code: 502 },
-    ])),
-  ),
+  useSearchParams: () => new URLSearchParams(mockQuery),
 }));
 jest.mock('@/components/common', () => ({
   FullScreenImageModal: () => null,
@@ -29,6 +29,7 @@ const mockSubmit = jest.fn();
 describe('NewReportPage multi missing', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockQuery = MISSING_QUERY;
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
     mockSubmit.mockResolvedValue({ id: 1 });
     mockUseApi.mockImplementation((endpoint: string) => ({
@@ -55,5 +56,20 @@ describe('NewReportPage multi missing', () => {
     expect(mockSubmit.mock.calls[0][0]).toMatchObject({ item: 88, box: 392, source: 'logistics' });
     expect(mockSubmit.mock.calls[1][0]).toMatchObject({ item: 89, box: 392, source: 'logistics' });
     expect(await screen.findByText('2 reportes enviados')).toBeInTheDocument();
+  });
+
+  it('shows the missing-game question when opened with kind=missing', async () => {
+    render(<NewReportPage />);
+
+    expect(await screen.findByText('¿Falta un juego en una caja?')).toBeInTheDocument();
+    expect(screen.queryByText('¿Vino roto?')).not.toBeInTheDocument();
+  });
+
+  it('shows the broken-game question when opened without kind', async () => {
+    mockQuery = '';
+    render(<NewReportPage />);
+
+    expect(await screen.findByText('¿Vino roto?')).toBeInTheDocument();
+    expect(screen.queryByText('¿Falta un juego en una caja?')).not.toBeInTheDocument();
   });
 });

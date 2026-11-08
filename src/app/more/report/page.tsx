@@ -263,7 +263,7 @@ function NewReportContent() {
 
   return (
     <StaffPage>
-      <ProblemHeader id="broken" />
+      <ProblemHeader id={isMissing ? 'missing-in-box' : 'broken'} />
       {currentStep === 'initial' && (
         <div className="flex flex-col gap-3">
           <button type="button" onClick={() => { setReportType('item'); setCurrentStep('find_item'); }} className="min-h-14 rounded-lg bg-white px-4 text-left font-medium">Un ítem</button>
