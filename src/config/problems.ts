@@ -33,7 +33,7 @@ export const PROBLEMS: Problem[] = [
   { id: 'no-show', group: 'participante', question: '¿Alguien no vino a retirar?', hint: 'Mirá quién retiró y marcá a los que no vinieron', path: '/admin/ready-to-pickup', adminOnly: true },
   { id: 'broken', group: 'juego', question: '¿Vino roto?', hint: 'Dejá foto y nota, y llamá a un organizador', path: '/more/report' },
   { id: 'no-label', group: 'juego', question: '¿No tiene etiqueta o no se lee?', hint: 'Buscá a su dueño y mirá sus juegos', path: '/lookup?mode=participant' },
-  { id: 'where-is-game', group: 'juego', question: '¿Dónde está un juego?', hint: 'Buscalo por el código de la etiqueta', path: '/lookup?mode=game' },
+  { id: 'where-is-game', group: 'juego', question: '¿Dónde está un juego?', hint: 'Buscalo por el título o por el código de la etiqueta', path: '/lookup?mode=game' },
   { id: 'still-missing', group: 'juego', question: '¿Qué juegos siguen faltando?', hint: 'Los reportes abiertos, para buscarlos', path: '/more/reports' },
   { id: 'wrong-state', group: 'juego', question: '¿Marcaste mal un juego, o está pero figura que no llegó?', hint: 'Corregilo con el código de la etiqueta', path: '/more/tools', adminOnly: true, tone: 'danger' },
 ];

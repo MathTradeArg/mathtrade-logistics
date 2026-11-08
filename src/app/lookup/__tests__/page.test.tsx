@@ -1,8 +1,9 @@
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
-import type { DeliverTrade, GameDetail, ReceiveTrade, TradeResponse } from '@/types';
+import type { DeliverTrade, GameBoxInfo, GameDetail, GameSearchResult, ReceiveTrade, TradeResponse } from '@/types';
+import { PROBLEMS } from '@/config/problems';
 import '@testing-library/jest-dom';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { useSearchParams } from 'next/navigation';
 import LookupPage from '../page';
 
@@ -142,8 +143,8 @@ describe('LookupPage', () => {
     render(<LookupPage />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Juego' }));
-    fireEvent.change(screen.getByLabelText('Buscar juego por código'), { target: { value: ' 303 ' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Buscar código' }));
+    fireEvent.change(screen.getByLabelText('Buscar juego por título o código'), { target: { value: ' 303 ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar' }));
 
     expect(await screen.findByText('Azul')).toBeInTheDocument();
     expect(gameExecute).toHaveBeenCalledWith(undefined, '303/detail/');
@@ -157,8 +158,8 @@ describe('LookupPage', () => {
     render(<LookupPage />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Juego' }));
-    fireEvent.change(screen.getByLabelText('Buscar juego por código'), { target: { value: '999' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Buscar código' }));
+    fireEvent.change(screen.getByLabelText('Buscar juego por título o código'), { target: { value: '999' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar' }));
 
     expect(await screen.findByText('Trade con el código asignado no encontrado.')).toBeInTheDocument();
   });
@@ -169,7 +170,7 @@ describe('LookupPage', () => {
 
     expect(screen.getByRole('heading', { level: 2, name: '¿Dónde está un juego?' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Juego' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByLabelText('Buscar juego por código')).toBeInTheDocument();
+    expect(screen.getByLabelText('Buscar juego por título o código')).toBeInTheDocument();
   });
 
   it('opens in Participante with its question when ?mode=participant', () => {
@@ -186,5 +187,197 @@ describe('LookupPage', () => {
 
     expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Participante' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  describe('Juego: title search and "Dónde está"', () => {
+    const box = (overrides: Partial<GameBoxInfo>): GameBoxInfo => ({
+      id: 1,
+      number: 12,
+      origin_id: 4,
+      origin_name: 'Córdoba',
+      destination_id: 1,
+      destination_name: 'AMBA',
+      closed: true,
+      has_tracking: true,
+      opened: false,
+      item_count: 8,
+      received_count: 3,
+      ...overrides,
+    });
+
+    const matches: GameSearchResult[] = [
+      {
+        assigned_trade_code: 303, title: 'Azul', giver_first_name: 'Juan', giver_last_name: 'Perez',
+        receiver_first_name: 'Ana', receiver_last_name: 'Gomez', status: 5, status_display: 'In Event',
+      },
+      {
+        assigned_trade_code: 404, title: 'Azul: Pabellón', giver_first_name: 'Eva', giver_last_name: 'Ruiz',
+        receiver_first_name: 'Luis', receiver_last_name: 'Diaz', status: 2, status_display: 'Transit to Event',
+      },
+    ];
+
+    const routeGame = (detail: GameDetail, results: GameSearchResult[] = matches) => {
+      gameExecute.mockImplementation((_body: unknown, path: string) =>
+        Promise.resolve(path.startsWith('search/') ? results : detail));
+    };
+
+    const search = (text: string) => {
+      fireEvent.click(screen.getByRole('button', { name: 'Juego' }));
+      fireEvent.change(screen.getByLabelText('Buscar juego por título o código'), { target: { value: text } });
+      fireEvent.click(screen.getByRole('button', { name: 'Buscar' }));
+    };
+
+    it('searches by title, lists the matches and opens the detail on tap', async () => {
+      routeGame({ ...game, giver_attends_event: false, boxes: [] });
+      render(<LookupPage />);
+
+      search('azúl ');
+
+      const list = await screen.findByRole('list', { name: 'Juegos encontrados' });
+      expect(gameExecute).toHaveBeenCalledWith(undefined, `search/?q=${encodeURIComponent('azúl')}`);
+      expect(within(list).getByText('Azul')).toBeInTheDocument();
+      expect(within(list).getByText('Entrega: Juan Perez · Recibe: Ana Gomez')).toBeInTheDocument();
+      expect(within(list).getByText('En evento')).toBeInTheDocument();
+      expect(within(list).getByText('Azul: Pabellón')).toBeInTheDocument();
+      expect(within(list).getByText('Entrega: Eva Ruiz · Recibe: Luis Diaz')).toBeInTheDocument();
+      expect(within(list).getByText('En viaje al evento')).toBeInTheDocument();
+
+      fireEvent.click(within(list).getByRole('button', { name: /Azul: Pabellón/ }));
+
+      expect(await screen.findByText('00303 · Mesa 7 · En evento')).toBeInTheDocument();
+      expect(gameExecute).toHaveBeenCalledWith(undefined, '404/detail/');
+      expect(screen.queryByRole('list', { name: 'Juegos encontrados' })).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Volver a los resultados' }));
+      expect(screen.getByRole('list', { name: 'Juegos encontrados' })).toBeInTheDocument();
+    });
+
+    it('needs at least 2 letters and does not search on each keystroke', async () => {
+      render(<LookupPage />);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Juego' }));
+      fireEvent.change(screen.getByLabelText('Buscar juego por título o código'), { target: { value: 'Az' } });
+      expect(gameExecute).not.toHaveBeenCalled();
+
+      fireEvent.change(screen.getByLabelText('Buscar juego por título o código'), { target: { value: 'a' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Buscar' }));
+      expect(await screen.findByText('Escribí al menos 2 letras del título.')).toBeInTheDocument();
+      expect(gameExecute).not.toHaveBeenCalled();
+    });
+
+    it('shows an empty state when no title matches', async () => {
+      routeGame(game, []);
+      render(<LookupPage />);
+
+      search('zzz');
+
+      expect(await screen.findByText('No hay juegos con “zzz” en el título.')).toBeInTheDocument();
+    });
+
+    it('shows the error when the title search fails', async () => {
+      gameExecute.mockRejectedValue(new Error('El servidor respondió con un error (500).'));
+      render(<LookupPage />);
+
+      search('Azul');
+
+      expect(await screen.findByText('El servidor respondió con un error (500).')).toBeInTheDocument();
+    });
+
+    it('goes straight to the detail for a label code, without a title search', async () => {
+      routeGame(game);
+      render(<LookupPage />);
+
+      search('#00303');
+
+      expect(await screen.findByText('00303 · Mesa 7 · En evento')).toBeInTheDocument();
+      expect(gameExecute).toHaveBeenCalledTimes(1);
+      expect(gameExecute).toHaveBeenCalledWith(undefined, '303/detail/');
+    });
+
+    it('does not show "Dónde está" when the backend does not send the new fields', async () => {
+      routeGame(game);
+      render(<LookupPage />);
+
+      search('303');
+
+      expect(await screen.findByText('Recibe: Ana Gomez')).toBeInTheDocument();
+      expect(screen.queryByText('Dónde está')).not.toBeInTheDocument();
+      expect(screen.queryByText('No está en ninguna caja')).not.toBeInTheDocument();
+    });
+
+    it('says who brings it when the giver attends, and that it arrived', async () => {
+      routeGame({ ...game, status: 5, giver_attends_event: true, giver_location_name: 'AMBA', boxes: [] });
+      render(<LookupPage />);
+
+      search('303');
+
+      expect(await screen.findByText('Dónde está')).toBeInTheDocument();
+      expect(screen.getByText('Lo trae Juan Perez (AMBA)')).toBeInTheDocument();
+      expect(screen.getByText('Ya llegó al evento')).toBeInTheDocument();
+      expect(screen.queryByText('No está en ninguna caja')).not.toBeInTheDocument();
+    });
+
+    it('does not say it arrived while an attendee has not brought it yet', async () => {
+      routeGame({ ...game, status: 1, giver_attends_event: true, boxes: [] });
+      render(<LookupPage />);
+
+      search('303');
+
+      expect(await screen.findByText('Lo trae Juan Perez (AMBA)')).toBeInTheDocument();
+      expect(screen.queryByText('Ya llegó al evento')).not.toBeInTheDocument();
+    });
+
+    it('says it is in no box when the giver does not attend and there is no box', async () => {
+      routeGame({ ...game, giver_attends_event: false, giver_location_name: 'Córdoba', boxes: [] });
+      render(<LookupPage />);
+
+      search('303');
+
+      expect(await screen.findByText('No está en ninguna caja')).toBeInTheDocument();
+    });
+
+    it.each([
+      ['opened', box({ opened: true, received_count: 8 }), 'Ya se abrió', false],
+      ['closed, not opened', box({}), 'Sin abrir', true],
+      ['not closed', box({ closed: false, has_tracking: false, number: 7 }), 'En armado', true],
+      ['from AMBA, sent', box({ origin_id: 1, origin_name: 'AMBA', destination_id: 4, destination_name: 'Córdoba', opened: true }), 'Armada en AMBA, enviada', false],
+      ['from AMBA, not sent', box({ origin_id: 1, origin_name: 'AMBA', destination_id: 4, destination_name: 'Córdoba', has_tracking: false, opened: true }), 'Armada en AMBA, sin enviar', false],
+    ])('shows the chip of a box that is %s', async (_state, theBox, chip, showsReceived) => {
+      routeGame({ ...game, giver_attends_event: false, boxes: [theBox] });
+      render(<LookupPage />);
+
+      search('303');
+
+      expect(await screen.findByText(chip)).toBeInTheDocument();
+      expect(screen.getByText(`Caja #${theBox.number} de ${theBox.origin_name} a ${theBox.destination_name}`)).toBeInTheDocument();
+      if (showsReceived) {
+        expect(screen.getByText(`${theBox.received_count} de ${theBox.item_count} juegos recibidos`)).toBeInTheDocument();
+      } else {
+        expect(screen.queryByText(/juegos recibidos/)).not.toBeInTheDocument();
+      }
+    });
+
+    it('lists every box and names an unnumbered one "en armado"', async () => {
+      routeGame({
+        ...game,
+        giver_attends_event: false,
+        boxes: [
+          box({ id: 1, opened: true }),
+          box({ id: 2, number: null, origin_id: 1, origin_name: 'AMBA', destination_id: 4, destination_name: 'Córdoba', closed: false, has_tracking: false }),
+        ],
+      });
+      render(<LookupPage />);
+
+      search('303');
+
+      expect(await screen.findByText('Caja #12 de Córdoba a AMBA')).toBeInTheDocument();
+      expect(screen.getByText('Ya se abrió')).toBeInTheDocument();
+      expect(screen.getByText('Caja #en armado de AMBA a Córdoba')).toBeInTheDocument();
+      expect(screen.getByText('En armado')).toBeInTheDocument();
+    });
+
+    it('hints that a game can be found by title or label code', () => {
+      expect(PROBLEMS.find((p) => p.id === 'where-is-game')?.hint).toBe('Buscalo por el título o por el código de la etiqueta');
+    });
   });
 });
