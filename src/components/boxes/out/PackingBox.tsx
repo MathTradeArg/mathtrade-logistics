@@ -35,11 +35,14 @@ export type PackingBoxProps = {
   readOnly?: boolean;
   /** Admin "Ver como" params for the lists (city screens). */
   viewParams?: CityViewParams;
+  /** Also list the games of the cities that ship as `itemsOrigin` (send_as):
+   *  the referrer packs them from their own table. */
+  includeSendAs?: boolean;
 };
 
 /** One open box: add, remove and move games, close or delete it. */
 export default function PackingBox({
-  origin, destinationId, boxId, basePath, phaseGated, itemsOrigin, readOnly = false, viewParams,
+  origin, destinationId, boxId, basePath, phaseGated, itemsOrigin, readOnly = false, viewParams, includeSendAs,
 }: PackingBoxProps) {
   const router = useRouter();
   const { isAuthenticated, isLoading: authIsLoading } = useAuth();
@@ -90,7 +93,7 @@ export default function PackingBox({
       const [nextBox, nextBoxes, nextItems] = await Promise.all([
         getBox(boxId),
         listBoxes({ destination: physicalDestId, origin, status: 'open', as_location: asLocation, mathtrade }),
-        listItems({ destination: physicalDestId, origin: itemsOrigin, as_location: asLocation, mathtrade }),
+        listItems({ destination: physicalDestId, origin: itemsOrigin, includeSendAs, as_location: asLocation, mathtrade }),
       ]);
       setBox(nextBox);
       setOpenBoxes(
@@ -110,7 +113,7 @@ export default function PackingBox({
     } finally {
       setIsLoading(false);
     }
-  }, [boxId, destinationId, physicalDestId, origin, itemsOrigin, asLocation, mathtrade]);
+  }, [boxId, destinationId, physicalDestId, origin, itemsOrigin, includeSendAs, asLocation, mathtrade]);
 
   useEffect(() => {
     if (!isAuthenticated || blocked) return;
@@ -467,6 +470,12 @@ export default function PackingBox({
         <ThumbCta variant="primary" disabled={empty || inFlight} onClick={handleClose}>
           Cerrar caja
         </ThumbCta>
+      )}
+
+      {box && mode === 'view' && !readOnly && !isBoxOpen(box) && box.tracking && (
+        <p className="mt-6 text-body text-gray-500">
+          Esta caja ya está en el envío {box.tracking} y no se puede reabrir. Si hace falta, eliminá el envío (las cajas quedan cerradas y sin envío).
+        </p>
       )}
 
       {box && mode === 'view' && canReopen && (

@@ -49,12 +49,36 @@ describe('CityBoxesDestinationPage', () => {
     const btn = await screen.findByRole('button', { name: 'Nueva caja' });
     await waitFor(() => expect(btn).not.toBeDisabled());
     expect(boxApi.listBoxes).toHaveBeenCalledWith({ destination: 1, origin: 7 });
-    expect(boxApi.listItems).toHaveBeenCalledWith({ destination: 1, origin: 7 });
+    expect(boxApi.listItems).toHaveBeenCalledWith({ destination: 1, origin: 7, includeSendAs: true });
 
     await act(async () => {
       fireEvent.click(btn);
     });
     await waitFor(() => expect(boxApi.openBox).toHaveBeenCalledWith(1, 7, expect.any(String)));
     expect(mockPush).toHaveBeenCalledWith('/city/boxes/1/55');
+  });
+
+  it('does not ask for the send_as cities when the user is a local volunteer', async () => {
+    mockUseAuth.mockReturnValue({
+      isAuthenticated: true, isLoading: false,
+      cityAccess: { kind: 'local', city: { id: 7, name: 'Mendoza' } },
+    });
+    render(<CityBoxesDestinationPage />, { wrapper });
+    await screen.findByRole('button', { name: 'Nueva caja' });
+    expect(boxApi.listItems).toHaveBeenCalledWith(expect.not.objectContaining({ includeSendAs: true }));
+  });
+
+  // Rule: a closed box of the own city opens its page, where it can be reopened.
+  it('opens a closed box of the city', async () => {
+    (boxApi.listBoxes as jest.Mock).mockResolvedValue([
+      {
+        id: 61, number: 4, closed_at: '2026-11-07T10:00:00Z', origin: 7, destiny: 1, origin_name: 'Mendoza',
+        destination_name: 'AMBA', created_by_username: 'r', created_by_first_name: 'R',
+        created_by_last_name: null, math_items: [{ id: 1, title: 'Catan', assigned_trade_code: 101, status: 2 }],
+      },
+    ]);
+    render(<CityBoxesDestinationPage />, { wrapper });
+    fireEvent.click(await screen.findByRole('button', { name: /#4/ }));
+    expect(mockPush).toHaveBeenCalledWith('/city/boxes/1/61');
   });
 });

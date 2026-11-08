@@ -167,6 +167,8 @@ describe('OutgoingBoxPage reopen: a closed box can be reopened only while it is 
     render(<OutgoingBoxPage />, { wrapper });
     await screen.findByText(/Catan/);
     expect(screen.queryByRole('button', { name: 'Reabrir caja' })).not.toBeInTheDocument();
+    // Rule: say why, instead of leaving the referrer without the action.
+    expect(screen.getByText(/ya está en el envío ABC123/)).toBeInTheDocument();
   });
 
   it('reopens after confirming and reloads the box', async () => {

@@ -57,7 +57,7 @@ export default function CityShipmentsPage() {
       activeTab === 'shipments'
         ? listTrackings(view).then((rows) => !cancelled && setTrackings(rows))
         : // Games that stay in the city are delivered by their giver, not shipped.
-          listItems({ origin: cityId, ...view }).then(
+          listItems({ origin: cityId, includeSendAs: isReferrer, ...view }).then(
             (rows) => !cancelled && setItems(rows.filter((item) => item.location !== cityId)),
           );
     load
@@ -74,7 +74,7 @@ export default function CityShipmentsPage() {
     return () => {
       cancelled = true;
     };
-  }, [cityId, activeTab, asLocation, mathtrade]);
+  }, [cityId, activeTab, isReferrer, asLocation, mathtrade]);
 
   const visibleItems = useMemo(
     () => items.filter((item) => matchesSearch(
