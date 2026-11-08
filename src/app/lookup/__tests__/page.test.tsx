@@ -167,7 +167,7 @@ describe('LookupPage', () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams('mode=game'));
     render(<LookupPage />);
 
-    expect(screen.getByRole('heading', { level: 1, name: '¿Dónde está un juego?' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: '¿Dónde está un juego?' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Juego' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByLabelText('Buscar juego por código')).toBeInTheDocument();
   });
@@ -176,7 +176,7 @@ describe('LookupPage', () => {
     mockUseSearchParams.mockReturnValue(new URLSearchParams('mode=participant'));
     render(<LookupPage />);
 
-    expect(screen.getByRole('heading', { level: 1, name: '¿No tiene etiqueta o no se lee?' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: '¿No tiene etiqueta o no se lee?' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Participante' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: 'Elegir Ana' })).toBeInTheDocument();
   });
@@ -184,7 +184,7 @@ describe('LookupPage', () => {
   it('shows no question header without ?mode=', () => {
     render(<LookupPage />);
 
-    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2 })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Participante' })).toHaveAttribute('aria-pressed', 'true');
   });
 });

@@ -6,7 +6,7 @@ export default function ProblemHeader({ id }: { id: ProblemId }) {
   if (!problem) return null;
   return (
     <header className="mb-4">
-      <StaffHeading level={1} variant="heading">{problem.question}</StaffHeading>
+      <StaffHeading level={2} variant="heading">{problem.question}</StaffHeading>
       <p className="mt-1 text-body text-gray-500">{problem.hint}</p>
     </header>
   );
