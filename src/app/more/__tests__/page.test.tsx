@@ -39,6 +39,15 @@ describe('MorePage', () => {
     expect(screen.queryByRole('button', { name: EXPORT_BUTTON })).not.toBeInTheDocument();
   });
 
+  it('opens with "Hay un problema" in the general menu', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: false, isLoading: false, role: 'boxes' });
+    render(<MorePage />);
+    const row = screen.getByRole('link', { name: /Hay un problema/ });
+    expect(row).toHaveAttribute('href', '/problem');
+    expect(row).toHaveTextContent('Falta un juego, alguien no vino…');
+    expect(screen.getAllByRole('link')[0]).toBe(row);
+  });
+
   it('shows "Mi rol" to a volunteer with a role', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: false, isLoading: false, role: 'boxes' });
     render(<MorePage />);
@@ -79,6 +88,7 @@ describe('MorePage', () => {
     expect(screen.queryByRole('link', { name: 'Nuevo reporte' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Faltantes AMBA' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Herramientas' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Hay un problema/ })).not.toBeInTheDocument();
   });
 
   it('shows Voluntarios to a pure referrer only, not to a local volunteer', () => {

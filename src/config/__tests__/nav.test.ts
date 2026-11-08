@@ -109,3 +109,15 @@ describe('city nav', () => {
     expect(shouldShowBack('/city/boxes')).toBe(true);
   });
 });
+
+describe('/problem chrome', () => {
+  it('is titled "Hay un problema", has a back button and lights up Más', () => {
+    expect(getPageTitle('/problem')).toBe('Hay un problema');
+    expect(shouldShowBack('/problem')).toBe(true);
+    for (const access of [{ role: null, isAdmin: true }, { role: 'runner' as const, isAdmin: false }]) {
+      const slots = getBottomNavSlots(1, access);
+      const more = slots.find((s) => s.id === 'more')!;
+      expect(isSlotActive('/problem', more, 1, slots)).toBe(true);
+    }
+  });
+});

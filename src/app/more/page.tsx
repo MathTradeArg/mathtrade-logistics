@@ -64,6 +64,9 @@ export default function MorePage() {
   return (
     <StaffPage>
       <ul className="flex flex-col gap-3">
+        <li>
+          <GameRow title="Hay un problema" subtitle="Falta un juego, alguien no vino…" href="/problem" />
+        </li>
         {cityAccess && (
           <li>
             <GameRow title={`Mi ciudad: ${cityAccess.city.name}`} href="/city" />
