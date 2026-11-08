@@ -27,7 +27,7 @@ export const PROBLEM_GROUPS: { id: ProblemGroup; label: string }[] = [
 export const PROBLEMS: Problem[] = [
   { id: 'missing-in-box', group: 'cajas', question: '¿Falta un juego en una caja?', hint: 'Abrí la caja, tildá los que están y reportá los que faltan', path: '/boxes/in' },
   { id: 'not-in-list', group: 'cajas', question: '¿Apareció un juego que no está en la lista?', hint: 'Cargalo como suelto, o buscá en qué caja iba', path: '/boxes/in/loose' },
-  { id: 'interior-pending', group: 'cajas', question: '¿Falta que llegue algo del interior?', hint: 'Juegos y cajas pendientes por ciudad', path: '/more/tools/amba-pending' },
+  { id: 'interior-pending', group: 'cajas', question: '¿Querés saber qué cajas faltan abrir del interior?', hint: 'Cajas de cada ciudad que todavía no se abrieron', path: '/more/tools/amba-pending' },
   { id: 'no-qr', group: 'participante', question: '¿El participante no tiene su QR?', hint: 'Buscalo por nombre', path: (phase) => (phase === 2 ? '/deliver' : '/receive') },
   { id: 'participant-missing', group: 'participante', question: '¿A un participante le faltan juegos?', hint: 'Si está en la ventanilla, mandalo con un admin', path: '/more/reports/amba-missing' },
   { id: 'no-show', group: 'participante', question: '¿Alguien no vino a retirar?', hint: 'Mirá quién retiró y marcá a los que no vinieron', path: '/admin/ready-to-pickup', adminOnly: true },
