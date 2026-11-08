@@ -16,7 +16,7 @@ Used live and in-person by event staff/volunteers/admins running a physical math
 - `/boxes` — shipping-box assembly and tracking
 - `/reports`, `/reports/all` — item/user incident reports (all-reports view is admin-only)
 - `/problem` — business-questions screen ("Hay un problema" in `Más`); each question links to the screen that solves it; config in `src/config/problems.ts` (destinations show the question with `ProblemHeader`)
-- `/more/tools` — admin-only (non-admins see "Esto lo resuelve un admin"); only "Forzar juego" (force a game state)
+- `/more/tools` — admin-only (non-admins see "Esto lo resuelve un organizador"); only "Forzar juego" (force a game state)
 - `/admin/ready-to-pickup` — "Quién retiró": dashboard of users by status, manual status transitions
 - `/admin/window-config` — pickup-window and table-assignment configuration
 - `/display/ready-to-pickup` — unauthenticated public TV display, polls for ready users

@@ -30,7 +30,7 @@ export default function ProblemPage() {
                 <li key={problem.id}>
                   <GameRow
                     title={problem.question}
-                    subtitle={needsAdmin ? 'Avisá a un admin' : problem.hint}
+                    subtitle={needsAdmin ? 'Avisá a un organizador' : problem.hint}
                     href={href ?? undefined}
                     tone={!needsAdmin ? problem.tone : undefined}
                   />

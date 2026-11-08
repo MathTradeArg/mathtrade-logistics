@@ -40,7 +40,7 @@ describe('ToolsPage', () => {
       </ActionStatusProvider>,
     );
 
-    expect(screen.getByText('Esto lo resuelve un admin. Avisale a uno.')).toBeInTheDocument();
+    expect(screen.getByText('Esto lo resuelve un organizador. Avisale a uno.')).toBeInTheDocument();
     expect(screen.queryByLabelText('Buscar juego por código')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Buscar código' })).not.toBeInTheDocument();
     expect(execute).not.toHaveBeenCalled();

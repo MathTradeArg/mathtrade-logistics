@@ -68,7 +68,7 @@ export default function ToolsPage() {
   if (!isAdmin) {
     return (
       <StaffPage>
-        <StaffEmpty>Esto lo resuelve un admin. Avisale a uno.</StaffEmpty>
+        <StaffEmpty>Esto lo resuelve un organizador. Avisale a uno.</StaffEmpty>
       </StaffPage>
     );
   }

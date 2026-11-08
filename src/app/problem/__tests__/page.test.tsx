@@ -29,14 +29,14 @@ describe('ProblemPage', () => {
     expect(screen.queryByRole('link', { name: /¿El participante no tiene su QR\?/ })).not.toBeInTheDocument();
   });
 
-  it('shows the admin questions to a volunteer without a link, with "Avisá a un admin"', () => {
+  it('shows the admin questions to a volunteer without a link, with "Avisá a un organizador"', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: false, isLoading: false, role: 'runner' });
     render(<ProblemPage />);
 
     expect(screen.getByText('¿Alguien no vino a retirar?')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /¿Alguien no vino a retirar\?/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /¿Marcaste mal un juego/ })).not.toBeInTheDocument();
-    expect(screen.getAllByText('Avisá a un admin')).toHaveLength(2);
+    expect(screen.getAllByText('Avisá a un organizador')).toHaveLength(2);
     expect(screen.queryByRole('heading', { name: 'En las cajas' })).toBeInTheDocument();
   });
 
@@ -46,7 +46,7 @@ describe('ProblemPage', () => {
 
     expect(screen.getByRole('link', { name: /¿Alguien no vino a retirar\?/ })).toHaveAttribute('href', '/admin/ready-to-pickup');
     expect(screen.getByRole('link', { name: /¿Marcaste mal un juego/ })).toHaveAttribute('href', '/more/tools');
-    expect(screen.queryByText('Avisá a un admin')).not.toBeInTheDocument();
+    expect(screen.queryByText('Avisá a un organizador')).not.toBeInTheDocument();
   });
 
   it('sends Ventanilla to Entregar for "sin QR" in phase 2', () => {
