@@ -81,7 +81,7 @@ export default function ToolsPage() {
     <StaffPage className="pb-8">
       <ProblemHeader id="wrong-state" />
       <p className="rounded-lg bg-warning/20 px-4 py-3 text-body text-gray-900">
-        Avisá si no estás seguro. Estas acciones fuerzan estados y se ven en la tele.
+        Avisá si no estás seguro. Estas acciones fuerzan el estado de un juego.
       </p>
 
       <h2 className="mt-8 text-body font-semibold text-gray-500">Forzar juego</h2>
