@@ -110,6 +110,12 @@ describe('city nav', () => {
   });
 });
 
+describe('admin titles', () => {
+  it('titles the pickups list "Quién retiró"', () => {
+    expect(getPageTitle('/admin/ready-to-pickup')).toBe('Quién retiró');
+  });
+});
+
 describe('/problem chrome', () => {
   it('is titled "Hay un problema", has a back button and lights up Más', () => {
     expect(getPageTitle('/problem')).toBe('Hay un problema');

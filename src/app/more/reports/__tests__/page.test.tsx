@@ -47,6 +47,7 @@ describe('MoreReportsPage', () => {
     expect(await screen.findByTestId('report-card')).toHaveTextContent('read-only');
     expect(execute).toHaveBeenCalledWith(undefined, '?event=1');
     expect(screen.getByRole('link', { name: /Retiran en AMBA con faltantes/ })).toHaveAttribute('href', '/more/reports/amba-missing');
+    expect(screen.getByText('Participantes que reciben acá y tienen juegos reportados')).toBeInTheDocument();
   });
 
   it('lets admins manage reports', async () => {

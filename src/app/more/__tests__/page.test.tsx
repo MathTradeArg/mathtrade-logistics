@@ -27,12 +27,14 @@ describe('MorePage', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: false, isLoading: false });
     render(<MorePage />);
 
+    expect(screen.getByRole('link', { name: /Hay un problema/ })).toHaveAttribute('href', '/problem');
     expect(screen.getByRole('link', { name: 'Consultar' })).toHaveAttribute('href', '/lookup');
-    expect(screen.getByRole('link', { name: 'Nuevo reporte' })).toHaveAttribute('href', '/more/report');
     expect(screen.getByRole('link', { name: 'Ver reportes' })).toHaveAttribute('href', '/more/reports');
-    expect(screen.getByRole('link', { name: 'Faltantes AMBA' })).toHaveAttribute('href', '/more/reports/amba-missing');
-    expect(screen.getByRole('link', { name: 'Herramientas' })).toHaveAttribute('href', '/more/tools');
-    expect(screen.queryByRole('link', { name: 'Usuarios' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Nuevo reporte' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Faltantes AMBA' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Herramientas' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Quién retiró' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Administrar el evento')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Voluntarios' })).not.toBeInTheDocument();
     expect(screen.queryByText('Fase del evento')).not.toBeInTheDocument();
     expect(screen.queryByText(/Mi rol/)).not.toBeInTheDocument();
@@ -125,8 +127,10 @@ describe('MorePage', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
     render(<MorePage />);
 
+    expect(screen.getByRole('heading', { level: 2, name: 'Administrar el evento' })).toBeInTheDocument();
     expect(screen.getByText('Fase del evento')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Usuarios' })).toHaveAttribute('href', '/admin/ready-to-pickup');
+    expect(screen.getByRole('link', { name: 'Quién retiró' })).toHaveAttribute('href', '/admin/ready-to-pickup');
+    expect(screen.queryByRole('link', { name: 'Herramientas' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ventanillas' })).toHaveAttribute('href', '/admin/window-config');
     expect(screen.getByRole('link', { name: 'Voluntarios' })).toHaveAttribute('href', '/admin/volunteers');
     expect(screen.getByRole('button', { name: 'Tele' })).toBeInTheDocument();

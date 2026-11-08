@@ -81,7 +81,7 @@ function AllReportsContent() {
       <GameRow
         href="/more/reports/amba-missing"
         title="Retiran en AMBA con faltantes"
-        subtitle="Socios que reciben acá y tienen juegos reportados"
+        subtitle="Participantes que reciben acá y tienen juegos reportados"
       />
       <div className="mt-4">
       <StaffSearch

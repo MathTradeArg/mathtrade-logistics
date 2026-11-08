@@ -114,7 +114,7 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/more')) return 'Más';
   if (pathname.startsWith('/admin/volunteers')) return 'Voluntarios';
   if (pathname.startsWith('/admin/window-config')) return 'Ventanillas';
-  if (pathname.startsWith('/admin/ready-to-pickup')) return 'Usuarios';
+  if (pathname.startsWith('/admin/ready-to-pickup')) return 'Quién retiró';
   if (pathname.startsWith('/problem')) return 'Hay un problema';
   return '';
 }

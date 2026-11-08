@@ -99,16 +99,7 @@ export default function MorePage() {
           <Link href="/lookup" className={rowClass}>Consultar</Link>
         </li>
         <li>
-          <Link href="/more/report" className={rowClass}>Nuevo reporte</Link>
-        </li>
-        <li>
           <Link href="/more/reports" className={rowClass}>Ver reportes</Link>
-        </li>
-        <li>
-          <Link href="/more/reports/amba-missing" className={rowClass}>Faltantes AMBA</Link>
-        </li>
-        <li>
-          <Link href="/more/tools" className={rowClass}>Herramientas</Link>
         </li>
         <li>
           <Link href="/more/print" className={rowClass}>Imprimir</Link>
@@ -117,7 +108,7 @@ export default function MorePage() {
 
       {isAdmin && (
         <div className="mt-10">
-          <h2 className="text-body font-semibold text-gray-500">Admin</h2>
+          <h2 className="text-body font-semibold text-gray-500">Administrar el evento</h2>
           <div className="staff-panel mt-3 p-4">
             <p className="text-body font-medium text-gray-700">Fase del evento</p>
             <div className="mt-3 flex flex-col gap-3">
@@ -145,7 +136,7 @@ export default function MorePage() {
           </div>
           <ul className="mt-3 flex flex-col gap-3">
             <li>
-              <GameRow title="Usuarios" href="/admin/ready-to-pickup" />
+              <GameRow title="Quién retiró" href="/admin/ready-to-pickup" />
             </li>
             <li>
               <GameRow title="Ventanillas" href="/admin/window-config" />
