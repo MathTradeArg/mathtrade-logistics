@@ -145,7 +145,7 @@ describe('IncomingBoxPage', () => {
 
     render(<IncomingBoxPage />, { wrapper });
 
-    expect(await screen.findByText(/Localidades mezcladas \(Catamarca, Córdoba\): hay que abrir esta caja/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Caja mezclada: tiene juegos que se quedan en AMBA y otros que siguen a Catamarca, Córdoba\. Abrila/i)).toBeInTheDocument();
     const wingspan = screen.getByRole('checkbox', { name: /Wingspan/ });
     const azul = screen.getByRole('checkbox', { name: /Azul/ });
     expect(wingspan).toHaveTextContent('Sigue a Córdoba');

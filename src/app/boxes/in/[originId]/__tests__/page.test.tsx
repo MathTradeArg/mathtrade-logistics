@@ -69,7 +69,7 @@ describe('BoxesInOriginPage transit', () => {
 
     const mixedRow = await screen.findByRole('link', { name: /#17/ });
     expect(mixedRow).toHaveAttribute('href', '/boxes/in/8/401');
-    expect(mixedRow).toHaveTextContent(/Localidades mezcladas \(Catamarca, Córdoba\) · abrir/);
+    expect(mixedRow).toHaveTextContent(/Caja mezclada \(Catamarca, Córdoba\) · abrir/);
   });
 });
 
