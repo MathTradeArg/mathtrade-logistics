@@ -31,11 +31,11 @@ export const PROBLEMS: Problem[] = [
   { id: 'no-qr', group: 'participante', question: '¿El participante no tiene su QR?', hint: 'Buscalo por nombre', path: (phase) => (phase === 2 ? '/deliver' : '/receive') },
   { id: 'participant-missing', group: 'participante', question: '¿A un participante le faltan juegos?', hint: 'Si está en la ventanilla, mandalo con un admin', path: '/more/reports/amba-missing' },
   { id: 'no-show', group: 'participante', question: '¿Alguien no vino a retirar?', hint: 'Mirá quién retiró y marcá a los que no vinieron', path: '/admin/ready-to-pickup', adminOnly: true },
-  { id: 'broken', group: 'juego', question: '¿Vino roto?', hint: 'Dejá foto y nota, y entregalo igual', path: '/more/report' },
+  { id: 'broken', group: 'juego', question: '¿Vino roto?', hint: 'Dejá foto y nota, y llamá a un admin', path: '/more/report' },
   { id: 'no-label', group: 'juego', question: '¿No tiene etiqueta o no se lee?', hint: 'Buscá a su dueño y mirá sus juegos', path: '/lookup?mode=participant' },
   { id: 'where-is-game', group: 'juego', question: '¿Dónde está un juego?', hint: 'Buscalo por el código de la etiqueta', path: '/lookup?mode=game' },
-  { id: 'still-missing', group: 'juego', question: '¿Qué juegos siguen faltando?', hint: 'Los reportes abiertos, para buscarlos o darlos por perdidos al cierre', path: '/more/reports' },
-  { id: 'wrong-state', group: 'juego', question: '¿Marcaste mal un juego, o está pero figura que no llegó?', hint: 'Corregilo con el código de la etiqueta. Se ve en la tele', path: '/more/tools', adminOnly: true, tone: 'danger' },
+  { id: 'still-missing', group: 'juego', question: '¿Qué juegos siguen faltando?', hint: 'Los reportes abiertos, para buscarlos', path: '/more/reports' },
+  { id: 'wrong-state', group: 'juego', question: '¿Marcaste mal un juego, o está pero figura que no llegó?', hint: 'Corregilo con el código de la etiqueta', path: '/more/tools', adminOnly: true, tone: 'danger' },
 ];
 
 export type VisibleProblem = { problem: Problem; href: string | null; needsAdmin: boolean };
