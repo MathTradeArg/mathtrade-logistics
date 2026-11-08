@@ -25,7 +25,7 @@ function transitSubtitle(box: Box): string {
     const destList = destinations.join(', ');
     return [
       `${box.math_items.length} juegos`,
-      `Localidades mezcladas (${destList})`,
+      `Caja mezclada (${destList})`,
       pendingCount > 0 ? `abrir (${pendingCount} pendientes)` : 'recibida',
     ].join(' · ');
   }

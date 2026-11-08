@@ -114,13 +114,15 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/more')) return 'Más';
   if (pathname.startsWith('/admin/volunteers')) return 'Voluntarios';
   if (pathname.startsWith('/admin/window-config')) return 'Ventanillas';
-  if (pathname.startsWith('/admin/ready-to-pickup')) return 'Usuarios';
+  if (pathname.startsWith('/admin/ready-to-pickup')) return 'Quién retiró';
+  if (pathname.startsWith('/problem')) return 'Hay un problema';
   return '';
 }
 
 export function shouldShowBack(pathname: string): boolean {
   if (pathname.startsWith('/city/')) return true;
   if (pathname.startsWith('/admin')) return true;
+  if (pathname === '/problem') return true;
   if (pathname === '/reports/all' || pathname.startsWith('/reports/all/')) return true;
   if (pathname.startsWith('/more/') && pathname !== '/more') return true;
   if (pathname.startsWith('/boxes/in/') && pathname !== '/boxes/in') return true;
@@ -164,6 +166,7 @@ export function isSlotActive(
   if (slot.id === 'more') {
     return (
       pathMatches(pathname, '/more') ||
+      pathMatches(pathname, '/problem') ||
       pathMatches(pathname, '/reports') ||
       pathMatches(pathname, '/admin') ||
       (pathMatches(pathname, '/tables') && !(slots ?? []).some((s) => s.id === 'tables')) ||

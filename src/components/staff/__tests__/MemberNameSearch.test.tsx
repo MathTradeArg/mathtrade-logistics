@@ -13,7 +13,7 @@ describe('MemberNameSearch', () => {
 
   it('does not search when the query is shorter than two characters', async () => {
     render(<MemberNameSearch onSelect={jest.fn()} />);
-    fireEvent.change(screen.getByLabelText('Buscar socio por nombre'), { target: { value: 'A' } });
+    fireEvent.change(screen.getByLabelText('Buscar participante por nombre'), { target: { value: 'A' } });
 
     await waitFor(() => {
       expect(fetchMock).not.toHaveBeenCalled();
@@ -27,7 +27,7 @@ describe('MemberNameSearch', () => {
     ]));
 
     render(<MemberNameSearch onSelect={onSelect} />);
-    fireEvent.change(screen.getByLabelText('Buscar socio por nombre'), { target: { value: 'Ana' } });
+    fireEvent.change(screen.getByLabelText('Buscar participante por nombre'), { target: { value: 'Ana' } });
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Ana Perez/ })).toBeInTheDocument();
@@ -57,7 +57,7 @@ describe('MemberNameSearch', () => {
         }));
 
       render(<MemberNameSearch onSelect={jest.fn()} />);
-      const input = screen.getByLabelText('Buscar socio por nombre');
+      const input = screen.getByLabelText('Buscar participante por nombre');
 
       fireEvent.change(input, { target: { value: 'ab' } });
       await act(async () => { await jest.advanceTimersByTimeAsync(250); });

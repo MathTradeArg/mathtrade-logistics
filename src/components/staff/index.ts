@@ -2,6 +2,7 @@ export { default as BottomNav } from './BottomNav';
 export { default as GameRow } from './GameRow';
 export { default as HoldToConfirm } from './HoldToConfirm';
 export { default as MemberNameSearch } from './MemberNameSearch';
+export { default as ProblemHeader } from './ProblemHeader';
 export { default as StaffChrome } from './StaffChrome';
 export { default as StaffDialog } from './StaffDialog';
 export { StaffBanner, StaffEmpty, StaffError, StaffPage, PhaseBlocked } from './StaffPage';

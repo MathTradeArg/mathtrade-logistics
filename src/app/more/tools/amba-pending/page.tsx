@@ -1,7 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
+import { GameRow, ProblemHeader, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
 import { matchesSearch } from '@/hooks/boxes/boxGrouping';
 import { listAmbaPending, type AmbaPendingOrigin } from '@/hooks/boxes/boxApi';
 import { useAuth } from '@/hooks/useAuth';
@@ -42,6 +42,7 @@ export default function AmbaPendingIndexPage() {
 
   return (
     <StaffPage>
+      <ProblemHeader id="interior-pending" />
       <StaffSearch
         value={query}
         onChange={(event) => setQuery(event.target.value)}

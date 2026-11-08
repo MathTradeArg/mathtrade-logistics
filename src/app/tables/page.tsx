@@ -595,7 +595,7 @@ export default function TablesPage() {
         </div>
         {isAdmin && (
           <p className="mt-3 text-caption text-gray-500">
-            Para asignar mesas a otros voluntarios andá a Admin → Voluntarios.
+            Para asignar mesas a otros voluntarios andá a Administrar el evento → Voluntarios.
           </p>
         )}
       </StaffDialog>

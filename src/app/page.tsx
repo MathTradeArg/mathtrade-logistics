@@ -54,7 +54,7 @@ function LandingPageContent() {
     <main className="flex min-h-[70dvh] flex-col items-center justify-center px-6 text-center text-gray-900">
       <h1 className="text-heading font-bold">El evento no empezó</h1>
       <p className="mt-3 max-w-sm text-gray-600">
-        Esperá a que un admin abra la recepción. Mientras tanto podés entrar a Más.
+        Esperá a que un organizador abra la recepción. Mientras tanto podés entrar a Más.
       </p>
       <Link
         href="/more"

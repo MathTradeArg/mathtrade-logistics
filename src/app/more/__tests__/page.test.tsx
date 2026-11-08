@@ -27,16 +27,27 @@ describe('MorePage', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: false, isLoading: false });
     render(<MorePage />);
 
+    expect(screen.getByRole('link', { name: /Hay un problema/ })).toHaveAttribute('href', '/problem');
     expect(screen.getByRole('link', { name: 'Consultar' })).toHaveAttribute('href', '/lookup');
-    expect(screen.getByRole('link', { name: 'Nuevo reporte' })).toHaveAttribute('href', '/more/report');
     expect(screen.getByRole('link', { name: 'Ver reportes' })).toHaveAttribute('href', '/more/reports');
-    expect(screen.getByRole('link', { name: 'Faltantes AMBA' })).toHaveAttribute('href', '/more/reports/amba-missing');
-    expect(screen.getByRole('link', { name: 'Herramientas' })).toHaveAttribute('href', '/more/tools');
-    expect(screen.queryByRole('link', { name: 'Usuarios' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Nuevo reporte' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Faltantes AMBA' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Herramientas' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Quién retiró' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Administrar el evento')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Voluntarios' })).not.toBeInTheDocument();
     expect(screen.queryByText('Fase del evento')).not.toBeInTheDocument();
     expect(screen.queryByText(/Mi rol/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: EXPORT_BUTTON })).not.toBeInTheDocument();
+  });
+
+  it('opens with "Hay un problema" in the general menu', () => {
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: false, isLoading: false, role: 'boxes' });
+    render(<MorePage />);
+    const row = screen.getByRole('link', { name: /Hay un problema/ });
+    expect(row).toHaveAttribute('href', '/problem');
+    expect(row).toHaveTextContent('Falta un juego, alguien no vino…');
+    expect(screen.getAllByRole('link')[0]).toBe(row);
   });
 
   it('shows "Mi rol" to a volunteer with a role', () => {
@@ -79,6 +90,7 @@ describe('MorePage', () => {
     expect(screen.queryByRole('link', { name: 'Nuevo reporte' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Faltantes AMBA' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Herramientas' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Hay un problema/ })).not.toBeInTheDocument();
   });
 
   it('shows Voluntarios to a pure referrer only, not to a local volunteer', () => {
@@ -115,8 +127,10 @@ describe('MorePage', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
     render(<MorePage />);
 
+    expect(screen.getByRole('heading', { level: 2, name: 'Administrar el evento' })).toBeInTheDocument();
     expect(screen.getByText('Fase del evento')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Usuarios' })).toHaveAttribute('href', '/admin/ready-to-pickup');
+    expect(screen.getByRole('link', { name: 'Quién retiró' })).toHaveAttribute('href', '/admin/ready-to-pickup');
+    expect(screen.queryByRole('link', { name: 'Herramientas' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ventanillas' })).toHaveAttribute('href', '/admin/window-config');
     expect(screen.getByRole('link', { name: 'Voluntarios' })).toHaveAttribute('href', '/admin/volunteers');
     expect(screen.getByRole('button', { name: 'Tele' })).toBeInTheDocument();

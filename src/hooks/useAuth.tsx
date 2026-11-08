@@ -302,7 +302,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const next = me.role ?? null;
       if (next !== roleRef.current) {
         if (roleRef.current !== null && next !== null) {
-          setRoleNotice(`Un admin cambió tu rol a ${ROLES[next].label}.`);
+          setRoleNotice(`Un organizador cambió tu rol a ${ROLES[next].label}.`);
         }
         roleRef.current = next;
         setRole(next);

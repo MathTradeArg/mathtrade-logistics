@@ -152,3 +152,20 @@ describe('canPrintEventSheets', () => {
     expect(canPrintEventSheets(false, null, null)).toBe(true);
   });
 });
+
+describe('/problem access', () => {
+  it('is open to every role and to admins', () => {
+    for (const role of ['window', 'boxes', 'tables', 'runner'] as const) {
+      expect(isPathAllowed('/problem', role, false)).toBe(true);
+    }
+    expect(isPathAllowed('/problem', null, true)).toBe(true);
+  });
+
+  it('is closed to a city user without an event role', () => {
+    const referrer = { kind: 'referrer' as const, city: { id: 7, name: 'Mendoza' } };
+    const local = { kind: 'local' as const, city: { id: 7, name: 'Mendoza' } };
+    expect(isPathAllowed('/problem', null, false, referrer)).toBe(false);
+    expect(isPathAllowed('/problem', null, false, local)).toBe(false);
+    expect(isPathAllowed('/problem', 'boxes', false, referrer)).toBe(true);
+  });
+});

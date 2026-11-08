@@ -37,7 +37,7 @@ describe('AdminSection', () => {
 
   it('renders admin actions and TV views sections', () => {
     render(<AdminSection {...defaultProps} />);
-    expect(screen.getByText('Acciones de Administrador')).toBeInTheDocument();
+    expect(screen.getByText('Acciones de organizador')).toBeInTheDocument();
     expect(screen.getByText('Administrar logística de entrega')).toBeInTheDocument();
   });
 

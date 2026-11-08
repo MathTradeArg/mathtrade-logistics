@@ -119,12 +119,12 @@ describe('ControlPanelModal', () => {
 
   it('does not render AdminSection if user is not admin', () => {
     renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={false} />);
-    expect(screen.queryByText('Acciones de Administrador')).not.toBeInTheDocument();
+    expect(screen.queryByText('Acciones de organizador')).not.toBeInTheDocument();
   });
 
   it('does not render AdminSection for admins; phase lives in Más', () => {
     renderWithProviders(<ControlPanelModal isOpen={true} onClose={mockOnClose} isAdmin={true} />);
-    expect(screen.queryByText('Acciones de Administrador')).not.toBeInTheDocument();
+    expect(screen.queryByText('Acciones de organizador')).not.toBeInTheDocument();
   });
 
   it('calls updateGameStatus and onClose with true after a successful game action', async () => {

@@ -17,13 +17,12 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import TransitBoxView from './TransitBoxView';
 
-/** Event staff may reopen a box that reached the event to rebuild it: a
- *  transit box (neither end is AMBA) or a box to AMBA already in a shipment.
- *  A box leaving AMBA already left; a box to AMBA never shipped keeps the
- *  receive flow. */
+/** Event staff may reopen only a transit box (neither end is AMBA) to rebuild
+ *  it at the event. A box leaving AMBA already left, and a box to AMBA always
+ *  keeps the receive flow, shipped or not, open or closed (UI rule: the
+ *  backend still lets a shipped box to AMBA be reopened). */
 function canBeRebuilt(box: Box): boolean {
-  if (box.origin === EVENT_LOCATION_ID) return false;
-  return box.destiny !== EVENT_LOCATION_ID || box.tracking != null;
+  return box.origin !== EVENT_LOCATION_ID && box.destiny !== EVENT_LOCATION_ID;
 }
 
 export default function IncomingBoxPage() {
@@ -136,7 +135,7 @@ export default function IncomingBoxPage() {
   const onwardNames = box ? boxOnwardDestinations(box) : [];
   const destLabel = box
     ? mixed
-      ? `Localidades mezcladas (${onwardNames.join(', ')})`
+      ? `Caja mezclada (${onwardNames.join(', ')})`
       : onwardNames[0] || box.destination_name
     : '';
 
@@ -151,7 +150,7 @@ export default function IncomingBoxPage() {
           <p className="text-body text-gray-500">{box.origin_name} → {destLabel}</p>
           {mixed && (
             <p className="mt-2 rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-body font-medium text-red-800">
-              Localidades mezcladas ({onwardNames.join(', ')}): hay que abrir esta caja y marcar los juegos como recibidos para separarlos por destino.
+              Caja mezclada: tiene juegos que se quedan en AMBA y otros que siguen a {onwardNames.join(', ')}. Abrila y marcá los juegos como recibidos para separarlos.
             </p>
           )}
           {transit && !mixed && (

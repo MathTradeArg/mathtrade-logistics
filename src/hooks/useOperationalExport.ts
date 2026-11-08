@@ -7,7 +7,7 @@ const EXPORT_TIMEOUT_MS = 45000;
 
 export const EXPORT_MESSAGES = {
   noToken: 'No se encontró el token de autenticación.',
-  forbidden: 'Solo un administrador puede descargar la planilla.',
+  forbidden: 'Solo un organizador puede descargar la planilla.',
   server: 'El servidor no pudo armar la planilla. Probá de nuevo en un minuto.',
   empty: 'La planilla vino vacía. Probá de nuevo.',
 } as const;

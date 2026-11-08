@@ -11,10 +11,6 @@ jest.mock('@/hooks/useApi');
 jest.mock('@/hooks/boxes/boxApi', () => ({
   bulkUpdateTradeStatus: jest.fn(),
 }));
-jest.mock('@/components/staff/MemberNameSearch', () => ({
-  __esModule: true,
-  default: () => <div>Buscar socio</div>,
-}));
 
 const mockUseAuth = useAuth as jest.Mock;
 const mockUseApi = useApi as jest.Mock;
@@ -34,7 +30,9 @@ describe('ToolsPage', () => {
     mockUseApi.mockReturnValue({ execute: jest.fn().mockResolvedValue(game) });
   });
 
-  it('does not show pending rollback for volunteers on a delivered game', async () => {
+  it('shows the admin-only notice to non-admins and does not search games', () => {
+    const execute = jest.fn().mockResolvedValue(game);
+    mockUseApi.mockReturnValue({ execute });
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: false, isLoading: false, userId: '1' });
     render(
       <ActionStatusProvider>
@@ -42,14 +40,10 @@ describe('ToolsPage', () => {
       </ActionStatusProvider>,
     );
 
-    fireEvent.change(screen.getByLabelText('Buscar juego por código'), { target: { value: '123' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Buscar código' }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/00123/)).toBeInTheDocument();
-    });
-    expect(screen.queryByRole('button', { name: 'Volver a pendiente' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Marcar entregado' })).not.toBeInTheDocument();
+    expect(screen.getByText('Esto lo resuelve un organizador. Avisale a uno.')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Buscar juego por código')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Buscar código' })).not.toBeInTheDocument();
+    expect(execute).not.toHaveBeenCalled();
   });
 
   it('shows pending rollback for admins', async () => {
@@ -66,5 +60,8 @@ describe('ToolsPage', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Volver a pendiente' })).toBeInTheDocument();
     });
+    expect(screen.queryByText('Marcar no apareció')).not.toBeInTheDocument();
+    expect(screen.queryByText('Interior')).not.toBeInTheDocument();
+    expect(mockUseApi).not.toHaveBeenCalledWith('logistics/users/update-status/', expect.anything());
   });
 });

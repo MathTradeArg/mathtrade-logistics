@@ -145,7 +145,7 @@ describe('IncomingBoxPage', () => {
 
     render(<IncomingBoxPage />, { wrapper });
 
-    expect(await screen.findByText(/Localidades mezcladas \(Catamarca, Córdoba\): hay que abrir esta caja/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Caja mezclada: tiene juegos que se quedan en AMBA y otros que siguen a Catamarca, Córdoba\. Abrila/i)).toBeInTheDocument();
     const wingspan = screen.getByRole('checkbox', { name: /Wingspan/ });
     const azul = screen.getByRole('checkbox', { name: /Azul/ });
     expect(wingspan).toHaveTextContent('Sigue a Córdoba');
@@ -223,10 +223,10 @@ describe('IncomingBoxPage rebuild of transit boxes', () => {
   });
 });
 
-// Rule: event staff may also rebuild a box that arrived at the event (city ->
-// AMBA) inside a shipment: reopen it, add, take out and move games, and close
-// it again with the same number.
-describe('IncomingBoxPage rebuild of boxes that arrived at AMBA', () => {
+// Rule: a box to AMBA (the event) is never rebuilt from this screen, even if it
+// is in a shipment or already open: it keeps the receive flow. Only transit
+// boxes (neither end AMBA) offer "Rearmar caja".
+describe('IncomingBoxPage: boxes that arrived at AMBA are not rebuilt', () => {
   const closedToAmba = {
     id: 392,
     number: 17,
@@ -268,32 +268,29 @@ describe('IncomingBoxPage rebuild of boxes that arrived at AMBA', () => {
     mockListItems.mockResolvedValue([looseViaAmba]);
   });
 
-  it('a box to AMBA in a shipment shows Rearmar caja and, reopened, can be edited and closed again', async () => {
-    const reopened = { ...closedToAmba, closed_at: null };
-    mockGetBox.mockResolvedValueOnce(closedToAmba).mockResolvedValue(reopened);
-    mockReopenBox.mockResolvedValue(reopened);
-    mockListBoxes.mockResolvedValue([reopened, openSibling]);
+  it('a box to AMBA in a shipment does not show Rearmar caja and keeps the receive flow', async () => {
+    mockGetBox.mockResolvedValue(closedToAmba);
+    mockListBoxes.mockResolvedValue([closedToAmba, openSibling]);
 
     render(<IncomingBoxPage />, { wrapper });
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Rearmar caja' }));
-    expect(
-      screen.getByText(/Marcá todos sus juegos como recibidos, también los que siguen a otras ciudades/),
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Rearmar' }));
+    await screen.findByRole('checkbox', { name: /Wingspan/ });
+    expect(screen.getByRole('checkbox', { name: /Azul/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Rearmar caja' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cerrar de nuevo' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Marcar recibidos/ })).toBeInTheDocument();
+    expect(mockReopenBox).not.toHaveBeenCalled();
+  });
 
-    await waitFor(() => expect(mockReopenBox).toHaveBeenCalledWith(392));
-    expect(await screen.findByRole('button', { name: 'Cerrar de nuevo' })).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Sacar' })).toHaveLength(2);
-    expect(screen.getAllByRole('button', { name: 'Marcar recibido' })).toHaveLength(2);
-    expect(await screen.findAllByRole('button', { name: 'Mover a otra caja' })).toHaveLength(2);
+  it('an open box to AMBA in a shipment shows the receive flow, not the rebuild screen', async () => {
+    mockGetBox.mockResolvedValue({ ...closedToAmba, closed_at: null });
 
-    const add = screen.getByRole('button', { name: 'Agregar juegos' });
-    await waitFor(() => expect(add).toBeEnabled());
-    fireEvent.click(add);
-    fireEvent.click(await screen.findByRole('checkbox', { name: /Heat/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Agregar (1)' }));
-    await waitFor(() => expect(boxApi.addItem).toHaveBeenCalledWith(392, 12));
+    render(<IncomingBoxPage />, { wrapper });
+
+    await screen.findByRole('checkbox', { name: /Wingspan/ });
+    expect(screen.queryByRole('button', { name: 'Cerrar de nuevo' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Agregar juegos' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Rearmar caja' })).not.toBeInTheDocument();
   });
 
   it('a box to AMBA that was never shipped keeps the receive flow (no rebuild)', async () => {
@@ -365,21 +362,22 @@ describe('IncomingBoxPage: every game of an opened box is marked en evento, also
 // Rule: in a rebuilt box the volunteer also adds a copy by typing its label
 // code and Enter; the title list keeps working.
 describe('IncomingBoxPage rebuilt box: add by label code', () => {
-  const reopenedToAmba = {
+  // A rebuilt transit box (Salta -> Córdoba): only transit boxes are rebuilt.
+  const reopenedTransit = {
     id: 392,
     number: 17,
     origin: 8,
     origin_name: 'Salta',
-    destiny: 1,
-    destination_name: 'AMBA',
-    lane_destination: 1,
+    destiny: 3,
+    destination_name: 'Córdoba',
+    lane_destination: 3,
     closed_at: null,
     tracking: 'VC-10',
     math_items: [
       { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, via_meeting: true, location: 3, lane_destination: 3, origin_location: 8 },
     ],
   };
-  const otherBox = { ...reopenedToAmba, id: 402, number: 18, math_items: [] as unknown[] };
+  const otherBox = { ...reopenedTransit, id: 402, number: 18, math_items: [] as unknown[] };
   const heat = {
     id: 12, item_id: 93, title: 'Heat', assigned_trade_code: 20043, status: 4,
     via_meeting: true, location: 3, lane_destination: 3, origin_location: 8,
@@ -393,13 +391,13 @@ describe('IncomingBoxPage rebuilt box: add by label code', () => {
     jest.clearAllMocks();
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, userId: '1' });
     mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
-    mockGetBox.mockResolvedValue(reopenedToAmba);
-    mockListBoxes.mockResolvedValue([reopenedToAmba, { ...otherBox, math_items: [brass] }]);
+    mockGetBox.mockResolvedValue(reopenedTransit);
+    mockListBoxes.mockResolvedValue([reopenedTransit, { ...otherBox, math_items: [brass] }]);
     mockListItems.mockResolvedValue([heat, brass]);
   });
 
   it('typing the code of a loose copy and Enter adds it, reloads and keeps the focus', async () => {
-    (boxApi.addItem as jest.Mock).mockResolvedValue({ ...reopenedToAmba, math_items: [...reopenedToAmba.math_items, heat] });
+    (boxApi.addItem as jest.Mock).mockResolvedValue({ ...reopenedTransit, math_items: [...reopenedTransit.math_items, heat] });
     render(<IncomingBoxPage />, { wrapper });
 
     const input = await screen.findByLabelText('Código de la etiqueta');
@@ -442,14 +440,15 @@ describe('IncomingBoxPage rebuilt box: add by label code', () => {
 // real box and which games did not go in and why. Load failures are shown
 // with a way to retry, never swallowed.
 describe('IncomingBoxPage rebuilt box: batch add with a partial failure and visible load errors', () => {
+  // A rebuilt transit box (Salta -> Córdoba): only transit boxes are rebuilt.
   const reopened = {
     id: 392,
     number: 17,
     origin: 8,
     origin_name: 'Salta',
-    destiny: 1,
-    destination_name: 'AMBA',
-    lane_destination: 1,
+    destiny: 3,
+    destination_name: 'Córdoba',
+    lane_destination: 3,
     closed_at: null,
     tracking: 'VC-10',
     math_items: [] as unknown[],

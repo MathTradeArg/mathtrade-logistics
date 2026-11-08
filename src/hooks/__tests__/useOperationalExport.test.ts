@@ -127,7 +127,7 @@ describe('useOperationalExport: an admin downloads the event sheet on demand', (
 
   it.each([
     ['403 (not an admin)', () => failure(403, { detail: 'You do not have permission to perform this action.' }),
-      'Solo un administrador puede descargar la planilla.'],
+      'Solo un organizador puede descargar la planilla.'],
     ['500', () => failure(500), 'El servidor no pudo armar la planilla. Probá de nuevo en un minuto.'],
     ['504', () => failure(504), 'El servidor no pudo armar la planilla. Probá de nuevo en un minuto.'],
     ['an empty file', () => xlsx(''), 'La planilla vino vacía. Probá de nuevo.'],

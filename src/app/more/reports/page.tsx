@@ -2,7 +2,7 @@
 
 import { FullScreenImageModal, ReportCard } from '@/components/common';
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
+import { GameRow, ProblemHeader, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
 import { EnrichedReport, Report } from '@/types/index';
@@ -77,10 +77,11 @@ function AllReportsContent() {
 
   return (
     <StaffPage>
+      <ProblemHeader id="still-missing" />
       <GameRow
         href="/more/reports/amba-missing"
         title="Retiran en AMBA con faltantes"
-        subtitle="Socios que reciben acá y tienen juegos reportados"
+        subtitle="Participantes que reciben acá y tienen juegos reportados"
       />
       <div className="mt-4">
       <StaffSearch

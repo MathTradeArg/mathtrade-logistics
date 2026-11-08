@@ -27,7 +27,7 @@ export const ROLES: Record<VolunteerRole, { label: string; description: string; 
 };
 
 // Open to every volunteer whatever the role.
-const ALWAYS_ALLOWED = ['/more', '/lookup', '/select-role', '/reports', '/login', '/display'];
+const ALWAYS_ALLOWED = ['/more', '/lookup', '/select-role', '/reports', '/login', '/display', '/problem'];
 
 // A city user (referrer / local volunteer) without an event role.
 const CITY_ONLY_ALLOWED = ['/more', '/login', '/city'];

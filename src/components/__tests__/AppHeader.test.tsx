@@ -153,7 +153,7 @@ describe('AppHeader', () => {
 
     it('does not show admin crown or control panel for non-admin', () => {
       render(<AppHeader />);
-      expect(screen.queryByTitle('Administrador')).not.toBeInTheDocument();
+      expect(screen.queryByTitle('Organizador')).not.toBeInTheDocument();
 
       const menuButton = screen.getByRole('button', { name: 'Menú' });
       fireEvent.click(menuButton);
@@ -163,7 +163,7 @@ describe('AppHeader', () => {
     it('shows admin crown but not control panel for admin', () => {
       mockUseAuth.mockReturnValue({ ...defaultAuthContext, isAdmin: true });
       render(<AppHeader />);
-      expect(screen.getByTitle('Administrador')).toBeInTheDocument();
+      expect(screen.getByTitle('Organizador')).toBeInTheDocument();
 
       const menuButton = screen.getByRole('button', { name: 'Menú' });
       fireEvent.click(menuButton);

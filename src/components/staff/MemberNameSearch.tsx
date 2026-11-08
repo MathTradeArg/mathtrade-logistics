@@ -73,7 +73,7 @@ export default function MemberNameSearch({ onSelect, disabled = false }: MemberN
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         placeholder="Buscar por nombre y apellido"
-        aria-label="Buscar socio por nombre"
+        aria-label="Buscar participante por nombre"
         disabled={disabled}
       />
       {isLoading && <p className="mt-3 text-center text-body text-gray-500">Buscando...</p>}

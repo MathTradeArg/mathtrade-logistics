@@ -173,7 +173,9 @@ export default function BoxesInPage() {
                   subtitle={[
                     origin.boxCount > 0 ? `${origin.boxCount} cajas` : null,
                     `${origin.itemCount} juegos en tránsito`,
-                    origin.mixedCount > 0 ? `${origin.mixedCount} con localidades mezcladas` : null,
+                    origin.mixedCount > 0
+                      ? (origin.mixedCount === 1 ? '1 caja mezclada' : `${origin.mixedCount} cajas mezcladas`)
+                      : null,
                   ].filter(Boolean).join(' · ')}
                   tone={origin.mixedCount > 0 ? 'danger' : undefined}
                 />

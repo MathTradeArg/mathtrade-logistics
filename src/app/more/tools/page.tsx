@@ -1,8 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, StaffDialog, StaffError, StaffPage, StaffSearch } from '@/components/staff';
-import MemberNameSearch from '@/components/staff/MemberNameSearch';
+import { ProblemHeader, StaffDialog, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { bulkUpdateTradeStatus } from '@/hooks/boxes/boxApi';
 import { useApi } from '@/hooks/useApi';
@@ -15,14 +14,12 @@ export default function ToolsPage() {
   const { isAuthenticated, isLoading: authIsLoading, userId, isAdmin } = useAuth();
   const { setSuccess, setError: setActionError } = useActionStatus();
   const { execute: searchGame } = useApi<GameDetail>('logistics/game/');
-  const { execute: updateUserStatus } = useApi<{ status: string }>('logistics/users/update-status/', { method: 'PATCH' });
 
   const [code, setCode] = useState('');
   const [game, setGame] = useState<GameDetail | null>(null);
   const [gameError, setGameError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<5 | 6 | 4 | null>(null);
-  const [noShowMember, setNoShowMember] = useState<{ id: number; name: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const handleCodeSearch = async (event: FormEvent) => {
@@ -64,33 +61,27 @@ export default function ToolsPage() {
     }
   };
 
-  const confirmNoShow = async () => {
-    if (!noShowMember || busy) return;
-    setBusy(true);
-    try {
-      await updateUserStatus({ user_id: noShowMember.id, status: 'no_show' });
-      setSuccess(`${noShowMember.name} marcado como no apareció.`);
-      setNoShowMember(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'No se pudo marcar no_show.';
-      setActionError(message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   if (authIsLoading || isAuthenticated === null) {
     return <div className="flex min-h-[50dvh] items-center justify-center"><LoadingSpinner message="Cargando..." /></div>;
   }
 
+  if (!isAdmin) {
+    return (
+      <StaffPage>
+        <StaffEmpty>Esto lo resuelve un organizador. Avisale a uno.</StaffEmpty>
+      </StaffPage>
+    );
+  }
+
   const showEvento = game && game.status < 5;
   const showEntregado = game && game.status < 6;
-  const showPendiente = isAdmin && game && game.status > 4;
+  const showPendiente = game && game.status > 4;
 
   return (
     <StaffPage className="pb-8">
+      <ProblemHeader id="wrong-state" />
       <p className="rounded-lg bg-warning/20 px-4 py-3 text-body text-gray-900">
-        Avisá si no estás seguro. Estas acciones fuerzan estados y se ven en la tele.
+        Avisá si no estás seguro. Estas acciones fuerzan el estado de un juego.
       </p>
 
       <h2 className="mt-8 text-body font-semibold text-gray-500">Forzar juego</h2>
@@ -124,17 +115,6 @@ export default function ToolsPage() {
         </div>
       )}
 
-      <h2 className="mt-10 text-body font-semibold text-gray-500">Marcar no apareció</h2>
-      <MemberNameSearch
-        onSelect={(member) => setNoShowMember({ id: member.user_id, name: `${member.first_name} ${member.last_name}`.trim() })}
-      />
-
-      <h2 className="mt-10 text-body font-semibold text-gray-500">Interior</h2>
-      <div className="mt-3 flex flex-col gap-3">
-        <GameRow title="Pendientes AMBA del interior" href="/more/tools/amba-pending" />
-        <GameRow title="Faltantes AMBA" href="/more/reports/amba-missing" />
-      </div>
-
       <StaffDialog
         open={pendingStatus != null}
         title="Confirmar cambio de estado"
@@ -146,18 +126,6 @@ export default function ToolsPage() {
         {pendingStatus === 5 && 'Vas a marcar este juego como en evento. Avisá si no estás seguro.'}
         {pendingStatus === 6 && 'Vas a marcar este juego como entregado. Avisá si no estás seguro.'}
         {pendingStatus === 4 && 'Vas a volver este juego a pendiente.'}
-      </StaffDialog>
-
-      <StaffDialog
-        open={noShowMember != null}
-        title="Marcar no apareció"
-        confirmLabel="Sí, marcar no_show"
-        variant="danger"
-        confirmDisabled={busy}
-        onConfirm={confirmNoShow}
-        onCancel={() => setNoShowMember(null)}
-      >
-        {noShowMember ? `${noShowMember.name} va a aparecer como no apareció en la tele.` : null}
       </StaffDialog>
     </StaffPage>
   );

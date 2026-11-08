@@ -115,7 +115,7 @@ describe('DeliverPage', () => {
   it('shows QR scanner when authenticated and ready', () => {
     render(<DeliverPage />);
     expect(screen.getByTestId('qr-scanner')).toBeInTheDocument();
-    expect(screen.getByLabelText('Buscar socio por nombre')).toBeInTheDocument();
+    expect(screen.getByLabelText('Buscar participante por nombre')).toBeInTheDocument();
   });
 
   it('disables QR scanner if event phase is not "Entrega"', () => {
@@ -143,7 +143,7 @@ describe('DeliverPage', () => {
     ]));
 
     render(<DeliverPage />);
-    fireEvent.change(screen.getByLabelText('Buscar socio por nombre'), { target: { value: 'Ana' } });
+    fireEvent.change(screen.getByLabelText('Buscar participante por nombre'), { target: { value: 'Ana' } });
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Ana Perez/ })).toBeInTheDocument();

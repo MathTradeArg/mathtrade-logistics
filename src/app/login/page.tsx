@@ -104,7 +104,7 @@ function LoginForm({ email, setEmail, password, setPassword, isMounted, isLoadin
 
     if (NEXT_PUBLIC_ENV === 'prod') {
       if (!RECAPTCHA_SITE_KEY) {
-        setLoginError('Falta la configuración de reCAPTCHA. Por favor, avise al administrador.');
+        setLoginError('Falta la configuración de reCAPTCHA. Por favor, avisá a un organizador.');
         return;
       }
       if (!executeRecaptcha) {

@@ -55,7 +55,7 @@ describe('useAuth refreshMe', () => {
     render(<AuthProvider><Probe /></AuthProvider>);
 
     await waitFor(() => expect(screen.getByTestId('role')).toHaveTextContent('boxes'));
-    expect(screen.getByTestId('notice')).toHaveTextContent('Un admin cambió tu rol a Cajas.');
+    expect(screen.getByTestId('notice')).toHaveTextContent('Un organizador cambió tu rol a Cajas.');
     expect(localStorage.getItem('logisticsRole')).toBe('boxes');
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toContain('logistics/me/');
