@@ -118,8 +118,7 @@ function ReceivePageContent() {
     try {
       await bulkUpdate({
         status: 5,
-        assigned_trade_codes: itemIds,
-        change_by_id: deliveredByUserId
+        assigned_trade_codes: itemIds
       });
 
       const updatedItems = itemsToUpdate.length;

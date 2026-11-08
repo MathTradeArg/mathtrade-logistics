@@ -114,7 +114,7 @@ describe('DeliverPage: a network or server error must not lock the screen', () =
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
     expect(bulkCalls()).toHaveLength(2);
     expect(JSON.parse(String(bulkCalls()[1][1]?.body))).toEqual({
-      status: 6, assigned_trade_codes: [101], change_by_id: 1,
+      status: 6, assigned_trade_codes: [101], user_uuid: 'user-qr-code',
     });
     expect(screen.getByTestId('game-list')).toBeInTheDocument();
 
@@ -133,6 +133,92 @@ describe('DeliverPage: a network or server error must not lock the screen', () =
     act(() => { jest.advanceTimersByTime(3000); });
     await waitFor(() => expect(screen.getByTestId('qr-scanner')).toBeInTheDocument());
     expect(screen.queryByText('Usuario no encontrado')).not.toBeInTheDocument();
+  });
+});
+
+describe('DeliverPage: backend rejections (409 / 400) show their message and keep the screen usable', () => {
+  const originalHost = process.env.NEXT_PUBLIC_MT_API_HOST;
+
+  beforeAll(() => { process.env.NEXT_PUBLIC_MT_API_HOST = 'http://api.test/'; });
+  afterAll(() => { process.env.NEXT_PUBLIC_MT_API_HOST = originalHost; });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    fetchMock.resetMocks();
+    localStorage.setItem('authToken', 'fake-token');
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, userId: '1', isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 2, isLoadingEventPhase: false });
+    mockUseSearchParams.mockReturnValue(new URLSearchParams());
+    mockUsePathname.mockReturnValue('/deliver');
+  });
+
+  // the scan itself PATCHes users/update-status/ with 'receiving'; only 'completed' means delivered
+  const markedCompleted = () => fetchMock.mock.calls.some(
+    ([url, init]) => String(url).includes('users/update-status/') && String(init?.body).includes('completed'),
+  );
+
+  const deliverAll = async () => {
+    render(<DeliverPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Simulate Scan' }));
+    await waitFor(() => expect(screen.getByTestId('game-list')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Update All Items' }));
+    return screen.findByRole('alert');
+  };
+
+  it('does not send change_by_id and sends the scanned user_uuid', async () => {
+    routeApi({ scan: { status: 200, body: mockTradesResponse } });
+    render(<DeliverPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Simulate Scan' }));
+    await waitFor(() => expect(screen.getByTestId('game-list')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Update All Items' }));
+    await waitFor(() => expect(bulkCalls()).toHaveLength(1));
+    const body = JSON.parse(String(bulkCalls()[0][1]?.body));
+    expect(body).toEqual({ status: 6, assigned_trade_codes: [101], user_uuid: 'user-qr-code' });
+    expect(body).not.toHaveProperty('change_by_id');
+  });
+
+  it('wrong_receiver 409 shows the detail and how many games are not the user\'s, without marking delivered', async () => {
+    routeApi({
+      scan: { status: 200, body: mockTradesResponse },
+      patchReplies: [{
+        status: 409,
+        body: { detail: 'Algunos juegos no son de este usuario. No se actualizó ninguno.', code: 'wrong_receiver', assigned_trade_codes: [101] },
+      }],
+    });
+    const alert = await deliverAll();
+    expect(alert).toHaveTextContent('Algunos juegos no son de este usuario. No se actualizó ninguno.');
+    expect(alert).toHaveTextContent('1 juego no es de este usuario');
+    expect(markedCompleted()).toBe(false);
+    expect(screen.getByTestId('game-list')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Update All Items' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Finish' })).toBeEnabled();
+  });
+
+  it('not_arrived 409 shows the detail, does not mark completed and allows retry', async () => {
+    routeApi({
+      scan: { status: 200, body: mockTradesResponse },
+      patchReplies: [
+        { status: 409, body: { detail: 'Algunos juegos todavía no llegaron al evento. No se actualizó ninguno.', code: 'not_arrived', assigned_trade_codes: [101] } },
+        { status: 200, body: {} },
+      ],
+    });
+    const alert = await deliverAll();
+    expect(alert).toHaveTextContent('Algunos juegos todavía no llegaron al evento. No se actualizó ninguno.');
+    expect(alert).not.toHaveTextContent('no es de este usuario');
+    expect(markedCompleted()).toBe(false);
+    fireEvent.click(within(alert).getByRole('button', { name: 'Reintentar' }));
+    await waitFor(() => expect(bulkCalls()).toHaveLength(2));
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+  });
+
+  it('400 shows a generic clear message', async () => {
+    routeApi({
+      scan: { status: 200, body: mockTradesResponse },
+      patchReplies: [{ status: 400, body: { user_uuid: ['Must be a valid UUID.'] } }],
+    });
+    const alert = await deliverAll();
+    expect(alert).toHaveTextContent('No se pudo validar la entrega');
+    expect(screen.getByTestId('game-list')).toBeInTheDocument();
   });
 });
 

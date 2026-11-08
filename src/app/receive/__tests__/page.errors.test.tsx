@@ -117,7 +117,7 @@ describe('ReceivePage: a network or server error must not lock the screen', () =
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
     expect(bulkCalls()).toHaveLength(2);
     expect(JSON.parse(String(bulkCalls()[1][1]?.body))).toEqual({
-      status: 5, assigned_trade_codes: [101], change_by_id: 1,
+      status: 5, assigned_trade_codes: [101],
     });
     expect(screen.getByTestId('game-list')).toBeInTheDocument();
 

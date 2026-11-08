@@ -218,22 +218,21 @@ export async function deleteBox(boxId: number): Promise<void> {
 
 export async function markItemsReceived(
   assignedTradeCodes: number[],
-  changeById: string | number | null,
+  // Kept so callers do not change; the backend takes the author from the token.
+  _changeById?: string | number | null,
 ): Promise<void> {
-  await bulkUpdateTradeStatus(assignedTradeCodes, 5, changeById);
+  await bulkUpdateTradeStatus(assignedTradeCodes, 5);
 }
 
 export async function bulkUpdateTradeStatus(
   assignedTradeCodes: number[],
   status: number,
-  changeById: string | number | null,
 ): Promise<void> {
   await boxFetch('logistics/games/bulk-update-status/', {
     method: 'PATCH',
     body: {
       status,
       assigned_trade_codes: assignedTradeCodes,
-      change_by_id: changeById,
     },
   });
 }

@@ -205,7 +205,7 @@ describe('ReceivePage', () => {
     });
     
     await waitFor(() => {
-      expect(mockBulkUpdate).toHaveBeenCalledWith({ status: 5, assigned_trade_codes: [101], change_by_id: 1 });
+      expect(mockBulkUpdate).toHaveBeenCalledWith({ status: 5, assigned_trade_codes: [101] });
     });
     expect(mockExecute).toHaveBeenCalledTimes(1);
   });

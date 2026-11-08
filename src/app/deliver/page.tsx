@@ -13,6 +13,23 @@ import { useSearchParams } from 'next/navigation';
 import { X } from 'phosphor-react';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
+type ApiRejection = Error & { status?: number; body?: { code?: string; assigned_trade_codes?: unknown } | null };
+
+/** Banner text for a failed delivery PATCH: 409 shows the backend detail, 400 a generic message. */
+function deliveryErrorMessage(err: unknown): string {
+  if (!(err instanceof Error)) return 'Falló la actualización.';
+  const { status, body } = err as ApiRejection;
+  if (status === 409) {
+    if (body?.code === 'wrong_receiver' && Array.isArray(body.assigned_trade_codes) && body.assigned_trade_codes.length > 0) {
+      const n = body.assigned_trade_codes.length;
+      return `${err.message} ${n === 1 ? '1 juego no es de este usuario.' : `${n} juegos no son de este usuario.`}`;
+    }
+    return err.message;
+  }
+  if (status === 400) return 'No se pudo validar la entrega. Escaneá el QR de nuevo e intentá otra vez.';
+  return err.message;
+}
+
 export default function DeliverPage() {
   return (
     <Suspense fallback={<div className="flex justify-center items-center min-h-screen"><LoadingSpinner message="Cargando página..." /></div>}>
@@ -129,7 +146,7 @@ function DeliverPageContent() {
       await bulkUpdate({
         status: 6,
         assigned_trade_codes: itemIds,
-        change_by_id: deliveredByUserId
+        user_uuid: qrData,
       });
 
       const remainingUndelivered = games.filter(
@@ -150,7 +167,7 @@ function DeliverPageContent() {
       handleDeliverySuccess(itemIds);
       lastUpdate.current = null;
     } catch (err) {
-      setUpdateError(err instanceof Error ? err.message : 'Falló la actualización.');
+      setUpdateError(deliveryErrorMessage(err));
     } finally {
       setIsUpdating(false);
     }

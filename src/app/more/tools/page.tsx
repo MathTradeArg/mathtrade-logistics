@@ -52,7 +52,7 @@ export default function ToolsPage() {
     if (!game || pendingStatus == null || busy) return;
     setBusy(true);
     try {
-      await bulkUpdateTradeStatus([game.assigned_trade_code], pendingStatus, userId);
+      await bulkUpdateTradeStatus([game.assigned_trade_code], pendingStatus);
       setGame({ ...game, status: pendingStatus });
       setSuccess('Estado actualizado.');
       setPendingStatus(null);
