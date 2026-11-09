@@ -13,12 +13,13 @@ import type { Item } from '@/types';
 import { formatTradeCode, giverName } from '@/utils/tradeCode';
 import type { Cell, WorkbookSheet } from '@/utils/xlsx';
 
-const HEADERS = ['Código', 'Juego', 'Entregador', 'Destino', 'Carril'];
+const HEADERS = ['Código', 'Juego', 'Entregador', 'Receptor', 'Destino', 'Carril'];
 
 const gameRow = (item: Item, origin: number): Cell[] => [
   formatTradeCode(item.assigned_trade_code),
   item.title,
   giverName(item),
+  receptorName(item),
   destinationLabel(item.location_name ?? '', goesViaHub(origin, item.location, item.via_meeting)),
   laneLabel(item, origin),
 ];
