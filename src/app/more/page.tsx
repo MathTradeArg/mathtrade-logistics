@@ -6,6 +6,7 @@ import { ROLES } from '@/config/roles';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useOperationalExport } from '@/hooks/useOperationalExport';
+import { EVENT_SHEETS, useXlsxExport } from '@/hooks/useXlsxExport';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -13,6 +14,29 @@ const formatClock = (at: Date) =>
   `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
 
 const rowClass = 'staff-card flex min-h-14 w-full items-center px-4 text-left font-medium text-gray-900';
+
+const EVENT_SHEET_BUTTONS = [
+  { sheet: EVENT_SHEETS.incomingBoxes, title: 'Cajas entrantes', help: 'Una pestaña por origen y tipo de caja, con su estado de apertura.' },
+  { sheet: EVENT_SHEETS.outgoingGames, title: 'Juegos que salen', help: 'Una pestaña por destino.' },
+  { sheet: EVENT_SHEETS.toReceive, title: 'Juegos a recibir por usuario', help: 'Lo que cada usuario del evento trae.' },
+  { sheet: EVENT_SHEETS.toDeliver, title: 'Juegos a entregar por usuario', help: 'Lo que cada usuario del evento retira, con su estado ahora.' },
+] as const;
+
+function EventSheetButton({ sheet, title, help }: { sheet: { endpoint: string; filePrefix: string }; title: string; help: string }) {
+  const { download, isLoading, error, lastDownloadedAt } = useXlsxExport(sheet.endpoint, sheet.filePrefix);
+  return (
+    <li>
+      <button type="button" className={`${rowClass} disabled:opacity-60`} disabled={isLoading} onClick={() => download()}>
+        {isLoading ? `${title} (armando la planilla...)` : title}
+      </button>
+      <p className="mt-2 px-1 text-body text-gray-500">{help}</p>
+      {error && <StaffBanner>{error}</StaffBanner>}
+      {lastDownloadedAt && (
+        <p className="mt-2 px-1 text-body text-gray-500">Descargada a las {formatClock(lastDownloadedAt)}</p>
+      )}
+    </li>
+  );
+}
 
 export default function MorePage() {
   const { isAuthenticated, isAdmin, isLoading: authIsLoading, role, cityAccess } = useAuth();
@@ -172,6 +196,9 @@ export default function MorePage() {
                 </p>
               )}
             </li>
+            {EVENT_SHEET_BUTTONS.map((b) => (
+              <EventSheetButton key={b.sheet.endpoint} {...b} />
+            ))}
           </ul>
         </div>
       )}
