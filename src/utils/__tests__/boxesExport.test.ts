@@ -8,7 +8,7 @@ const ESPERANZA = 6;
 const base = { status: 2 };
 const items: Item[] = [
   // direct to Rosario, boxed
-  { ...base, id: 1, title: 'Catan', assigned_trade_code: 12, first_name: 'Ana', last_name: 'Paz', location: 9, location_name: 'Rosario', box_number: 3 },
+  { ...base, id: 1, title: 'Catan', assigned_trade_code: 12, first_name: 'Ana', last_name: 'Paz', receptor_first_name: 'Lía', receptor_last_name: 'Mora', location: 9, location_name: 'Rosario', box_number: 3 },
   // direct to Rosario, not boxed, giver without last name
   { ...base, id: 2, title: 'Azul', assigned_trade_code: 7, first_name: 'Beto', location: 9, location_name: 'Rosario' },
   // to AMBA itself
@@ -35,10 +35,15 @@ describe('buildBoxesExport', () => {
     const rows = (byName('Total') as { rows: Record<string, string | number>[] }).rows;
     expect(rows.map((r) => r['Código'])).toEqual(['00007', '00012', '00020', '00040', '16120']);
     expect(rows[0]).toEqual({
-      Código: '00007', Juego: 'Azul', Entregador: 'Beto', Destino: 'Rosario', Carril: 'Directo',
+      Código: '00007', Juego: 'Azul', Entregador: 'Beto', Receptor: '', Destino: 'Rosario', Carril: 'Directo',
     });
     expect(rows.map((r) => r['Carril'])).toEqual(['Directo', 'Directo', 'AMBA', 'Directo', 'Vía reunión']);
     expect(rows.find((r) => r['Juego'] === 'Dune')!['Destino']).toBe('Salta · Vía AMBA');
+  });
+
+  it('shows the receptor in Total', () => {
+    const rows = (byName('Total') as { rows: Record<string, string | number>[] }).rows;
+    expect(rows.find((r) => r['Juego'] === 'Catan')!['Receptor']).toBe('Lía Mora');
   });
 
   it('keeps giver "—" when the copy has no name', () => {
@@ -49,17 +54,17 @@ describe('buildBoxesExport', () => {
   it('Por destino: title rows with counts, direct first then AMBA/via, blank between groups', () => {
     const aoa = (byName('Por destino') as { aoa: (string | number)[][] }).aoa;
     expect(aoa).toEqual([
-      ['Código', 'Juego', 'Entregador', 'Destino', 'Carril'],
+      ['Código', 'Juego', 'Entregador', 'Receptor', 'Destino', 'Carril'],
       ['Rosario · 3 juegos'],
-      ['00007', 'Azul', 'Beto', 'Rosario', 'Directo'],
-      ['00012', 'Catan', 'Ana Paz', 'Rosario', 'Directo'],
-      ['00040', 'Viaja', 'Eva Sosa', 'Rosario', 'Directo'],
+      ['00007', 'Azul', 'Beto', '', 'Rosario', 'Directo'],
+      ['00012', 'Catan', 'Ana Paz', 'Lía Mora', 'Rosario', 'Directo'],
+      ['00040', 'Viaja', 'Eva Sosa', '', 'Rosario', 'Directo'],
       [],
       ['AMBA · 1 juego'],
-      ['00020', 'Root', 'Cris Gil', 'AMBA', 'AMBA'],
+      ['00020', 'Root', 'Cris Gil', '', 'AMBA', 'AMBA'],
       [],
       ['Otras ciudades · Vía AMBA · 1 juego'],
-      ['16120', 'Dune', 'Dani Ruiz', 'Salta · Vía AMBA', 'Vía reunión'],
+      ['16120', 'Dune', 'Dani Ruiz', '', 'Salta · Vía AMBA', 'Vía reunión'],
       [],
     ]);
   });
