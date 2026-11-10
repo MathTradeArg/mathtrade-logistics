@@ -43,8 +43,8 @@ describe('MorePage', () => {
     render(<MorePage />);
 
     expect(screen.getByRole('link', { name: /Hay un problema/ })).toHaveAttribute('href', '/problem');
-    expect(screen.getByRole('link', { name: 'Consultar' })).toHaveAttribute('href', '/lookup');
-    expect(screen.getByRole('link', { name: 'Ver reportes' })).toHaveAttribute('href', '/more/reports');
+    expect(screen.getByRole('link', { name: 'Buscar participante o juego' })).toHaveAttribute('href', '/lookup');
+    expect(screen.getByRole('link', { name: 'Reportes cargados' })).toHaveAttribute('href', '/more/reports');
     expect(screen.queryByRole('link', { name: 'Nuevo reporte' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Faltantes AMBA' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Herramientas' })).not.toBeInTheDocument();
@@ -101,7 +101,7 @@ describe('MorePage', () => {
     render(<MorePage />);
     expect(screen.getByRole('link', { name: 'Mi ciudad' })).toHaveAttribute('href', '/city');
     expect(screen.getByRole('link', { name: 'Instructivo' })).toHaveAttribute('href', '/city/instructivo');
-    expect(screen.queryByRole('link', { name: 'Consultar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Buscar participante o juego' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Nuevo reporte' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Faltantes AMBA' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Herramientas' })).not.toBeInTheDocument();
@@ -135,7 +135,7 @@ describe('MorePage', () => {
     expect(screen.getByRole('link', { name: 'Mi ciudad: Mendoza' })).toHaveAttribute('href', '/city');
     expect(screen.getByRole('link', { name: 'Voluntarios de Mendoza' })).toHaveAttribute('href', '/city/volunteers');
     expect(screen.getByRole('link', { name: 'Mi rol: Cajas' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Consultar' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Buscar participante o juego' })).toBeInTheDocument();
   });
 
   it('shows admin links for math_admin', () => {
@@ -146,9 +146,9 @@ describe('MorePage', () => {
     expect(screen.getByText('Fase del evento')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Quién retiró' })).toHaveAttribute('href', '/admin/ready-to-pickup');
     expect(screen.queryByRole('link', { name: 'Herramientas' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Ventanillas' })).toHaveAttribute('href', '/admin/window-config');
-    expect(screen.getByRole('link', { name: 'Voluntarios' })).toHaveAttribute('href', '/admin/volunteers');
-    expect(screen.getByRole('button', { name: 'Tele' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Configurar ventanillas' })).toHaveAttribute('href', '/admin/window-config');
+    expect(screen.getByRole('link', { name: 'Administrar voluntarios' })).toHaveAttribute('href', '/admin/volunteers');
+    expect(screen.getByRole('button', { name: 'Abrir pantalla de retiros (tele)' })).toBeInTheDocument();
     expect(screen.queryByText(/Mi rol/)).not.toBeInTheDocument();
   });
 

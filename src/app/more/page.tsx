@@ -13,6 +13,7 @@ import { useState } from 'react';
 const formatClock = (at: Date) =>
   `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
 
+const primaryRowClass = 'flex min-h-14 w-full items-center rounded-lg bg-primary px-4 text-left font-semibold text-white';
 const rowClass = 'staff-card flex min-h-14 w-full items-center px-4 text-left font-medium text-gray-900';
 
 const EVENT_SHEET_BUTTONS = [
@@ -89,7 +90,7 @@ export default function MorePage() {
     <StaffPage>
       <ul className="flex flex-col gap-3">
         <li>
-          <GameRow title="Hay un problema" subtitle="Falta un juego, alguien no vino…" href="/problem" />
+          <GameRow tone="primary" title="Hay un problema" subtitle="Falta un juego, alguien no vino…" href="/problem" />
         </li>
         {cityAccess && (
           <li>
@@ -116,17 +117,25 @@ export default function MorePage() {
             <GameRow title={`Mi rol: ${ROLES[role].label}`} href="/more/role" />
           </li>
         )}
+      </ul>
+
+      <h2 className="mt-8 text-body font-semibold text-gray-500">Entrega y consultas</h2>
+      <ul className="mt-3 flex flex-col gap-3">
         <li>
-          <Link href="/tables" className={rowClass}>Mesas</Link>
+          <Link href="/tables" className={primaryRowClass}>Mis mesas: juegos</Link>
         </li>
         <li>
-          <Link href="/lookup" className={rowClass}>Consultar</Link>
+          <Link href="/lookup" className={primaryRowClass}>Buscar participante o juego</Link>
         </li>
         <li>
-          <Link href="/more/reports" className={rowClass}>Ver reportes</Link>
+          <Link href="/more/reports" className={rowClass}>Reportes cargados</Link>
         </li>
+      </ul>
+
+      <h2 className="mt-8 text-body font-semibold text-gray-500">Herramientas</h2>
+      <ul className="mt-3 flex flex-col gap-3">
         <li>
-          <Link href="/more/print" className={rowClass}>Imprimir</Link>
+          <Link href="/more/print" className={rowClass}>Imprimir etiquetas, sectores y mesas</Link>
         </li>
       </ul>
 
@@ -163,10 +172,10 @@ export default function MorePage() {
               <GameRow title="Quién retiró" href="/admin/ready-to-pickup" />
             </li>
             <li>
-              <GameRow title="Ventanillas" href="/admin/window-config" />
+              <GameRow title="Configurar ventanillas" href="/admin/window-config" />
             </li>
             <li>
-              <GameRow title="Voluntarios" href="/admin/volunteers" />
+              <GameRow title="Administrar voluntarios" href="/admin/volunteers" />
             </li>
             <li>
               <button
@@ -177,7 +186,7 @@ export default function MorePage() {
                   win?.focus();
                 }}
               >
-                Tele
+                Abrir pantalla de retiros (tele)
               </button>
             </li>
             <li>
