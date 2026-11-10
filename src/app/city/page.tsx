@@ -19,9 +19,11 @@ export default function CityHomePage() {
       ) : (
         <>
           <StaffHeading level={1}>{cityName}</StaffHeading>
-          <ul className="mt-6 flex flex-col gap-3">
+          <h2 className="mt-6 text-body font-semibold text-gray-500">Cajas que salen</h2>
+          <ul className="mt-3 flex flex-col gap-3">
             <li>
               <GameRow
+                tone="primary"
                 title="Armar cajas"
                 subtitle="Las cajas que salen de tu ciudad"
                 href="/city/boxes"
@@ -37,8 +39,13 @@ export default function CityHomePage() {
             <li>
               <GameRow title="Instructivo" subtitle="Cómo preparar las cajas" href="/city/instructivo" />
             </li>
+          </ul>
+
+          <h2 className="mt-8 text-body font-semibold text-gray-500">Envíos y recepción</h2>
+          <ul className="mt-3 flex flex-col gap-3">
             <li>
               <GameRow
+                tone="primary"
                 title="Envíos"
                 subtitle={isReferrer ? 'Tus envíos, sus comprobantes y los ejemplares' : 'Los ejemplares que salen de tu ciudad'}
                 href="/city/shipments"
@@ -46,9 +53,18 @@ export default function CityHomePage() {
             </li>
             {isReferrer && (
               <li>
-                <GameRow title="Recibidas" subtitle="Las cajas y ejemplares que llegan" href="/city/received" />
+                <GameRow
+                  tone="primary"
+                  title="Recibidas"
+                  subtitle="Las cajas y ejemplares que llegan"
+                  href="/city/received"
+                />
               </li>
             )}
+          </ul>
+
+          <h2 className="mt-8 text-body font-semibold text-gray-500">Personas</h2>
+          <ul className="mt-3 flex flex-col gap-3">
             <li>
               <GameRow title="Usuarios" subtitle="Los participantes de tu ciudad" href="/city/users" />
             </li>
