@@ -90,7 +90,7 @@ export default function MorePage() {
     <StaffPage>
       <ul className="flex flex-col gap-3">
         <li>
-          <GameRow tone="primary" title="Hay un problema" subtitle="Falta un juego, alguien no vino…" href="/problem" />
+          <GameRow tone="critical" title="Hay un problema" subtitle="Falta un juego, alguien no vino…" href="/problem" />
         </li>
         {cityAccess && (
           <li>

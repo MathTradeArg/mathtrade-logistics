@@ -14,7 +14,7 @@ interface GameRowProps {
   href?: string;
   disabled?: boolean;
   selected?: boolean;
-  tone?: 'danger' | 'primary';
+  tone?: 'danger' | 'primary' | 'critical';
 }
 
 export default function GameRow({
@@ -33,10 +33,11 @@ export default function GameRow({
   else if (selectable && selected) cardTone = 'selected';
   else if (tone === 'danger') cardTone = 'danger';
   else if (tone === 'primary') cardTone = 'primary';
+  else if (tone === 'critical') cardTone = 'critical';
   const className = clsx(
     cardClass({ tone: cardTone }),
     'flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left',
-    cardTone !== 'primary' && 'text-gray-900',
+    cardTone !== 'primary' && cardTone !== 'critical' && 'text-gray-900',
     (onClick || href) && !disabled && 'active:bg-gray-100',
   );
 
@@ -45,7 +46,7 @@ export default function GameRow({
       <div className="min-w-0 flex-1">
         <p className="font-semibold leading-tight">{title}</p>
         {subtitle && (
-          <p className={`mt-0.5 text-body ${tone === 'danger' ? 'text-danger' : tone === 'primary' && !disabled ? 'text-white/80' : 'text-gray-500'}`}>
+          <p className={`mt-0.5 text-body ${tone === 'danger' ? 'text-danger' : (tone === 'primary' || tone === 'critical') && !disabled ? 'text-white/80' : 'text-gray-500'}`}>
             {subtitle}
           </p>
         )}
