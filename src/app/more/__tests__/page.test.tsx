@@ -1,6 +1,7 @@
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useOperationalExport } from '@/hooks/useOperationalExport';
+import { useXlsxExport } from '@/hooks/useXlsxExport';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 import MorePage from '../page';
@@ -8,10 +9,21 @@ import MorePage from '../page';
 jest.mock('@/hooks/useAuth');
 jest.mock('@/contexts/EventPhaseContext');
 jest.mock('@/hooks/useOperationalExport');
+jest.mock('@/hooks/useXlsxExport', () => ({
+  ...jest.requireActual('@/hooks/useXlsxExport'),
+  useXlsxExport: jest.fn(),
+}));
 
 const mockUseAuth = useAuth as jest.Mock;
 const mockUseEventPhase = useEventPhase as jest.Mock;
 const mockUseOperationalExport = useOperationalExport as jest.Mock;
+const mockUseXlsxExport = useXlsxExport as jest.Mock;
+const EVENT_SHEET_BUTTONS = [
+  'Cajas entrantes',
+  'Juegos que salen',
+  'Juegos a recibir por usuario',
+  'Juegos a entregar por usuario',
+];
 const EXPORT_BUTTON = 'Descargar planilla del evento (Excel)';
 
 describe('MorePage', () => {
@@ -19,6 +31,9 @@ describe('MorePage', () => {
     jest.clearAllMocks();
     mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false, updateEventPhase: jest.fn() });
     mockUseOperationalExport.mockReturnValue({
+      download: jest.fn(), isLoading: false, error: null, lastDownloadedAt: null,
+    });
+    mockUseXlsxExport.mockReturnValue({
       download: jest.fn(), isLoading: false, error: null, lastDownloadedAt: null,
     });
   });
@@ -180,6 +195,64 @@ describe('MorePage', () => {
       });
       render(<MorePage />);
       expect(screen.getByText('Descargada a las 09:05')).toBeInTheDocument();
+    });
+  });
+  describe('an admin downloads the four event spreadsheets', () => {
+    it('hides them from volunteers and referrers', () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: false, isLoading: false, role: 'boxes' });
+      render(<MorePage />);
+      EVENT_SHEET_BUTTONS.forEach((name) => {
+        expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
+      });
+    });
+
+    it('shows the four buttons with their help line to the organizer', () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+      render(<MorePage />);
+      EVENT_SHEET_BUTTONS.forEach((name) => {
+        expect(screen.getByRole('button', { name })).toBeEnabled();
+      });
+      expect(screen.getByText(/una pestaña por origen y tipo de caja/i)).toBeInTheDocument();
+      expect(screen.getByText(/una pestaña por destino/i)).toBeInTheDocument();
+      expect(screen.getByText(/lo que cada usuario del evento trae/i)).toBeInTheDocument();
+      expect(screen.getByText(/lo que cada usuario del evento retira/i)).toBeInTheDocument();
+      expect(screen.queryByText(/admin\b/i)).not.toBeInTheDocument();
+    });
+
+    it('each button uses its own endpoint and file prefix', () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+      render(<MorePage />);
+      expect(mockUseXlsxExport.mock.calls.map((c) => [c[0], c[1]])).toEqual([
+        ['incoming-boxes', 'cajas_entrantes'],
+        ['outgoing-games', 'juegos_que_salen'],
+        ['to-receive', 'juegos_a_recibir'],
+        ['to-deliver', 'juegos_a_entregar'],
+      ]);
+    });
+
+    it('a tap starts only that download; loading and errors are per button', () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+      const downloads = [jest.fn(), jest.fn(), jest.fn(), jest.fn()];
+      const states = [
+        { isLoading: false, error: null },
+        { isLoading: true, error: null },
+        { isLoading: false, error: 'No hay una edición activa.' },
+        { isLoading: false, error: null },
+      ];
+      let call = 0;
+      mockUseXlsxExport.mockImplementation(() => {
+        const i = call++ % 4;
+        return { download: downloads[i], lastDownloadedAt: i === 3 ? new Date(2026, 10, 8, 9, 5) : null, ...states[i] };
+      });
+      render(<MorePage />);
+      expect(screen.getByRole('button', { name: /Armando.*Juegos que salen|Juegos que salen/ })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Cajas entrantes' })).toBeEnabled();
+      expect(screen.getAllByRole('alert')).toHaveLength(1);
+      expect(screen.getByRole('alert')).toHaveTextContent('No hay una edición activa.');
+      expect(screen.getByText('Descargada a las 09:05')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Cajas entrantes' }));
+      expect(downloads[0]).toHaveBeenCalledTimes(1);
+      expect(downloads[1]).not.toHaveBeenCalled();
     });
   });
 });
