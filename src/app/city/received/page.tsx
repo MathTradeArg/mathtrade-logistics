@@ -12,7 +12,7 @@ import { listItems } from '@/hooks/boxes/boxApi';
 import { boxLabel } from '@/hooks/boxes/boxGrouping';
 import { listTrackings } from '@/hooks/city/cityApi';
 import type { Item, Tracking } from '@/types';
-import { formatMoney, formatTradeCode, pricePerItem } from '@/utils/tradeCode';
+import { formatMoney, formatTradeCode, itemShippingCost, trackingUnits } from '@/utils/tradeCode';
 import { useEffect, useMemo, useState } from 'react';
 
 type Tab = 'boxes' | 'items';
@@ -29,6 +29,7 @@ function TrackingCard({ tracking, onOpenImage }: { tracking: Tracking; onOpenIma
   const [open, setOpen] = useState(false);
   const origin = tracking.boxes.find((box) => box.origin_name)?.origin_name || '—';
   const count = tracking.item_count;
+  const totalUnits = trackingUnits(tracking.boxes);
   return (
     <li className="staff-card p-4">
       <div className="flex items-start gap-3">
@@ -43,8 +44,7 @@ function TrackingCard({ tracking, onOpenImage }: { tracking: Tracking; onOpenIma
             Cajas: {tracking.boxes.map(boxLabel).join(', ') || '—'} · {count} juegos
           </p>
           <p className="text-body text-gray-700">
-            {formatMoney(tracking.price)} en total ·{' '}
-            {pricePerItem(tracking.price, count)} por juego
+            {formatMoney(tracking.price)} en total · {totalUnits} unidades de tamaño
           </p>
         </button>
         {tracking.image && (
@@ -68,7 +68,8 @@ function TrackingCard({ tracking, onOpenImage }: { tracking: Tracking; onOpenIma
               <ul className="mt-1 text-body text-gray-700">
                 {box.math_items.map((item) => (
                   <li key={item.id}>
-                    {formatTradeCode(item.assigned_trade_code)} · {item.title} → {receiverName(item)}
+                    {formatTradeCode(item.assigned_trade_code)} · {item.title} → {receiverName(item)} ·{' '}
+                    {itemShippingCost(tracking.price, item.size_units, totalUnits)}
                   </li>
                 ))}
               </ul>

@@ -23,4 +23,6 @@ export interface Item {
   receptor_last_name?: string;
   item_id?: number;
   reported_missing?: boolean;
+  /** Shipping size units (pequeña 1, mediana 3, clásica 5, grande 10, no ocupa 0; a combo sums its items). */
+  size_units?: number;
 }

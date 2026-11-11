@@ -25,7 +25,8 @@ const tracking = {
     {
       id: 30, number: 2, origin_number: 1, destiny: 7, origin_name: 'Salta', comment: null,
       math_items: [
-        { id: 1, title: 'Catan', assigned_trade_code: 12, receptor_first_name: 'Ana', receptor_last_name: 'Paz' },
+        { id: 1, title: 'Catan', assigned_trade_code: 12, receptor_first_name: 'Ana', receptor_last_name: 'Paz', size_units: 5 },
+        { id: 3, title: 'Combo', assigned_trade_code: 13, receptor_first_name: 'Eva', receptor_last_name: 'Sol', size_units: 1 },
       ],
     },
   ],
@@ -51,12 +52,14 @@ describe('city received', () => {
     render(<CityReceivedPage />);
     expect(await screen.findByText('Salta · AR123')).toBeInTheDocument();
     expect(cityApi.listTrackings).toHaveBeenCalledWith({ destination: 7 });
-    // 6000 / 3 = 2000 per game; "—" when the shipment has no games or price.
-    expect(screen.getByText(/2\.000,00 por juego/)).toBeInTheDocument();
-    expect(screen.getByText(/— en total · — por juego/)).toBeInTheDocument();
+    // 6 size units in total; "—" when the shipment has no price.
+    expect(screen.getByText(/6\.000,00 en total · 6 unidades/)).toBeInTheDocument();
+    expect(screen.getByText(/— en total · 6 unidades/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Salta · AR123'));
-    expect(screen.getByText('00012 · Catan → Ana Paz')).toBeInTheDocument();
+    // Cost is proportional to size: 6000 * 5/6 = 5000 and 6000 * 1/6 = 1000.
+    expect(screen.getByText(/00012 · Catan → Ana Paz · .*5\.000,00/)).toBeInTheDocument();
+    expect(screen.getByText(/00013 · Combo → Eva Sol · .*1\.000,00/)).toBeInTheDocument();
   });
 
   it('shows the receipt photo and opens it full screen', async () => {

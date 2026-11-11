@@ -38,9 +38,22 @@ export function formatMoney(value: number | null | undefined): string {
   return value == null ? '—' : money.format(value);
 }
 
-/** Price per game of a shipment, or "—" when the price or the count is 0. */
-export function pricePerItem(price: number | null | undefined, count: number): string {
-  return price && count > 0 ? money.format(price / count) : '—';
+/** Total size units of a shipment's games (a combo counts the sum of its items). */
+export function trackingUnits(boxes: { math_items: { size_units?: number }[] }[]): number {
+  return boxes.reduce(
+    (total, box) => total + box.math_items.reduce((sum, item) => sum + (item.size_units ?? 0), 0),
+    0,
+  );
+}
+
+/** A game's share of the shipment price, proportional to its size units, or "—"
+ *  when there is no price or the shipment has no units. */
+export function itemShippingCost(
+  price: number | null | undefined,
+  units: number | undefined,
+  totalUnits: number,
+): string {
+  return price && totalUnits > 0 ? money.format((price * (units ?? 0)) / totalUnits) : '—';
 }
 
 /** The giver's full name, or "—" when the copy carries none. */
