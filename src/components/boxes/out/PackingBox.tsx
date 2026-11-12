@@ -419,11 +419,13 @@ export default function PackingBox({
             <ul className="flex flex-col gap-3">
               {filteredAvailableItems.map((item) => {
                 const checked = selectedAdds.has(item.id);
+                const inClosedBox = item.box_number != null && `${item.box_number}` !== '';
+                const subtitle = packingItemSubtitle(item, origin);
                 return (
                   <li key={item.id}>
                     <GameRow
                       title={`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}
-                      subtitle={packingItemSubtitle(item, origin)}
+                      subtitle={inClosedBox ? [`Ya está en la caja #${item.box_number}`, subtitle].filter(Boolean).join(' · ') : subtitle}
                       onClick={() => toggleAdd(item.id)}
                       selected={checked}
                     />
