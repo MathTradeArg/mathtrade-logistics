@@ -3,7 +3,7 @@
 import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, StaffEmpty, StaffError } from '@/components/staff';
 import { listBoxes } from '@/hooks/boxes/boxApi';
-import { apiDestinationId, boxLabel, boxLaneId, destinationLabel, splitByRoute, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
+import { apiDestinationId, boxLabel, boxLaneId } from '@/hooks/boxes/boxGrouping';
 import { saveTracking, uploadReceipt, type TrackingInput } from '@/hooks/city/cityApi';
 import type { Box, Tracking } from '@/types';
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
@@ -21,12 +21,16 @@ type Props = {
   onCancel: () => void;
 };
 
+/** Where a box goes as a shipment. Direct-AMBA and via-AMBA boxes are packed in
+ *  separate lanes but travel together to the hub, so they share one destination. */
+const shipmentDestination = (box: Box): number => apiDestinationId(boxLaneId(box));
+
 /** Create or edit a shipment of the city's closed boxes, with its receipt photo. */
 export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: Props) {
   const [closedBoxes, setClosedBoxes] = useState<Box[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [destination, setDestination] = useState<number | null>(
-    tracking?.boxes?.[0] ? boxLaneId(tracking.boxes[0]) : (tracking?.destiny ?? null),
+    tracking?.boxes?.[0] ? shipmentDestination(tracking.boxes[0]) : (tracking?.destiny ?? null),
   );
   const [selected, setSelected] = useState<Set<number>>(
     () => new Set((tracking?.boxes ?? []).map((box) => box.id)),
@@ -65,19 +69,11 @@ export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: 
   const destinations = useMemo(() => {
     const map = new Map<number, string>();
     [...closedBoxes, ...(tracking?.boxes ?? [])].forEach((box) => {
-      const lane = boxLaneId(box);
-      map.set(
-        lane,
-        lane === VIA_AMBA_DESTINATION_ID
-          ? VIA_AMBA_DESTINATION_LABEL
-          : box.destination_name || map.get(lane) || `Destino ${box.destiny}`,
-      );
+      const dest = shipmentDestination(box);
+      map.set(dest, box.destination_name || map.get(dest) || `Destino ${box.destiny}`);
     });
     return Array.from(map.entries())
-      .map(([id, name]) => {
-        const viaHub = id === VIA_AMBA_DESTINATION_ID;
-        return { id, name, viaHub, label: destinationLabel(name, viaHub) };
-      })
+      .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [closedBoxes, tracking]);
 
@@ -86,10 +82,10 @@ export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: 
     if (destination == null) return [];
     const byId = new Map<number, Box>();
     closedBoxes
-      .filter((box) => boxLaneId(box) === destination && (!box.tracking || ownBoxIds.has(box.id)))
+      .filter((box) => shipmentDestination(box) === destination && (!box.tracking || ownBoxIds.has(box.id)))
       .forEach((box) => byId.set(box.id, box));
     (tracking?.boxes ?? [])
-      .filter((box) => boxLaneId(box) === destination)
+      .filter((box) => shipmentDestination(box) === destination)
       .forEach((box) => byId.set(box.id, byId.get(box.id) ?? box));
     return Array.from(byId.values()).sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
   }, [closedBoxes, destination, ownBoxIds, tracking]);
@@ -138,7 +134,7 @@ export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: 
     event.preventDefault();
     if (!canSave || destination == null) return;
     const body: TrackingInput = {
-      destiny: apiDestinationId(destination),
+      destiny: destination,
       tracking_code: code.trim(),
       boxes: boxIds,
       weight: Number(weight),
@@ -169,12 +165,8 @@ export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: 
           className={inputClass}
         >
           <option value="">Elegí un destino</option>
-          {splitByRoute(destinations, (dest) => dest.id, (dest) => dest.viaHub).map((section) => (
-            <optgroup key={section.key} label={section.title}>
-              {section.entries.map((dest) => (
-                <option key={dest.id} value={dest.id}>{dest.label}</option>
-              ))}
-            </optgroup>
+          {destinations.map((dest) => (
+            <option key={dest.id} value={dest.id}>{dest.name}</option>
           ))}
         </select>
         {destinations.length === 0 && (
