@@ -116,34 +116,32 @@ describe('TrackingEditor', () => {
     expect(await screen.findByText('Solo cajas cerradas de tu ciudad.')).toBeInTheDocument();
   });
 
-  describe('direct AMBA and via-AMBA boxes (both destiny 1)', () => {
+  describe('direct AMBA and via-AMBA boxes (both destiny 1, one shipment)', () => {
     const viaBox = (id: number, number: number): Box => ({
       ...box(id, number, 1),
       math_items: [{ id: id * 10, title: 'x', via_meeting: true, location: 8, send_to: 8 } as Item],
     });
     const mixed = [box(30, 1, 1), viaBox(31, 2)];
 
-    it('lists them as separate destinations and keeps their boxes apart', async () => {
+    it('lists them under one AMBA destination with the boxes of both kinds', async () => {
       (boxApi.listBoxes as jest.Mock).mockResolvedValue(mixed);
       render(<TrackingEditor cityId={7} onSaved={jest.fn()} onCancel={jest.fn()} />);
       await screen.findByLabelText('Destino');
       const options = screen.getAllByRole('option').map((o) => o.textContent);
-      expect(options).toEqual(expect.arrayContaining(['AMBA', 'Otras ciudades · Vía AMBA']));
+      expect(options).toContain('AMBA');
+      expect(options).not.toContain('Otras ciudades · Vía AMBA');
 
       fill(/Destino/, '1');
       expect(screen.getByRole('checkbox', { name: /Caja 1\b/ })).toBeInTheDocument();
-      expect(screen.queryByRole('checkbox', { name: /Caja 2\b/ })).not.toBeInTheDocument();
-
-      fill(/Destino/, '-1');
       expect(screen.getByRole('checkbox', { name: /Caja 2\b/ })).toBeInTheDocument();
-      expect(screen.queryByRole('checkbox', { name: /Caja 1\b/ })).not.toBeInTheDocument();
     });
 
-    it('sends the API destination (1) for the via-AMBA lane', async () => {
+    it('ships a direct and a via-AMBA box in a single shipment', async () => {
       (boxApi.listBoxes as jest.Mock).mockResolvedValue(mixed);
       render(<TrackingEditor cityId={7} onSaved={jest.fn()} onCancel={jest.fn()} />);
       await screen.findByLabelText('Destino');
-      fill(/Destino/, '-1');
+      fill(/Destino/, '1');
+      fireEvent.click(screen.getByRole('checkbox', { name: /Caja 1\b/ }));
       fireEvent.click(screen.getByRole('checkbox', { name: /Caja 2\b/ }));
       fill(/Código de seguimiento/, 'V1');
       fill(/Precio/, '1');
@@ -151,12 +149,13 @@ describe('TrackingEditor', () => {
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: 'Guardar envío' }));
       });
+      expect(cityApi.saveTracking).toHaveBeenCalledTimes(1);
       expect(cityApi.saveTracking).toHaveBeenCalledWith(
-        expect.objectContaining({ destiny: 1, boxes: [31] }), undefined,
+        expect.objectContaining({ destiny: 1, boxes: [30, 31] }), undefined,
       );
     });
 
-    it('preselects the lane of the shipment being edited', async () => {
+    it('offers both kinds of box when editing a shipment that holds a via-AMBA one', async () => {
       (boxApi.listBoxes as jest.Mock).mockResolvedValue(mixed);
       const editing: Tracking = {
         id: 5, tracking_code: 'V', destiny: 1, price: 10, weight: 1, image: null, item_count: 1,
@@ -164,7 +163,7 @@ describe('TrackingEditor', () => {
       };
       render(<TrackingEditor cityId={7} tracking={editing} onSaved={jest.fn()} onCancel={jest.fn()} />);
       expect(await screen.findByRole('checkbox', { name: /Caja 2\b/ })).toBeInTheDocument();
-      expect(screen.queryByRole('checkbox', { name: /Caja 1\b/ })).not.toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: /Caja 1\b/ })).toBeInTheDocument();
     });
   });
 });
