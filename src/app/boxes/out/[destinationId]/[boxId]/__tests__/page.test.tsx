@@ -129,6 +129,19 @@ describe('OutgoingBoxPage delete empty', () => {
     expect(screen.queryByText(/Terraforming Mars/)).not.toBeInTheDocument();
     expect(screen.getByText(/Wingspan/)).toBeInTheDocument();
   });
+
+  it('marks a game that is already in a closed box with a subtitle', async () => {
+    mockListItems.mockResolvedValue([
+      { id: 21, title: 'Terraforming Mars', assigned_trade_code: 301, status: 5, location: 2, box_number: 9 },
+    ]);
+
+    render(<OutgoingBoxPage />, { wrapper });
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Agregar juegos' }));
+
+    expect(await screen.findByText(/Ya está en la caja #9/)).toBeInTheDocument();
+    expect(screen.queryByText('En caja #9')).not.toBeInTheDocument();
+  });
 });
 
 const closedBox = {
