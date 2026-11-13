@@ -81,7 +81,9 @@ describe('OutgoingBoxPage delete empty', () => {
   it('lists the hub open boxes of the destination', async () => {
     render(<OutgoingBoxPage />, { wrapper });
     await screen.findByRole('button', { name: 'Borrar caja vacía' });
-    expect(mockListBoxes).toHaveBeenCalledWith({ destination: 2, origin: 1, status: 'open' });
+    // Rule: open AND closed boxes are asked for, so closed-box games leave the available list.
+    expect(mockListBoxes).toHaveBeenCalledWith({ destination: 2, origin: 1 });
+    expect(mockListItems).toHaveBeenCalledWith(expect.objectContaining({ excludeDelivered: true }));
   });
 
   it('warns with added games and refreshes the box after OK', async () => {
@@ -130,17 +132,62 @@ describe('OutgoingBoxPage delete empty', () => {
     expect(screen.getByText(/Wingspan/)).toBeInTheDocument();
   });
 
-  it('marks a game that is already in a closed box with a subtitle', async () => {
+  it('does not offer a game that is in another closed box, nor the old "Ya está en la caja" label', async () => {
     mockListItems.mockResolvedValue([
       { id: 21, title: 'Terraforming Mars', assigned_trade_code: 301, status: 5, location: 2, box_number: 9 },
+      { id: 22, title: 'Wingspan', assigned_trade_code: 302, status: 5, location: 2 },
+    ]);
+    mockListBoxes.mockResolvedValue([
+      {
+        ...emptyBox, id: 400, number: 9, closed_at: '2026-11-06T10:00:00Z',
+        math_items: [{ id: 21, title: 'Terraforming Mars', assigned_trade_code: 301, status: 5, location: 2 }],
+      },
     ]);
 
     render(<OutgoingBoxPage />, { wrapper });
 
     fireEvent.click(await screen.findByRole('button', { name: 'Agregar juegos' }));
 
-    expect(await screen.findByText(/Ya está en la caja #9/)).toBeInTheDocument();
-    expect(screen.queryByText('En caja #9')).not.toBeInTheDocument();
+    expect(await screen.findByText(/Wingspan/)).toBeInTheDocument();
+    expect(screen.queryByText(/Terraforming Mars/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ya está en la caja/)).not.toBeInTheDocument();
+  });
+
+  it('does not offer a game that is in another open box', async () => {
+    mockListItems.mockResolvedValue([
+      { id: 21, title: 'Terraforming Mars', assigned_trade_code: 301, status: 5, location: 2 },
+      { id: 22, title: 'Wingspan', assigned_trade_code: 302, status: 5, location: 2 },
+    ]);
+    mockListBoxes.mockResolvedValue([
+      {
+        ...emptyBox, id: 401, number: null, closed_at: null,
+        math_items: [{ id: 21, title: 'Terraforming Mars', assigned_trade_code: 301, status: 5, location: 2 }],
+      },
+    ]);
+
+    render(<OutgoingBoxPage />, { wrapper });
+    fireEvent.click(await screen.findByRole('button', { name: 'Agregar juegos' }));
+
+    expect(await screen.findByText(/Wingspan/)).toBeInTheDocument();
+    expect(screen.queryByText(/Terraforming Mars/)).not.toBeInTheDocument();
+  });
+
+  it('keeps showing the games of a reopened box inside it and hides them from the others', async () => {
+    const reopened = {
+      ...emptyBox, id: 399, number: 7, closed_at: null,
+      math_items: [{ id: 21, title: 'Terraforming Mars', assigned_trade_code: 301, status: 5, location: 2 }],
+    };
+    mockGetBox.mockResolvedValue(reopened);
+    mockListItems.mockResolvedValue([
+      { id: 21, title: 'Terraforming Mars', assigned_trade_code: 301, status: 5, location: 2, box_number: 7 },
+    ]);
+    mockListBoxes.mockResolvedValue([reopened]);
+
+    render(<OutgoingBoxPage />, { wrapper });
+
+    expect(await screen.findByText(/Terraforming Mars/)).toBeInTheDocument();
+    // Its own game is in the box, so nothing is left to add (the button is disabled).
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Agregar juegos' })).toBeDisabled());
   });
 });
 

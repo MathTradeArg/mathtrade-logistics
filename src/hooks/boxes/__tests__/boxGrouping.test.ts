@@ -1,5 +1,5 @@
 import { EVENT_LOCATION_ID } from '@/constants/event';
-import { boxContentsSummary, boxLaneDestination, boxMatchesLane, boxDestinationLabel, boxLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, hasMixedDestinations, boxOnwardDestinations, isTransitBox, splitByRoute, groupPackingDestinations, laneLabel, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
+import { boxContentsSummary, boxLaneDestination, boxMatchesLane, boxDestinationLabel, boxLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, hasMixedDestinations, hasPendingIncomingItems, isAlreadyDelivered, isPackable, isPendingIncomingItem, boxOnwardDestinations, isTransitBox, splitByRoute, groupPackingDestinations, laneLabel, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import type { Box, Item } from '@/types';
 
 const box = (overrides: Partial<Box> & Pick<Box, 'id' | 'origin' | 'origin_name'>): Box => ({
@@ -242,6 +242,31 @@ describe('boxGrouping', () => {
         ? 'Vía reunión'
         : group.destinationId === EVENT_LOCATION_ID ? 'AMBA' : 'Directo';
       expect(fromScreen).toBe(laneLabel(item, MENDOZA));
+    });
+  });
+
+  describe('delivered games (status 6)', () => {
+    const it6 = { status: 6 } as Item;
+    const it5 = { status: 5 } as Item;
+    const it1 = { status: 1 } as Item;
+
+    it('isPackable always rejects status 6, even without phase gating', () => {
+      expect(isPackable(it6, false)).toBe(false);
+      expect(isPackable(it6, true)).toBe(false);
+      expect(isPackable(it1, false)).toBe(true);
+      expect(isPackable(it5, true)).toBe(true);
+      expect(isPackable(it1, true)).toBe(false);
+      expect(isAlreadyDelivered(it6)).toBe(true);
+      expect(isAlreadyDelivered(it5)).toBe(false);
+    });
+
+    it('treats 5 and 6 as not pending incoming', () => {
+      expect(isPendingIncomingItem(it5)).toBe(false);
+      expect(isPendingIncomingItem(it6)).toBe(false);
+      expect(isPendingIncomingItem(it1)).toBe(true);
+      const box = { math_items: [it5, it6] } as unknown as Box;
+      expect(hasPendingIncomingItems(box)).toBe(false);
+      expect(hasPendingIncomingItems({ math_items: [it5, it1] } as unknown as Box)).toBe(true);
     });
   });
 });

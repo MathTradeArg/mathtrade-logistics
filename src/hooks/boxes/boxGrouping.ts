@@ -17,8 +17,19 @@ export function isBoxOpen(box: Box): boolean {
   return box.closed_at == null;
 }
 
+/** Trade status of a game already handed to its receiver. */
+export const DELIVERED_STATUS = 6;
+/** Trade status of a game received at the event (AMBA). */
+export const RECEIVED_STATUS = 5;
+
+export const isAlreadyDelivered = (item: { status?: number }): boolean => item.status === DELIVERED_STATUS;
+
+/** A game that still has to arrive: not received (5) nor delivered (6). */
+export const isPendingIncomingItem = (item: { status?: number }): boolean =>
+  item.status !== RECEIVED_STATUS && item.status !== DELIVERED_STATUS;
+
 export function hasPendingIncomingItems(box: Box): boolean {
-  return box.math_items.some((item) => item.status !== 5 && item.status !== 6);
+  return box.math_items.some(isPendingIncomingItem);
 }
 
 export function isTransitBox(box: Box, eventLocationId = EVENT_LOCATION_ID): boolean {
@@ -301,9 +312,7 @@ export function groupIncomingByOrigin(boxes: Box[]): OriginGroup[] {
       pendingCount: 0,
     };
     current.boxCount += 1;
-    current.pendingCount += box.math_items.filter(
-      (item) => item.status !== 5 && item.status !== 6,
-    ).length;
+    current.pendingCount += box.math_items.filter(isPendingIncomingItem).length;
     map.set(box.origin, current);
   });
   return Array.from(map.values()).sort((a, b) => a.originName.localeCompare(b.originName));
@@ -321,8 +330,9 @@ export type DestinationGroup = {
 
 /** The event scan flow marks a game packable (status 5) at the hub; boxes
  *  built in a city ignore the status, as the backend does (add_item). */
-export function isPackable(item: Item, requirePackableStatus = true): boolean {
-  return !requirePackableStatus || item.status === 5;
+export function isPackable(item: Pick<Item, 'status'>, requirePackableStatus = true): boolean {
+  if (isAlreadyDelivered(item)) return false; // delivered games are never packed, gated or not
+  return !requirePackableStatus || item.status === RECEIVED_STATUS;
 }
 
 export function groupPackingDestinations(

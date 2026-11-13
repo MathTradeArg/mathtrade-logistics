@@ -104,7 +104,7 @@ describe('BoxesOutDestinationPage', () => {
     expect(screen.getByText('Root')).toBeInTheDocument();
     // The event screens list the hub's boxes only.
     expect(mockListBoxes).toHaveBeenCalledWith({ destination: 8, origin: 1 });
-    expect(mockListItems).toHaveBeenCalledWith({ destination: 8, origin: undefined });
+    expect(mockListItems).toHaveBeenCalledWith({ destination: 8, origin: undefined, excludeDelivered: true });
   });
 
   it('opens a box immediately when none are already open', async () => {

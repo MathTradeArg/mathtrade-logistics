@@ -6,7 +6,7 @@ import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { listItems, markItemsReceived } from '@/hooks/boxes/boxApi';
-import { matchesSearch, receptorName } from '@/hooks/boxes/boxGrouping';
+import { isPendingIncomingItem, matchesSearch, receptorName } from '@/hooks/boxes/boxGrouping';
 import { formatTradeCode, tradeCodeSearchText } from '@/utils/tradeCode';
 import { useAuth } from '@/hooks/useAuth';
 import type { Item } from '@/types';
@@ -29,7 +29,7 @@ export default function LooseIncomingPage() {
     setError(null);
     try {
       const all = await listItems({ destination: EVENT_LOCATION_ID });
-      setItems(all.filter((item) => item.status !== 5 && item.status !== 6));
+      setItems(all.filter(isPendingIncomingItem));
       setSelected(new Set());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudieron cargar los juegos.');

@@ -17,7 +17,7 @@ export default function CityBoxesPage() {
       origin={cityId}
       basePath="/city/boxes"
       phaseGated={false}
-      loadItems={() => listItems({ origin: cityId, includeSendAs: kind === 'referrer', ...params })}
+      loadItems={() => listItems({ origin: cityId, includeSendAs: kind === 'referrer', excludeDelivered: true, ...params })}
       excludeDestination={cityId}
       viewParams={params}
       exportFileName={kind === 'referrer' ? `cajas_${fileSlug(cityName)}.xlsx` : undefined}

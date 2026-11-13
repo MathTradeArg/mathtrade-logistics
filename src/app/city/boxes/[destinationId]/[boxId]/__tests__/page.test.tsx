@@ -48,7 +48,7 @@ describe('CityBoxPage', () => {
   it('asks for the games of the cities that ship as the own one', async () => {
     render(<CityBoxPage />, { wrapper });
     await waitFor(() => expect(boxApi.listItems).toHaveBeenCalled());
-    expect(boxApi.listItems).toHaveBeenCalledWith({ destination: 1, origin: 7, includeSendAs: true });
+    expect(boxApi.listItems).toHaveBeenCalledWith({ destination: 1, origin: 7, includeSendAs: true, excludeDelivered: true });
   });
 
   it('offers to reopen a closed box of the city', async () => {

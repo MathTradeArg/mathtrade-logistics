@@ -76,7 +76,7 @@ export default function PackingDestination({
   const fetchData = useCallback(async (): Promise<Box[]> => {
     const [nextBoxes, nextItems] = await Promise.all([
       listBoxes({ destination: physicalDestId, origin, as_location: asLocation, mathtrade }),
-      listItems({ destination: physicalDestId, origin: itemsOrigin, includeSendAs, as_location: asLocation, mathtrade }),
+      listItems({ destination: physicalDestId, origin: itemsOrigin, includeSendAs, excludeDelivered: true, as_location: asLocation, mathtrade }),
     ]);
     const laneBoxes =
       origin !== EVENT_LOCATION_ID
