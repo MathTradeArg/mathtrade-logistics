@@ -71,6 +71,18 @@ describe('city received', () => {
     expect(screen.getByText('Caja MEN-2', { exact: true })).toBeInTheDocument();
   });
 
+  it('labels the Ejemplares box as <destination code>-<number> when it left AMBA', async () => {
+    (boxApi.listItems as jest.Mock).mockResolvedValue([
+      { ...items[0], box_number: 1, box_destination_code: 'CBA' },
+      { ...items[1], box_number: 5, box_destination_code: 'CBA' },
+    ]);
+    render(<CityReceivedPage />);
+    fireEvent.click(await screen.findByText('Ejemplares'));
+    expect(await screen.findByText(/de Salta \(AMBA\) · Caja CBA-1$/)).toBeInTheDocument();
+    // Sent straight from another city: plain number.
+    expect(screen.getByText(/de Rosario · Caja 5$/)).toBeInTheDocument();
+  });
+
   it('shows the receipt photo and opens it full screen', async () => {
     (cityApi.listTrackings as jest.Mock).mockResolvedValue([{ ...tracking, image: 'https://img/receipt.jpg' }]);
     render(<CityReceivedPage />);
