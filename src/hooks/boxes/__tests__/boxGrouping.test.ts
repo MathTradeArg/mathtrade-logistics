@@ -1,5 +1,5 @@
 import { EVENT_LOCATION_ID } from '@/constants/event';
-import { boxContentsSummary, boxLaneDestination, boxMatchesLane, boxDestinationLabel, boxLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, hasMixedDestinations, boxOnwardDestinations, isTransitBox, splitByRoute, groupPackingDestinations, laneLabel, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
+import { boxContentsSummary, boxLaneDestination, boxMatchesLane, boxDestinationLabel, boxLabel, destinationLabel, goesViaHub, groupIncomingByOrigin, hasMixedDestinations, hasPendingIncomingItems, isAlreadyDelivered, isPackable, isPendingIncomingItem, boxOnwardDestinations, isTransitBox, splitByRoute, groupPackingDestinations, laneLabel, openBoxSubtitle, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import type { Box, Item } from '@/types';
 
 const box = (overrides: Partial<Box> & Pick<Box, 'id' | 'origin' | 'origin_name'>): Box => ({
@@ -135,18 +135,22 @@ describe('boxGrouping', () => {
     expect(boxContentsSummary({ ...open, math_items: [] })).toBe('Vacía');
   });
 
-  it('labels boxes with compound format in AMBA and simple format in the interior', () => {
-    // AMBA box towards the interior: compound origin_number-number
-    const ambaBox = { origin: EVENT_LOCATION_ID, origin_number: 3, number: 1 };
-    expect(boxLabel(ambaBox)).toBe('3-1');
+  it('labels AMBA boxes <destination code>-<number> and interior boxes with the bare number', () => {
+    // Box leaving the hub: destination code + number (origin_number is not used)
+    const ambaBox = { origin: EVENT_LOCATION_ID, destination_code: 'MEN', origin_number: 3, number: 1 };
+    expect(boxLabel(ambaBox)).toBe('MEN-1');
 
     // Interior box: simple number
-    const interiorBox = { origin: 7, origin_number: 1, number: 2 };
+    const interiorBox = { origin: 7, destination_code: 'COR', origin_number: 1, number: 2 };
     expect(boxLabel(interiorBox)).toBe('2');
 
     // Box without number
-    expect(boxLabel({ origin: EVENT_LOCATION_ID, origin_number: 1, number: null })).toBe('—');
+    expect(boxLabel({ origin: EVENT_LOCATION_ID, destination_code: 'MEN', number: null })).toBe('—');
+
+    // Older backend without destination_code
+    expect(boxLabel({ origin: EVENT_LOCATION_ID, number: 1 })).toBe('1');
   });
+
   describe('onward destinations of a box', () => {
     const item = (id: number, extra: Partial<Item>): Item => ({ id, title: `G${id}`, status: 4, ...extra } as Item);
     const laPlata = item(1, { location: 20, location_name: 'La Plata', send_to: EVENT_LOCATION_ID, send_to_name: 'AMBA', via_meeting: true });
@@ -238,6 +242,31 @@ describe('boxGrouping', () => {
         ? 'Vía reunión'
         : group.destinationId === EVENT_LOCATION_ID ? 'AMBA' : 'Directo';
       expect(fromScreen).toBe(laneLabel(item, MENDOZA));
+    });
+  });
+
+  describe('delivered games (status 6)', () => {
+    const it6 = { status: 6 } as Item;
+    const it5 = { status: 5 } as Item;
+    const it1 = { status: 1 } as Item;
+
+    it('isPackable always rejects status 6, even without phase gating', () => {
+      expect(isPackable(it6, false)).toBe(false);
+      expect(isPackable(it6, true)).toBe(false);
+      expect(isPackable(it1, false)).toBe(true);
+      expect(isPackable(it5, true)).toBe(true);
+      expect(isPackable(it1, true)).toBe(false);
+      expect(isAlreadyDelivered(it6)).toBe(true);
+      expect(isAlreadyDelivered(it5)).toBe(false);
+    });
+
+    it('treats 5 and 6 as not pending incoming', () => {
+      expect(isPendingIncomingItem(it5)).toBe(false);
+      expect(isPendingIncomingItem(it6)).toBe(false);
+      expect(isPendingIncomingItem(it1)).toBe(true);
+      const box = { math_items: [it5, it6] } as unknown as Box;
+      expect(hasPendingIncomingItems(box)).toBe(false);
+      expect(hasPendingIncomingItems({ math_items: [it5, it1] } as unknown as Box)).toBe(true);
     });
   });
 });

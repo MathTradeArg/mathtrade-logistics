@@ -12,7 +12,8 @@ import { listItems } from '@/hooks/boxes/boxApi';
 import { boxLabel } from '@/hooks/boxes/boxGrouping';
 import { listTrackings } from '@/hooks/city/cityApi';
 import type { Item, Tracking } from '@/types';
-import { formatMoney, formatTradeCode, itemShippingCost, trackingUnits } from '@/utils/tradeCode';
+import { EVENT_LOCATION_ID } from '@/constants/event';
+import { formatMoney, formatTradeCode, itemBoxLabel, itemShippingCost, trackingUnits } from '@/utils/tradeCode';
 import { useEffect, useMemo, useState } from 'react';
 
 type Tab = 'boxes' | 'items';
@@ -41,7 +42,7 @@ function TrackingCard({ tracking, onOpenImage }: { tracking: Tracking; onOpenIma
         >
           <p className="text-body-lg font-semibold text-gray-900">{origin} · {tracking.tracking_code}</p>
           <p className="text-body text-gray-700">
-            Cajas: {tracking.boxes.map(boxLabel).join(', ') || '—'} · {count} juegos
+            Cajas: {tracking.boxes.map((box) => boxLabel(box)).join(', ') || '—'} · {count} juegos
           </p>
           <p className="text-body text-gray-700">
             {formatMoney(tracking.price)} en total · {totalUnits} unidades de tamaño
@@ -197,7 +198,11 @@ export default function CityReceivedPage() {
                       title={`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}
                       subtitle={`${receiverName(item)} · de ${item.origin_location_name ?? '—'}${
                         item.via_meeting && cityId !== 1 ? ' (AMBA)' : ''
-                      } · Caja ${item.box_number ?? '—'}`}
+                      } · Caja ${itemBoxLabel({
+                        ...item,
+                        // Via the meeting the box was packed at the event (AMBA); otherwise in the giver's city.
+                        box_origin: item.via_meeting ? EVENT_LOCATION_ID : item.origin_location,
+                      })}`}
                     />
                   </li>
                 ))}

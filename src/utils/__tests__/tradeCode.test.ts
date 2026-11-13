@@ -1,4 +1,5 @@
-import { formatTradeCode, parseTradeCodeQuery, tradeCodeSearchText } from '@/utils/tradeCode';
+import { EVENT_LOCATION_ID } from '@/constants/event';
+import { formatTradeCode, itemBoxLabel, parseTradeCodeQuery, tradeCodeSearchText } from '@/utils/tradeCode';
 
 describe('formatTradeCode', () => {
   it('pads to 5 digits and keeps longer codes', () => {
@@ -25,5 +26,14 @@ describe('parseTradeCodeQuery', () => {
     expect(parseTradeCodeQuery('16120')).toBe('16120');
     expect(parseTradeCodeQuery('catan')).toBeNull();
     expect(parseTradeCodeQuery('')).toBeNull();
+  });
+});
+
+describe('itemBoxLabel', () => {
+  it('uses <destination code>-<number> for boxes leaving AMBA and the bare number otherwise', () => {
+    expect(itemBoxLabel({ box_number: '1', box_destination_code: 'MEN', box_origin: EVENT_LOCATION_ID })).toBe('MEN-1');
+    expect(itemBoxLabel({ box_number: '1', box_destination_code: 'MEN', box_origin: 7 })).toBe('1');
+    expect(itemBoxLabel({ box_number: '1', box_destination_code: 'MEN' })).toBe('1');
+    expect(itemBoxLabel({ box_number: null })).toBe('—');
   });
 });

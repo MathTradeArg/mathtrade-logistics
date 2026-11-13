@@ -9,7 +9,7 @@ import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { resolveCodeToAdd, summarizeAdd, type AddSummary } from '@/hooks/boxes/addByCode';
 import { addItem as addItemApi, getBox, listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
-import { apiDestinationId, boxDestinationLabel, boxedTradeIds, boxContentsSummary, boxLaneDestination, boxMatchesLane, isBoxOpen, isPackable, matchesSearch, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, receptorName, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
+import { apiDestinationId, boxDestinationLabel, boxLabel, boxedTradeIds, boxContentsSummary, boxLaneDestination, boxMatchesLane, isBoxOpen, isPackable, matchesSearch, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, receptorName, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import { boxErrorMessage, useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box, Item } from '@/types';
@@ -50,7 +50,9 @@ export default function PackingBox({
   const { inFlight, addItems, removeItem, moveItem, closeBox, deleteBox, reopenBox } = useBoxLifecycle();
 
   const [box, setBox] = useState<Box | null>(null);
-  const [openBoxes, setOpenBoxes] = useState<Box[]>([]);
+  // Every other box of the lane, open and closed: their games are not available here.
+  const [otherBoxes, setOtherBoxes] = useState<Box[]>([]);
+  const openBoxes = useMemo(() => otherBoxes.filter(isBoxOpen), [otherBoxes]);
   const [items, setItems] = useState<Item[]>([]);
   const [mode, setMode] = useState<Mode>('view');
   const [addQuery, setAddQuery] = useState('');
@@ -74,11 +76,7 @@ export default function PackingBox({
   const asLocation = viewParams?.as_location;
   const mathtrade = viewParams?.mathtrade;
 
-  const boxTitle = box?.number != null
-    ? (origin === EVENT_LOCATION_ID && box.origin_number != null
-        ? `Caja ${box.origin_number}-${box.number}`
-        : `#${box.number}`)
-    : 'Caja abierta';
+  const boxTitle = box?.number != null ? `Caja ${boxLabel(box)}` : 'Caja abierta';
   useStaffTitle(boxTitle);
 
   const physicalDestId = apiDestinationId(destinationId);
@@ -92,11 +90,11 @@ export default function PackingBox({
     try {
       const [nextBox, nextBoxes, nextItems] = await Promise.all([
         getBox(boxId),
-        listBoxes({ destination: physicalDestId, origin, status: 'open', as_location: asLocation, mathtrade }),
-        listItems({ destination: physicalDestId, origin: itemsOrigin, includeSendAs, as_location: asLocation, mathtrade }),
+        listBoxes({ destination: physicalDestId, origin, as_location: asLocation, mathtrade }),
+        listItems({ destination: physicalDestId, origin: itemsOrigin, includeSendAs, excludeDelivered: true, as_location: asLocation, mathtrade }),
       ]);
       setBox(nextBox);
-      setOpenBoxes(
+      setOtherBoxes(
         nextBoxes.filter(
           (candidate) =>
             candidate.id !== boxId &&
@@ -130,14 +128,14 @@ export default function PackingBox({
 
   const availableItems = useMemo(() => {
     if (!box) return [];
-    const boxed = boxedTradeIds([box, ...openBoxes]);
+    const boxed = boxedTradeIds([box, ...otherBoxes]);
     return items.filter(
       (item) =>
         isPackable(item, phaseGated) &&
         packingDestinationId(item, origin) === effectiveLaneId &&
         !boxed.has(item.id),
     );
-  }, [box, items, openBoxes, phaseGated, origin, effectiveLaneId]);
+  }, [box, items, otherBoxes, phaseGated, origin, effectiveLaneId]);
 
   const filteredAvailableItems = useMemo(() => {
     if (!addQuery.trim()) return availableItems;
@@ -192,7 +190,7 @@ export default function PackingBox({
       items,
       available: availableItems,
       boxItems: current.math_items,
-      otherBoxes: openBoxes,
+      otherBoxes,
       requirePackable: phaseGated,
     });
     if (resolution.kind === 'error') return { ok: false, message: resolution.message };
@@ -419,13 +417,12 @@ export default function PackingBox({
             <ul className="flex flex-col gap-3">
               {filteredAvailableItems.map((item) => {
                 const checked = selectedAdds.has(item.id);
-                const inClosedBox = item.box_number != null && `${item.box_number}` !== '';
                 const subtitle = packingItemSubtitle(item, origin);
                 return (
                   <li key={item.id}>
                     <GameRow
                       title={`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}
-                      subtitle={inClosedBox ? [`Ya está en la caja #${item.box_number}`, subtitle].filter(Boolean).join(' · ') : subtitle}
+                      subtitle={subtitle}
                       onClick={() => toggleAdd(item.id)}
                       selected={checked}
                     />
@@ -544,15 +541,11 @@ export default function PackingBox({
         {closedBox != null && (
           <div className="text-center">
             <p className="text-5xl font-bold text-gray-900">
-              {origin === EVENT_LOCATION_ID && closedBox.origin_number != null
-                ? `${closedBox.origin_number}-${closedBox.number}`
-                : `#${closedBox.number}`}
+              {boxLabel(closedBox)}
             </p>
             <p className="mt-3">
               Escribí el{' '}
-              {origin === EVENT_LOCATION_ID && closedBox.origin_number != null
-                ? `${closedBox.origin_number}-${closedBox.number}`
-                : `#${closedBox.number}`}{' '}
+              {boxLabel(closedBox)}{' '}
               en la caja física a {boxDestLabel}. {box?.math_items.length} juegos.
             </p>
           </div>

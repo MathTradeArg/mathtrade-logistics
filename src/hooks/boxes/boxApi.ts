@@ -133,6 +133,9 @@ export type ItemListParams = CityViewParams & {
   excludeAmba?: number;
   /** Also list the copies of cities that ship as this origin (send_as). */
   includeSendAs?: boolean;
+  /** Leave out games already delivered (status 6). Opt-in: city/received and
+   *  shipments still need them. */
+  excludeDelivered?: boolean;
 };
 
 export async function listItems(params: ItemListParams = {}): Promise<Item[]> {
@@ -142,6 +145,7 @@ export async function listItems(params: ItemListParams = {}): Promise<Item[]> {
       origin: params.origin,
       exclude_amba: params.excludeAmba,
       include_send_as: params.includeSendAs ? 1 : undefined,
+      exclude_delivered: params.excludeDelivered ? 1 : undefined,
       as_location: params.as_location,
       mathtrade: params.mathtrade,
     })}`,

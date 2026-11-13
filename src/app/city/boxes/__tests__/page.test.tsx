@@ -57,7 +57,7 @@ describe('CityBoxesPage', () => {
     expect(screen.queryByRole('link', { name: /Mendoza/ })).not.toBeInTheDocument();
     expect(screen.getAllByText(/1 listos/)).toHaveLength(2);
     expect(mockListBoxes).toHaveBeenCalledWith({ origin: 7 });
-    expect(mockListItems).toHaveBeenCalledWith({ origin: 7, includeSendAs: true });
+    expect(mockListItems).toHaveBeenCalledWith({ origin: 7, includeSendAs: true, excludeDelivered: true });
     expect(screen.queryByText('El evento no empezó')).not.toBeInTheDocument();
   });
 
@@ -116,7 +116,7 @@ describe('CityBoxesPage', () => {
       render(<CityBoxesPage />, { wrapper });
       await screen.findByRole('link', { name: /AMBA/ });
       expect(screen.queryByRole('button', { name: 'Excel de cajas' })).not.toBeInTheDocument();
-      expect(mockListItems).toHaveBeenCalledWith({ origin: 7, includeSendAs: false });
+      expect(mockListItems).toHaveBeenCalledWith({ origin: 7, includeSendAs: false, excludeDelivered: true });
     });
 
     it('is disabled when there is nothing to send to other cities', async () => {

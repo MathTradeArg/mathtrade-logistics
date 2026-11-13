@@ -15,7 +15,7 @@ export default function TrackingSummary({
     tracking.boxes[0]?.destination_name || `Destino ${tracking.destiny}`,
     tracking.boxes.some((box) => boxGoesViaHub(box)),
   );
-  const labels = tracking.boxes.map(boxLabel).join(', ');
+  const labels = tracking.boxes.map((box) => boxLabel(box)).join(', ');
   return (
     <div className="flex items-start gap-3">
       <div className="min-w-0 flex-1 text-body text-gray-700">

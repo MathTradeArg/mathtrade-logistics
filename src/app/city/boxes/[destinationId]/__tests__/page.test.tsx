@@ -49,7 +49,7 @@ describe('CityBoxesDestinationPage', () => {
     const btn = await screen.findByRole('button', { name: 'Nueva caja' });
     await waitFor(() => expect(btn).not.toBeDisabled());
     expect(boxApi.listBoxes).toHaveBeenCalledWith({ destination: 1, origin: 7 });
-    expect(boxApi.listItems).toHaveBeenCalledWith({ destination: 1, origin: 7, includeSendAs: true });
+    expect(boxApi.listItems).toHaveBeenCalledWith({ destination: 1, origin: 7, includeSendAs: true, excludeDelivered: true });
 
     await act(async () => {
       fireEvent.click(btn);
@@ -78,7 +78,7 @@ describe('CityBoxesDestinationPage', () => {
       },
     ]);
     render(<CityBoxesDestinationPage />, { wrapper });
-    fireEvent.click(await screen.findByRole('button', { name: /#4/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^4/ }));
     expect(mockPush).toHaveBeenCalledWith('/city/boxes/1/61');
   });
 });
