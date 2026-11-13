@@ -17,6 +17,7 @@ import {
   packingDestinationId,
   receptorName,
   splitByRoute,
+  boxLabel,
 } from '@/hooks/boxes/boxGrouping';
 import { useAuth } from '@/hooks/useAuth';
 import { buildBoxesExport, buildIntraExport } from '@/utils/boxesExport';
@@ -156,10 +157,7 @@ export default function PackingDestinations({
       return;
     }
     if (box && !isBoxOpen(box)) {
-      const tag = origin === EVENT_LOCATION_ID && box.origin_number != null
-        ? `${box.origin_number}-${box.number}`
-        : `#${box.number}`;
-      setError(`Ese juego ya está en la caja ${tag} (cerrada).`);
+      setError(`Ese juego ya está en la caja ${boxLabel(box)} (cerrada).`);
       return;
     }
     const destId = packingDestinationId(item, origin);
@@ -227,11 +225,7 @@ export default function PackingDestinations({
               const subtitle = box
                 ? isBoxOpen(box)
                   ? `En caja abierta a ${boxDestinationLabel(box)}`
-                  : `En caja ${
-                      origin === EVENT_LOCATION_ID && box.origin_number != null
-                        ? `${box.origin_number}-${box.number}`
-                        : `#${box.number}`
-                    } (cerrada)`
+                  : `En caja ${boxLabel(box)} (cerrada)`
                 : item.location_name
                   ? `Listo para ${destinationLabel(item.location_name, goesViaHub(origin, item.location, item.via_meeting))}`
                   : 'Listo para empacar';

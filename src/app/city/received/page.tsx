@@ -41,7 +41,7 @@ function TrackingCard({ tracking, onOpenImage }: { tracking: Tracking; onOpenIma
         >
           <p className="text-body-lg font-semibold text-gray-900">{origin} · {tracking.tracking_code}</p>
           <p className="text-body text-gray-700">
-            Cajas: {tracking.boxes.map(boxLabel).join(', ') || '—'} · {count} juegos
+            Cajas: {tracking.boxes.map((box) => boxLabel(box)).join(', ') || '—'} · {count} juegos
           </p>
           <p className="text-body text-gray-700">
             {formatMoney(tracking.price)} en total · {totalUnits} unidades de tamaño

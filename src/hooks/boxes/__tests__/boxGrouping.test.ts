@@ -135,18 +135,22 @@ describe('boxGrouping', () => {
     expect(boxContentsSummary({ ...open, math_items: [] })).toBe('Vacía');
   });
 
-  it('labels boxes with compound format in AMBA and simple format in the interior', () => {
-    // AMBA box towards the interior: compound origin_number-number
-    const ambaBox = { origin: EVENT_LOCATION_ID, origin_number: 3, number: 1 };
-    expect(boxLabel(ambaBox)).toBe('3-1');
+  it('labels AMBA boxes <destination code>-<number> and interior boxes with the bare number', () => {
+    // Box leaving the hub: destination code + number (origin_number is not used)
+    const ambaBox = { origin: EVENT_LOCATION_ID, destination_code: 'MEN', origin_number: 3, number: 1 };
+    expect(boxLabel(ambaBox)).toBe('MEN-1');
 
     // Interior box: simple number
-    const interiorBox = { origin: 7, origin_number: 1, number: 2 };
+    const interiorBox = { origin: 7, destination_code: 'COR', origin_number: 1, number: 2 };
     expect(boxLabel(interiorBox)).toBe('2');
 
     // Box without number
-    expect(boxLabel({ origin: EVENT_LOCATION_ID, origin_number: 1, number: null })).toBe('—');
+    expect(boxLabel({ origin: EVENT_LOCATION_ID, destination_code: 'MEN', number: null })).toBe('—');
+
+    // Older backend without destination_code
+    expect(boxLabel({ origin: EVENT_LOCATION_ID, number: 1 })).toBe('1');
   });
+
   describe('onward destinations of a box', () => {
     const item = (id: number, extra: Partial<Item>): Item => ({ id, title: `G${id}`, status: 4, ...extra } as Item);
     const laPlata = item(1, { location: 20, location_name: 'La Plata', send_to: EVENT_LOCATION_ID, send_to_name: 'AMBA', via_meeting: true });

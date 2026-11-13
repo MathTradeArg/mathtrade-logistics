@@ -1,3 +1,5 @@
+import { boxLabel } from '@/hooks/boxes/boxGrouping';
+
 /** A copy's label number (assigned_trade_code) as printed on the sticker:
  *  at least 5 digits and never cut, so 12 -> "00012" and 16120 stays "16120". */
 export function formatTradeCode(code: number | string | null | undefined): string {
@@ -24,11 +26,17 @@ export function parseTradeCodeQuery(raw: string): string | null {
 /** Box label of a copy from the items list: simple number, or "—" when unboxed. */
 export function itemBoxLabel(item: {
   box_number?: number | string | null;
-  box_origin_number?: number | null;
+  box_destination_code?: string | null;
+  /** Origin of the box when the caller knows it; `<code>-<number>` applies to boxes leaving AMBA. */
+  box_origin?: number | null;
 }): string {
   const number = item.box_number;
   if (number === null || number === undefined || `${number}` === '') return '—';
-  return `${number}`;
+  return boxLabel({
+    number: Number(number),
+    origin: item.box_origin,
+    destination_code: item.box_destination_code,
+  });
 }
 
 const money = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });

@@ -62,6 +62,15 @@ describe('city received', () => {
     expect(screen.getByText(/00013 · Combo → Eva Sol · .*1\.000,00/)).toBeInTheDocument();
   });
 
+  it('labels a box that left AMBA as <destination code>-<number>', async () => {
+    const fromAmba = { ...tracking, boxes: [{ ...tracking.boxes[0], origin: 1, destination_code: 'MEN' }] };
+    (cityApi.listTrackings as jest.Mock).mockResolvedValue([fromAmba]);
+    render(<CityReceivedPage />);
+    fireEvent.click(await screen.findByText('Salta · AR123'));
+    expect(screen.getByText(/Cajas: MEN-2/)).toBeInTheDocument();
+    expect(screen.getByText('Caja MEN-2', { exact: true })).toBeInTheDocument();
+  });
+
   it('shows the receipt photo and opens it full screen', async () => {
     (cityApi.listTrackings as jest.Mock).mockResolvedValue([{ ...tracking, image: 'https://img/receipt.jpg' }]);
     render(<CityReceivedPage />);

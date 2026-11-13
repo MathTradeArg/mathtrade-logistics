@@ -408,17 +408,18 @@ export function findBoxForTrade(boxes: Box[], tradeId: number): Box | undefined 
 }
 
 /** The label written on a box:
- *  - For boxes packed in AMBA towards the interior (origin === EVENT_LOCATION_ID): compound `<origin_number>-<number>`
- *    so volunteers can quickly distinguish boxes across different destinations.
- *  - For boxes packed in the interior: simple `<number>` (e.g. `1`, `2`).
+ *  - Boxes packed in AMBA (origin === EVENT_LOCATION_ID): `<destination city code>-<number>` (e.g. `MEN-1`),
+ *    so volunteers can quickly tell boxes of different destinations apart.
+ *  - Boxes packed in the interior: simple `<number>`.
+ *  `destination_code` is only missing with an older backend; then the bare number is shown.
  */
-export function boxLabel(
-  box: Pick<Box, 'number' | 'origin_number'> & { origin?: number | null },
-  eventLocationId = EVENT_LOCATION_ID,
-): string {
+export function boxLabel(box: {
+  number: number | null;
+  origin?: number | null;
+  destination_code?: string | null;
+}): string {
   if (box.number == null) return '—';
-  if (box.origin === eventLocationId && box.origin_number != null) {
-    return `${box.origin_number}-${box.number}`;
-  }
-  return `${box.number}`;
+  return box.origin === EVENT_LOCATION_ID && box.destination_code
+    ? `${box.destination_code}-${box.number}`
+    : `${box.number}`;
 }

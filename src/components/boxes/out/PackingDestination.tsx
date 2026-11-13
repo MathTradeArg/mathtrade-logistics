@@ -6,7 +6,7 @@ import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
-import { apiDestinationId, boxContentsSummary, boxMatchesLane, destinationLabel, goesViaHub, isBoxOpen, openBoxTitle, packingDestinationId, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
+import { apiDestinationId, boxContentsSummary, boxLabel, boxMatchesLane, destinationLabel, goesViaHub, isBoxOpen, openBoxTitle, packingDestinationId, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box, Item } from '@/types';
@@ -192,11 +192,7 @@ export default function PackingDestination({
               {closedBoxes.map((box) => (
                 <li key={box.id}>
                   <GameRow
-                    title={
-                      origin === EVENT_LOCATION_ID && box.origin_number != null
-                        ? `${box.origin_number}-${box.number}`
-                        : `#${box.number}`
-                    }
+                    title={boxLabel(box)}
                     subtitle={`${box.math_items.length} juegos${box.tracking ? ' · en un envío' : ''}`}
                     onClick={readOnly ? undefined : () => router.push(`${basePath}/${destinationId}/${box.id}`)}
                     disabled={readOnly}

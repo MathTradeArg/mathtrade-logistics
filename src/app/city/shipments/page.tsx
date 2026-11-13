@@ -92,7 +92,7 @@ export default function CityShipmentsPage() {
         'Código': formatTradeCode(item.assigned_trade_code),
         'Entregador': giverName(item),
         'Juego': item.title,
-        'Caja': itemBoxLabel(item),
+        'Caja': itemBoxLabel({ ...item, box_origin: cityId }),
         'Destino': itemDestination(item, cityId),
       })),
       `ejemplares_${fileSlug(cityName)}.xlsx`,
@@ -151,7 +151,7 @@ export default function CityShipmentsPage() {
                   <li key={item.id}>
                     <GameRow
                       title={`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}
-                      subtitle={`${giverName(item)} · Caja ${itemBoxLabel(item)} · ${itemDestination(item, cityId) || '—'}`}
+                      subtitle={`${giverName(item)} · Caja ${itemBoxLabel({ ...item, box_origin: cityId })} · ${itemDestination(item, cityId) || '—'}`}
                     />
                   </li>
                 ))}

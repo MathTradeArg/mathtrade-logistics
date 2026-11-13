@@ -78,7 +78,7 @@ describe('CityBoxesDestinationPage', () => {
       },
     ]);
     render(<CityBoxesDestinationPage />, { wrapper });
-    fireEvent.click(await screen.findByRole('button', { name: /#4/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /^4/ }));
     expect(mockPush).toHaveBeenCalledWith('/city/boxes/1/61');
   });
 });

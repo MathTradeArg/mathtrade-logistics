@@ -15,6 +15,8 @@ export interface Item {
   box_number?: number | string | null;
   /** Origin-sequence number of the box the copy is in (`<origin_number>-<number>`). */
   box_origin_number?: number | null;
+  /** `Location.code` of the destination of the box the copy is in. */
+  box_destination_code?: string | null;
   /** The copy travels through the event (AMBA) to its city. */
   via_meeting?: boolean;
   origin_location?: number;

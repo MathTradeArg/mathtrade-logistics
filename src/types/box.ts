@@ -7,6 +7,8 @@ export interface Box {
   id: number;
   number: number | null;
   origin_number?: number | null;
+  /** `Location.code` of the box's physical destination (label `<code>-<number>` for boxes leaving AMBA). */
+  destination_code?: string | null;
   tracking?: string | null;
   destiny: number;
   /** Effective destination computed by the API (the destination's send_as or itself); absent in older responses. */

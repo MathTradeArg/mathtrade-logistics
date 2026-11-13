@@ -9,7 +9,7 @@ import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { resolveCodeToAdd, summarizeAdd, type AddSummary } from '@/hooks/boxes/addByCode';
 import { addItem as addItemApi, getBox, listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
-import { apiDestinationId, boxDestinationLabel, boxedTradeIds, boxContentsSummary, boxLaneDestination, boxMatchesLane, isBoxOpen, isPackable, matchesSearch, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, receptorName, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
+import { apiDestinationId, boxDestinationLabel, boxLabel, boxedTradeIds, boxContentsSummary, boxLaneDestination, boxMatchesLane, isBoxOpen, isPackable, matchesSearch, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, receptorName, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
 import { boxErrorMessage, useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box, Item } from '@/types';
@@ -74,11 +74,7 @@ export default function PackingBox({
   const asLocation = viewParams?.as_location;
   const mathtrade = viewParams?.mathtrade;
 
-  const boxTitle = box?.number != null
-    ? (origin === EVENT_LOCATION_ID && box.origin_number != null
-        ? `Caja ${box.origin_number}-${box.number}`
-        : `#${box.number}`)
-    : 'Caja abierta';
+  const boxTitle = box?.number != null ? `Caja ${boxLabel(box)}` : 'Caja abierta';
   useStaffTitle(boxTitle);
 
   const physicalDestId = apiDestinationId(destinationId);
@@ -544,15 +540,11 @@ export default function PackingBox({
         {closedBox != null && (
           <div className="text-center">
             <p className="text-5xl font-bold text-gray-900">
-              {origin === EVENT_LOCATION_ID && closedBox.origin_number != null
-                ? `${closedBox.origin_number}-${closedBox.number}`
-                : `#${closedBox.number}`}
+              {boxLabel(closedBox)}
             </p>
             <p className="mt-3">
               Escribí el{' '}
-              {origin === EVENT_LOCATION_ID && closedBox.origin_number != null
-                ? `${closedBox.origin_number}-${closedBox.number}`
-                : `#${closedBox.number}`}{' '}
+              {boxLabel(closedBox)}{' '}
               en la caja física a {boxDestLabel}. {box?.math_items.length} juegos.
             </p>
           </div>
