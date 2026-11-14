@@ -163,7 +163,7 @@ export default function NotificationsBell() {
                           </p>
                         )}
                         {message.comment && <p className="mt-1 line-clamp-2 text-body text-gray-600">{message.comment}</p>}
-                        {reporter && <p className="mt-1 text-caption text-gray-400">{reporter}</p>}
+                        {reporter && <p className="mt-1 text-caption text-gray-500">{reporter}</p>}
                       </button>
                     </li>
                   );
