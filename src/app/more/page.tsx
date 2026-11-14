@@ -13,7 +13,7 @@ import { useState } from 'react';
 const formatClock = (at: Date) =>
   `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
 
-const primaryRowClass = 'flex min-h-14 w-full items-center rounded-lg bg-primary px-4 text-left font-semibold text-white';
+const primaryRowClass = 'flex min-h-14 w-full items-center rounded-lg bg-brand px-4 text-left font-semibold text-brand-ink hover:brightness-95';
 const rowClass = 'staff-card flex min-h-14 w-full items-center px-4 text-left font-medium text-gray-900';
 
 const EVENT_SHEET_BUTTONS = [

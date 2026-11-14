@@ -338,7 +338,7 @@ export default function TablesPage() {
               onClick={() => setTableFilter(MINE_FILTER)}
               className={`rounded-full px-3 py-1.5 text-caption font-semibold ${
                 effectiveTableFilter === MINE_FILTER
-                  ? 'bg-primary text-white'
+                  ? 'bg-ink text-white'
                   : 'border border-gray-200 bg-white text-gray-700'
               }`}
             >
@@ -350,7 +350,7 @@ export default function TablesPage() {
             onClick={() => setTableFilter(ALL_FILTER)}
             className={`rounded-full px-3 py-1.5 text-caption font-semibold ${
               effectiveTableFilter === ALL_FILTER
-                ? 'bg-primary text-white'
+                ? 'bg-ink text-white'
                 : 'border border-gray-200 bg-white text-gray-700'
             }`}
           >
@@ -363,7 +363,7 @@ export default function TablesPage() {
               onClick={() => setTableFilter(tbl)}
               className={`rounded-full px-3 py-1.5 text-caption font-semibold ${
                 effectiveTableFilter === tbl
-                  ? 'bg-primary text-white'
+                  ? 'bg-ink text-white'
                   : 'border border-gray-200 bg-white text-gray-700'
               }`}
             >
@@ -562,7 +562,7 @@ export default function TablesPage() {
                   onClick={() => toggleDraftTable(tbl)}
                   className={`rounded-full px-3.5 py-2 text-body font-semibold ${
                     selected
-                      ? 'bg-primary text-white'
+                      ? 'bg-ink text-white'
                       : 'border border-gray-200 bg-white text-gray-800'
                   }`}
                 >

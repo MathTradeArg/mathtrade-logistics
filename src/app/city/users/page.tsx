@@ -15,7 +15,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const fullName = (member: CityMember) => `${member.first_name} ${member.last_name}`.trim() || '—';
 
-const linkClass = 'font-semibold text-primary underline';
+const linkClass = 'font-semibold text-link underline';
 
 function Phone({ value }: { value?: string | null }) {
   const wa = whatsappLink(value);

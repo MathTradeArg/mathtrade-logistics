@@ -347,7 +347,7 @@ function PrintPageContent() {
               onClick={() => setTab(option.id)}
               className={`min-h-12 rounded-lg px-3 py-2 text-body font-semibold border ${
                 tab === option.id
-                  ? 'border-primary bg-primary text-white'
+                  ? 'border-ink bg-ink text-white'
                   : 'border-gray-200 bg-white text-gray-800'
               }`}
             >
@@ -606,7 +606,7 @@ function PrintPageContent() {
                   onClick={() => setSectorKind(opt.id)}
                   className={`rounded-lg border px-3 py-2 text-body font-semibold ${
                     sectorKind === opt.id
-                      ? 'border-primary bg-primary text-white'
+                      ? 'border-ink bg-ink text-white'
                       : 'border-gray-200 bg-white text-gray-800'
                   }`}
                 >

@@ -287,14 +287,14 @@ function NewReportContent() {
                     <button
                       type="button"
                       onClick={() => setSelectedItem(item)}
-                      className={`min-h-14 w-full rounded-lg px-4 text-left ${selectedItem?.id === item.id ? 'bg-primary text-white' : 'bg-white'}`}
+                      className={`min-h-14 w-full rounded-lg px-4 text-left ${selectedItem?.id === item.id ? 'bg-ink text-white' : 'bg-white'}`}
                     >
                       {item.title} ({formatTradeCode(item.assigned_trade_code)})
                     </button>
                   </li>
                 ))}
               </ul>
-              <button type="submit" disabled={!selectedItem} className="min-h-14 w-full rounded-lg bg-primary font-semibold text-white disabled:bg-cancel">Siguiente</button>
+              <button type="submit" disabled={!selectedItem} className="min-h-14 w-full rounded-lg bg-brand font-semibold text-brand-ink hover:brightness-95 disabled:bg-cancel disabled:text-white">Siguiente</button>
             </>
           )}
         </form>
@@ -307,14 +307,14 @@ function NewReportContent() {
           ) : (
             <MemberNameSearch onSelect={(member) => setSelectedUser({ id: member.user_id, first_name: member.first_name, last_name: member.last_name })} />
           )}
-          <button type="submit" disabled={!selectedUser} className="min-h-14 w-full rounded-lg bg-primary font-semibold text-white disabled:bg-cancel">Siguiente</button>
+          <button type="submit" disabled={!selectedUser} className="min-h-14 w-full rounded-lg bg-brand font-semibold text-brand-ink hover:brightness-95 disabled:bg-cancel disabled:text-white">Siguiente</button>
         </form>
       )}
 
       {currentStep === 'take_photo' && (
         <div className="space-y-4">
           <input type="file" id="itemPhoto" accept="image/*" capture="environment" onChange={handlePhotoChange} className="hidden" ref={fileInputRef} multiple />
-          <label htmlFor="itemPhoto" className="flex min-h-14 items-center justify-center rounded-lg bg-primary font-semibold text-white">
+          <label htmlFor="itemPhoto" className="flex min-h-14 items-center justify-center rounded-lg bg-brand font-semibold text-brand-ink hover:brightness-95">
             {photoPreviews.length > 0 ? 'Añadir más fotos' : 'Seleccionar foto(s)'}
           </label>
           {photoPreviews.length > 0 && (
@@ -326,7 +326,7 @@ function NewReportContent() {
               ))}
             </div>
           )}
-          <button type="button" onClick={() => setCurrentStep('describe_problem')} className="min-h-14 w-full rounded-lg bg-primary font-semibold text-white">Siguiente</button>
+          <button type="button" onClick={() => setCurrentStep('describe_problem')} className="min-h-14 w-full rounded-lg bg-brand font-semibold text-brand-ink hover:brightness-95">Siguiente</button>
         </div>
       )}
 
@@ -356,7 +356,7 @@ function NewReportContent() {
             placeholder="Describí el problema"
             className="w-full rounded-lg border border-gray-200 bg-white p-4"
           />
-          <button type="submit" disabled={isProcessing} className="min-h-14 w-full rounded-lg bg-primary font-semibold text-white disabled:bg-cancel">
+          <button type="submit" disabled={isProcessing} className="min-h-14 w-full rounded-lg bg-brand font-semibold text-brand-ink hover:brightness-95 disabled:bg-cancel disabled:text-white">
             {isProcessing
               ? (processingMessage || 'Enviando...')
               : preloadedItems.length > 1
@@ -378,7 +378,7 @@ function NewReportContent() {
                 : `Ya había un reporte abierto para: ${mergedLabels.join(', ')}. Agregamos tu mensaje a esas conversaciones.`}
             </p>
           )}
-          <button type="button" onClick={resetForm} className="mt-6 min-h-14 w-full rounded-lg bg-primary font-semibold text-white">Crear otro reporte</button>
+          <button type="button" onClick={resetForm} className="mt-6 min-h-14 w-full rounded-lg bg-brand font-semibold text-brand-ink hover:brightness-95">Crear otro reporte</button>
         </div>
       )}
 

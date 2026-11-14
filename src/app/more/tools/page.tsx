@@ -93,7 +93,7 @@ export default function ToolsPage() {
           aria-label="Buscar juego por código"
           inputMode="numeric"
         />
-        <button type="submit" className="min-h-14 rounded-lg bg-primary font-semibold text-white">Buscar código</button>
+        <button type="submit" className="min-h-14 rounded-lg bg-brand font-semibold text-brand-ink hover:brightness-95">Buscar código</button>
       </form>
       {isSearching && <LoadingSpinner message="Buscando..." />}
       {gameError && <StaffError>{gameError}</StaffError>}
@@ -106,7 +106,7 @@ export default function ToolsPage() {
               <button type="button" onClick={() => setPendingStatus(5)} className="min-h-14 rounded-lg bg-want font-semibold text-white">Marcar en evento</button>
             )}
             {showEntregado && (
-              <button type="button" onClick={() => setPendingStatus(6)} className="min-h-14 rounded-lg bg-primary font-semibold text-white">Marcar entregado</button>
+              <button type="button" onClick={() => setPendingStatus(6)} className="min-h-14 rounded-lg bg-brand font-semibold text-brand-ink hover:brightness-95">Marcar entregado</button>
             )}
             {showPendiente && (
               <button type="button" onClick={() => setPendingStatus(4)} className="min-h-14 rounded-lg bg-warning font-semibold text-gray-900">Volver a pendiente</button>

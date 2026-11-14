@@ -20,7 +20,16 @@ const mainFont = localFont({
   fallback: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
 });
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
+const displayFont = localFont({
+  src: [
+    { path: "./fonts/bricolage-grotesque-latin-600-normal.woff2", weight: "600", style: "normal" },
+  ],
+  variable: "--font-display-loaded",
+  display: "swap",
+  fallback: ["ui-rounded", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+});
+
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#fffaf0" };
 
 export const metadata: Metadata = {
   title: "Math Trade Argentina - Logística",
@@ -92,7 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <EventPhaseProvider>
         <ControlPanelProvider>
           <ActionStatusProvider>
-            <html lang="es" className={`${mainFont.variable} ${mainFont.className} antialiased h-full`}>
+            <html lang="es" className={`${mainFont.variable} ${displayFont.variable} ${mainFont.className} antialiased h-full`}>
               <body className="h-full bg-page text-gray-900">
                 <StaffChrome>
                   {children}

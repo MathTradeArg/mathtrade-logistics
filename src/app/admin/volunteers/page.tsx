@@ -446,7 +446,7 @@ export default function VolunteersPage() {
                   onClick={() => toggleDraftTable(tbl)}
                   className={`rounded-full px-3.5 py-2 text-body font-semibold ${
                     selected
-                      ? 'bg-primary text-white'
+                      ? 'bg-ink text-white'
                       : 'border border-gray-200 bg-white text-gray-800'
                   }`}
                 >
