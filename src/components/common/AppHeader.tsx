@@ -49,7 +49,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   }
 
   return (
-    <header className="sticky top-0 z-nav flex w-full flex-wrap items-center justify-between bg-white p-3 pt-[calc(0.75rem+env(safe-area-inset-top))] shadow-main md:flex-nowrap">
+    <header className="sticky top-0 z-nav flex w-full flex-wrap items-center justify-between bg-white border-b border-line p-3 pt-[calc(0.75rem+env(safe-area-inset-top))] md:flex-nowrap">
       <div className="flex min-w-0 flex-1 items-center gap-3 overflow-x-hidden">
         {!isMagnifyingGlassVisible && (
           <>
@@ -61,7 +61,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             {pageIcon && React.createElement(pageIcon, { size: 28, className: "text-gray-700" })}
             {pageTitle && (
               <h1
-                className="max-w-[60vw] truncate text-heading font-bold text-gray-900"
+                className="max-w-[60vw] truncate font-display text-heading font-semibold text-ink"
                 title={pageTitle}
               >
                 {pageTitle}

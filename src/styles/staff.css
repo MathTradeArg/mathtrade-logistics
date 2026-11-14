@@ -70,15 +70,14 @@
 @layer components {
   .staff-card {
     background-color: #fff;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    border-radius: var(--radius-card);
+    border: 1px solid var(--color-line);
   }
 
   .staff-panel {
     background-color: #fff;
     border-radius: var(--radius-main);
-    box-shadow: var(--shadow-main);
+    border: 1px solid var(--color-line);
   }
 }
 

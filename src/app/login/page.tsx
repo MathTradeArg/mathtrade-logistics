@@ -161,7 +161,7 @@ function LoginForm({ email, setEmail, password, setPassword, isMounted, isLoadin
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-page p-4 text-gray-900">
       <div className="staff-panel w-full max-w-sm space-y-8 p-8">
-        <h1 className="text-center text-3xl font-bold">Bienvenido</h1>
+        <h1 className="text-center font-display text-3xl font-semibold text-ink">Bienvenido</h1>
         <form
           onSubmit={handleSubmit} className="space-y-7"
         >
