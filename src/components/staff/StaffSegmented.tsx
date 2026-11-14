@@ -30,7 +30,7 @@ export default function StaffSegmented<T extends string>({
             onClick={() => onChange(option.id)}
             className={clsx(
               'min-h-14 rounded-full px-3 text-body font-semibold',
-              active ? 'bg-primary text-white' : 'border border-stroke bg-white text-gray-700',
+              active ? 'bg-ink text-white' : 'border border-stroke bg-white text-gray-700',
             )}
           >
             {option.label}

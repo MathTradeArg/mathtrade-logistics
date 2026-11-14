@@ -33,8 +33,13 @@
 }
 
 .staff-btn-primary {
-  background-color: var(--color-primary);
-  color: #fff;
+  background-color: var(--color-brand);
+  color: var(--color-brand-ink);
+}
+
+.staff-btn-primary:hover:not(:disabled) {
+  opacity: 1;
+  filter: brightness(0.95);
 }
 
 .staff-btn-want {
@@ -49,13 +54,13 @@
 
 .staff-btn-outline {
   background-color: #fff;
-  color: #1f2937;
-  border: 1px solid var(--color-stroke);
+  color: var(--color-ink);
+  border: 1px solid var(--color-ink);
 }
 
 .staff-btn-outline:hover:not(:disabled) {
   opacity: 1;
-  background-color: #f3f4f6;
+  background-color: var(--color-surface);
 }
 
 .staff-btn:disabled {

@@ -77,7 +77,7 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
                   <button
                     onClick={() => handleAction(5)}
                     disabled={isPerformingGameAction || actionsDisabledByPhase || (status === 6 && !isAdmin)}
-                    className="min-h-14 rounded-lg bg-primary px-4 text-body font-semibold text-white disabled:bg-cancel"
+                    className="min-h-14 rounded-lg bg-brand px-4 text-body font-semibold text-brand-ink hover:brightness-95 disabled:bg-cancel disabled:text-white"
                   >
                     En evento
                   </button>

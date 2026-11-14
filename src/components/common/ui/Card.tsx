@@ -8,7 +8,7 @@ export const cardClass = ({ tone = 'default', panel = false }: { tone?: CardTone
     'border-danger/40 bg-danger/5': tone === 'danger',
     'border-primary bg-primary/10': tone === 'selected',
     // staff-card sets an unlayered white background, so these need `!` to win.
-    '!border-primary !bg-primary text-white': tone === 'primary',
+    '!border-brand !bg-brand text-brand-ink': tone === 'primary',
     '!border-danger !bg-danger text-white': tone === 'critical',
     'bg-muted opacity-45': tone === 'disabled',
   });

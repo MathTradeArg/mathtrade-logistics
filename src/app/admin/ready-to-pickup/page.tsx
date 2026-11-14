@@ -487,7 +487,7 @@ export default function ReadyToPickupPage() {
                           closeUserModal();
                         }}
                         className={`w-full min-h-14 p-3 rounded-lg flex items-center gap-3 ${transition === 'receiving' ? 'border border-gray-200 bg-white text-gray-800' :
-                            transition === 'completed' ? 'bg-primary text-white' :
+                            transition === 'completed' ? 'bg-brand text-brand-ink' :
                               transition === 'no_show' ? 'bg-danger text-white' :
                                 'bg-want text-white'
                           }`}
@@ -622,7 +622,7 @@ export default function ReadyToPickupPage() {
             <button
               onClick={fetchDataClick}
               disabled={isRefreshing}
-              className="min-h-14 rounded-lg bg-primary px-4 font-semibold text-white flex items-center gap-1 text-body px-3 py-2 disabled:opacity-50"
+              className="min-h-14 rounded-lg bg-brand px-4 font-semibold text-brand-ink hover:brightness-95 flex items-center gap-1 text-body px-3 py-2 disabled:opacity-50"
             >
               <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
               <span className="hidden sm:inline">Actualizar</span>

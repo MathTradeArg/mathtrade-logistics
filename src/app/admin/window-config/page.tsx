@@ -239,7 +239,7 @@ export default function WindowConfigPage() {
                 </h2>
                 <button
                   onClick={handleAddWindow}
-                  className="min-h-14 rounded-lg bg-primary px-4 font-semibold text-white flex items-center justify-center gap-2 text-body px-3 py-2"
+                  className="min-h-14 rounded-lg bg-brand px-4 font-semibold text-brand-ink hover:brightness-95 flex items-center justify-center gap-2 text-body px-3 py-2"
                 >
                   <Plus size={16} />
                   Agregar Ventanilla
@@ -328,7 +328,7 @@ export default function WindowConfigPage() {
             
               <button
                 onClick={handleSaveConfiguration}
-                className="min-h-14 rounded-lg bg-primary px-4 font-semibold text-white flex items-center justify-center gap-2 text-body px-4 py-2"
+                className="min-h-14 rounded-lg bg-brand px-4 font-semibold text-brand-ink hover:brightness-95 flex items-center justify-center gap-2 text-body px-4 py-2"
               >
                 <Save size={16} />
                 Guardar Configuración

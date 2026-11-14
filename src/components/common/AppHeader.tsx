@@ -86,7 +86,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             </div>
             <button
               type="submit"
-              className="shrink-0 rounded-full bg-primary px-4 py-3 text-body font-semibold text-white"
+              className="shrink-0 rounded-full bg-brand px-4 py-3 text-body font-semibold text-brand-ink hover:brightness-95"
             >
               Buscar
             </button>
