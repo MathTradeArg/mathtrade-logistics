@@ -29,7 +29,7 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-nav bg-black"
+      className="fixed inset-x-0 bottom-0 z-nav border-t border-white/15 bg-ink"
       aria-label="Navegación principal"
     >
       <ul
@@ -40,10 +40,10 @@ export default function BottomNav() {
           const Icon = ICONS[slot.id];
           const active = isSlotActive(pathname ?? '', slot, eventPhase, slots);
           const itemClass = clsx(
-            'staff-nav-item flex h-full w-full flex-col items-center justify-center gap-0.5 pb-[env(safe-area-inset-bottom)] text-caption font-semibold',
-            slot.disabled && 'cursor-not-allowed text-gray-500',
-            !slot.disabled && active && 'text-primary',
-            !slot.disabled && !active && 'text-gray-400',
+            'staff-nav-item flex h-full w-full flex-col rounded-xl items-center justify-center gap-0.5 pb-[env(safe-area-inset-bottom)] text-caption font-semibold',
+            slot.disabled && 'cursor-not-allowed text-white/50',
+            !slot.disabled && active && 'bg-brand text-brand-ink',
+            !slot.disabled && !active && 'text-[#cfcbe6]',
           );
 
           return (
