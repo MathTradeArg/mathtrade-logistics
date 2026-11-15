@@ -92,4 +92,16 @@ describe('BottomNav', () => {
     expect(screen.queryByRole('link', { name: 'Consultar' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Más' })).toHaveAttribute('aria-current', 'page');
   });
+
+  it('insets the active pill inside a full-size tap area', () => {
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1 });
+    mockUsePathname.mockReturnValue('/more');
+    render(<BottomNav />);
+
+    const more = screen.getByRole('link', { name: 'Más' });
+    expect(more).toHaveClass('h-full', 'w-full', 'p-1.5');
+    const pill = more.querySelector('.staff-nav-pill');
+    expect(pill).toHaveClass('bg-brand', 'rounded-2xl');
+    expect(screen.getByRole('link', { name: 'Recibir' }).querySelector('.staff-nav-pill')).not.toHaveClass('bg-brand');
+  });
 });
