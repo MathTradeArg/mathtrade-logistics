@@ -325,13 +325,13 @@ export default function PackingBox({
           ) : (
             <ul className="mt-4 flex flex-col gap-3">
               {box.math_items.map((item) => (
-                <li key={item.id} className="rounded-lg bg-white">
-                  <GameRow
-                    title={`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}
-                    subtitle={packingItemSubtitle(item, origin)}
-                  />
+                <li key={item.id} className="staff-card flex flex-col gap-3 p-4">
+                  <div className="min-w-0">
+                    <p className="font-semibold leading-tight">{`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}</p>
+                    {packingItemSubtitle(item, origin) && <p className="mt-0.5 text-body text-gray-500">{packingItemSubtitle(item, origin)}</p>}
+                  </div>
                   {canMutate && (
-                    <div className="flex flex-col gap-3 px-4 pb-4">
+                    <div className="flex flex-col gap-3">
                       <button
                         type="button"
                         disabled={inFlight}
