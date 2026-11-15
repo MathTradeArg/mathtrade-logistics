@@ -286,7 +286,7 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
                 <button
                   onClick={handleSubmitComment}
                   disabled={!newComment.trim() || isAddingComment}
-                  className="px-4 py-2 text-body font-medium bg-primary hover:bg-primary text-white rounded-lg shadow-sm transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-body font-medium bg-brand hover:brightness-95 text-brand-ink rounded-lg shadow-sm transition-all duration-150 ease-in-out active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isAddingComment ? 'Agregando...' : 'Agregar comentario'}
                 </button>

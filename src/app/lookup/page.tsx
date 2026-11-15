@@ -346,7 +346,7 @@ function LookupPageContent() {
               placeholder="Título o código de etiqueta"
               aria-label="Buscar juego por título o código"
             />
-            <button type="submit" className="min-h-14 rounded-lg bg-primary font-semibold text-white">Buscar</button>
+            <button type="submit" className="min-h-14 rounded-lg bg-brand font-semibold text-brand-ink hover:brightness-95">Buscar</button>
           </form>
           {isSearchingGame && <LoadingSpinner message="Buscando..." />}
           {gameError && <StaffError>{gameError}</StaffError>}

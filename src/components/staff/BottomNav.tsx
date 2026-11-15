@@ -29,7 +29,7 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-nav bg-black shadow-main"
+      className="fixed inset-x-0 bottom-0 z-nav bg-black"
       aria-label="Navegación principal"
     >
       <ul

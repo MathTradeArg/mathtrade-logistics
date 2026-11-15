@@ -169,7 +169,7 @@ export default function DisplayReadyToPickupPage() {
           <Users size={48} className="mr-4 text-primary" />
           Listos para retirar
         </h1>
-        <div className="flex items-center justify-center gap-2 text-body text-gray-500">
+        <div className="flex items-center justify-center gap-2 text-body text-gray-600">
           <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
           {lastUpdated && (
             <span>
@@ -217,7 +217,7 @@ export default function DisplayReadyToPickupPage() {
                     <h2 className="mb-3 text-center text-heading font-bold text-primary md:text-2xl">
                       {window.name}
                     </h2>
-                    <p className="text-center text-caption text-gray-500">
+                    <p className="text-center text-body text-gray-600">
                       Hasta {window.max_users} en Listos / En mesa
                     </p>
                   </header>
@@ -238,7 +238,7 @@ export default function DisplayReadyToPickupPage() {
                       variant="receiving"
                     />
                     {hidden > 0 && (
-                      <p className="mb-4 text-center text-body text-gray-500">+{hidden} más</p>
+                      <p className="mb-4 text-center text-body text-gray-600">+{hidden} más</p>
                     )}
                     {noShow.length > 0 && (
                       <WindowGroup
@@ -305,7 +305,7 @@ function WindowGroup({
         {title} ({count})
       </h3>
       {users.length === 0 ? (
-        <p className="text-body text-gray-400">Nadie</p>
+        <p className="text-body text-gray-600">Nadie</p>
       ) : (
         <div className="flex flex-col gap-3">
           {users.map((user) => (
@@ -327,7 +327,7 @@ function UserRow({
   const styles = {
     ready: 'border-l-[6px] border-want bg-want/10 text-gray-900',
     receiving: 'border-l-4 border-primary bg-primary/10 text-gray-900',
-    no_show: 'border-l-4 border-danger bg-gray-100 text-gray-500',
+    no_show: 'border-l-4 border-danger bg-gray-100 text-gray-600',
   }[variant];
 
   const icon = {
@@ -342,7 +342,7 @@ function UserRow({
         <p className="flex-1 whitespace-normal break-words text-3xl font-bold leading-tight md:text-4xl lg:text-5xl">
           {displayName(user)}
         </p>
-        <div className="shrink-0 text-right text-caption text-gray-500">
+        <div className="shrink-0 text-right text-body text-gray-600">
           <p className="leading-tight">{user.username}</p>
           {user.table_number && <p className="leading-tight">Mesa {user.table_number}</p>}
         </div>

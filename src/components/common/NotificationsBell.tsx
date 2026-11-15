@@ -133,7 +133,7 @@ export default function NotificationsBell() {
             onClick={() => setOpen(false)}
           />
           <div className="fixed inset-x-3 top-[4.5rem] z-popover flex max-h-[calc(100dvh-8.5rem-env(safe-area-inset-bottom))] w-auto max-w-sm flex-col overflow-hidden rounded-main bg-white shadow-main sm:inset-x-auto sm:right-3">
-            <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-4 py-3">
+            <div className="flex shrink-0 items-center justify-between border-b border-line px-4 py-3">
               <p className="text-body font-semibold">Notificaciones</p>
               {unread > 0 && (
                 <button type="button" onClick={handleMarkAll} className="text-caption font-medium text-primary">
@@ -163,7 +163,7 @@ export default function NotificationsBell() {
                           </p>
                         )}
                         {message.comment && <p className="mt-1 line-clamp-2 text-body text-gray-600">{message.comment}</p>}
-                        {reporter && <p className="mt-1 text-caption text-gray-400">{reporter}</p>}
+                        {reporter && <p className="mt-1 text-caption text-gray-500">{reporter}</p>}
                       </button>
                     </li>
                   );
