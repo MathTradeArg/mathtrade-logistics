@@ -29,7 +29,7 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-nav border-t border-white/15 bg-ink"
+      className="fixed inset-x-0 bottom-0 z-nav border-t border-white/15 bg-ink pb-[env(safe-area-inset-bottom)]"
       aria-label="Navegación principal"
     >
       <ul
@@ -39,19 +39,26 @@ export default function BottomNav() {
         {slots.map((slot) => {
           const Icon = ICONS[slot.id];
           const active = isSlotActive(pathname ?? '', slot, eventPhase, slots);
+          // The cell (link/span) keeps the full tap area; the visible pill is the inner span, inset by the cell padding.
           const itemClass = clsx(
-            'staff-nav-item flex h-full w-full flex-col rounded-xl items-center justify-center gap-0.5 pb-[env(safe-area-inset-bottom)] text-caption font-semibold',
+            'staff-nav-item block h-full w-full p-1.5 text-caption font-semibold',
             slot.disabled && 'cursor-not-allowed text-white/50',
-            !slot.disabled && active && 'bg-brand text-brand-ink',
+            !slot.disabled && active && 'text-brand-ink',
             !slot.disabled && !active && 'text-[#cfcbe6]',
+          );
+          const pillClass = clsx(
+            'staff-nav-pill flex h-full w-full flex-col items-center justify-center gap-0.5 rounded-2xl',
+            !slot.disabled && active && 'bg-brand',
           );
 
           return (
             <li key={slot.id} className="h-full">
               {slot.disabled ? (
                 <span className={itemClass} aria-disabled="true">
-                  <Icon size={22} weight={active ? 'fill' : 'regular'} />
-                  {slot.label}
+                  <span className={pillClass}>
+                    <Icon size={22} weight={active ? 'fill' : 'regular'} />
+                    {slot.label}
+                  </span>
                 </span>
               ) : (
                 <Link
@@ -59,8 +66,10 @@ export default function BottomNav() {
                   className={itemClass}
                   aria-current={active ? 'page' : undefined}
                 >
-                  <Icon size={22} weight={active ? 'fill' : 'regular'} />
-                  {slot.label}
+                  <span className={pillClass}>
+                    <Icon size={22} weight={active ? 'fill' : 'regular'} />
+                    {slot.label}
+                  </span>
                 </Link>
               )}
             </li>
