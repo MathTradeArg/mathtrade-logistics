@@ -23,6 +23,7 @@ const EVENT_SHEET_BUTTONS = [
   'Juegos que salen',
   'Juegos a recibir por usuario',
   'Juegos a entregar por usuario',
+  'Envíos cargados',
 ];
 const EXPORT_BUTTON = 'Descargar planilla del evento (Excel)';
 
@@ -197,7 +198,7 @@ describe('MorePage', () => {
       expect(screen.getByText('Descargada a las 09:05')).toBeInTheDocument();
     });
   });
-  describe('an admin downloads the four event spreadsheets', () => {
+  describe('an admin downloads the five event spreadsheets', () => {
     it('hides them from volunteers and referrers', () => {
       mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: false, isLoading: false, role: 'boxes' });
       render(<MorePage />);
@@ -206,16 +207,17 @@ describe('MorePage', () => {
       });
     });
 
-    it('shows the four buttons with their help line to the organizer', () => {
+    it('shows the five buttons with their help line to the organizer', () => {
       mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
       render(<MorePage />);
       EVENT_SHEET_BUTTONS.forEach((name) => {
         expect(screen.getByRole('button', { name })).toBeEnabled();
       });
       expect(screen.getByText(/una pestaña por origen y tipo de caja/i)).toBeInTheDocument();
-      expect(screen.getByText(/una pestaña por destino/i)).toBeInTheDocument();
+      expect(screen.getByText(/^una pestaña por destino\.$/i)).toBeInTheDocument();
       expect(screen.getByText(/lo que cada usuario del evento trae/i)).toBeInTheDocument();
       expect(screen.getByText(/lo que cada usuario del evento retira/i)).toBeInTheDocument();
+      expect(screen.getByText(/trackings cargados por los referentes/i)).toBeInTheDocument();
       expect(screen.queryByText(/admin\b/i)).not.toBeInTheDocument();
     });
 
@@ -227,21 +229,23 @@ describe('MorePage', () => {
         ['outgoing-games', 'juegos_que_salen'],
         ['to-receive', 'juegos_a_recibir'],
         ['to-deliver', 'juegos_a_entregar'],
+        ['shipments', 'envios'],
       ]);
     });
 
     it('a tap starts only that download; loading and errors are per button', () => {
       mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
-      const downloads = [jest.fn(), jest.fn(), jest.fn(), jest.fn()];
+      const downloads = [jest.fn(), jest.fn(), jest.fn(), jest.fn(), jest.fn()];
       const states = [
         { isLoading: false, error: null },
         { isLoading: true, error: null },
         { isLoading: false, error: 'No hay una edición activa.' },
         { isLoading: false, error: null },
+        { isLoading: false, error: null },
       ];
       let call = 0;
       mockUseXlsxExport.mockImplementation(() => {
-        const i = call++ % 4;
+        const i = call++ % 5;
         return { download: downloads[i], lastDownloadedAt: i === 3 ? new Date(2026, 10, 8, 9, 5) : null, ...states[i] };
       });
       render(<MorePage />);
