@@ -41,6 +41,7 @@ describe('useXlsxExport: each event sheet has its own endpoint and file name pre
     ['outgoingGames', 'outgoing-games', 'juegos_que_salen'],
     ['toReceive', 'to-receive', 'juegos_a_recibir'],
     ['toDeliver', 'to-deliver', 'juegos_a_entregar'],
+    ['shipments', 'shipments', 'envios'],
   ] as const)('%s downloads logistics/export/%s/ as %s_<date>.xlsx', async (key, path, prefix) => {
     fetchMock.mockResolvedValue(xlsx());
     const sheet = EVENT_SHEETS[key];
