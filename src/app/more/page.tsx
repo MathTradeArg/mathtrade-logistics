@@ -22,6 +22,7 @@ const EVENT_SHEET_BUTTONS = [
   { sheet: EVENT_SHEETS.toReceive, title: 'Juegos a recibir por usuario', help: 'Lo que cada usuario del evento trae.' },
   { sheet: EVENT_SHEETS.toDeliver, title: 'Juegos a entregar por usuario', help: 'Lo que cada usuario del evento retira, con su estado ahora.' },
   { sheet: EVENT_SHEETS.shipments, title: 'Envíos cargados', help: 'Trackings cargados por los referentes, con su valor y comprobante. Una pestaña por destino; lo que llega a AMBA, en la primera.' },
+  { sheet: EVENT_SHEETS.cobro, title: 'Cobro del interior', help: 'Monto a cobrar por persona a los participantes del interior, con el detalle de cada juego. Lo que pasó por AMBA va en una columna aparte, fuera del total.' },
 ] as const;
 
 function EventSheetButton({ sheet, title, help }: { sheet: { endpoint: string; filePrefix: string }; title: string; help: string }) {

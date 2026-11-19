@@ -19,13 +19,14 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export const xlsxFileName = (prefix: string, at: Date) =>
   `${prefix}_${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}_${pad(at.getHours())}${pad(at.getMinutes())}.xlsx`;
 
-/** The five per-purpose sheets of `/more` (endpoint under `logistics/export/` and file name prefix). */
+/** The per-purpose sheets of `/more` (endpoint under `logistics/export/` and file name prefix). */
 export const EVENT_SHEETS = {
   incomingBoxes: { endpoint: 'incoming-boxes', filePrefix: 'cajas_entrantes' },
   outgoingGames: { endpoint: 'outgoing-games', filePrefix: 'juegos_que_salen' },
   toReceive: { endpoint: 'to-receive', filePrefix: 'juegos_a_recibir' },
   toDeliver: { endpoint: 'to-deliver', filePrefix: 'juegos_a_entregar' },
   shipments: { endpoint: 'shipments', filePrefix: 'envios' },
+  cobro: { endpoint: 'cobro', filePrefix: 'cobro_interior' },
 } as const;
 
 /** Admin download of `logistics/export/<endpoint>/` (an .xlsx, not JSON, so
