@@ -3,7 +3,8 @@ import * as cityApi from '@/hooks/city/cityApi';
 import { useAuth } from '@/hooks/useAuth';
 import { useXlsxExport } from '@/hooks/useXlsxExport';
 import '@testing-library/jest-dom';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { CITY_VIEW_STORAGE_KEY, CityViewProvider } from '@/contexts/CityViewContext';
 import CityReceivedPage from '../page';
 
 jest.mock('@/hooks/useAuth');
@@ -135,7 +136,8 @@ describe('city received', () => {
     mockUseXlsxExport.mockReturnValue({ download, isLoading: false, error: null, lastDownloadedAt: null });
     render(<CityReceivedPage />);
     await screen.findByText('Salta · AR123');
-    expect(mockUseXlsxExport).toHaveBeenCalledWith('cobro', 'cobro_mendoza');
+    // No query: the backend scopes the referrer to their own city.
+    expect(mockUseXlsxExport).toHaveBeenCalledWith('cobro', 'cobro_mendoza', undefined);
     fireEvent.click(screen.getByRole('button', { name: COBRO_BUTTON }));
     expect(download).toHaveBeenCalledTimes(1);
   });
@@ -150,13 +152,38 @@ describe('city received', () => {
     expect(screen.getByRole('button', { name: 'Armando la planilla...' })).toBeDisabled();
   });
 
-  it('does not offer the download to an admin viewing a city (they get every city in /more)', async () => {
+  it('offers an admin the download of the city they are viewing, not the global one', async () => {
+    const download = jest.fn();
+    mockUseXlsxExport.mockReturnValue({ download, isLoading: false, error: null, lastDownloadedAt: null });
     mockUseAuth.mockReturnValue({
       isAdmin: true, cityAccess: { kind: 'referrer', city: { id: 7, name: 'Mendoza' } },
     });
     render(<CityReceivedPage />);
     await screen.findByText('Salta · AR123');
+    expect(mockUseXlsxExport).toHaveBeenLastCalledWith('cobro', 'cobro_mendoza', { as_location: 7 });
+    fireEvent.click(screen.getByRole('button', { name: COBRO_BUTTON }));
+    expect(download).toHaveBeenCalledTimes(1);
+  });
+
+  it('an admin who picked another city ("Ver como") downloads that city', async () => {
+    sessionStorage.setItem(CITY_VIEW_STORAGE_KEY, JSON.stringify({ asLocation: 9, mathtradeId: null }));
+    (cityApi.listLocations as jest.Mock).mockResolvedValue([{ id: 9, name: 'Córdoba' }]);
+    (cityApi.listMathtrades as jest.Mock).mockResolvedValue([{ id: 1, name: 'MT', active: true }]);
+    mockUseAuth.mockReturnValue({ isAdmin: true, cityAccess: null });
+    render(<CityViewProvider><CityReceivedPage /></CityViewProvider>);
+    await screen.findByText('Salta · AR123');
+    expect(cityApi.listTrackings).toHaveBeenCalledWith({ destination: 9, as_location: 9 });
+    await waitFor(() =>
+      expect(mockUseXlsxExport).toHaveBeenLastCalledWith('cobro', 'cobro_cordoba', { as_location: 9 }));
+    expect(screen.getByRole('button', { name: COBRO_BUTTON })).toBeInTheDocument();
+    sessionStorage.clear();
+  });
+
+  it('an admin without a city picked sees no download', () => {
+    mockUseAuth.mockReturnValue({ isAdmin: true, cityAccess: null });
+    render(<CityReceivedPage />);
     expect(screen.queryByRole('button', { name: COBRO_BUTTON })).not.toBeInTheDocument();
+    expect(cityApi.listTrackings).not.toHaveBeenCalled();
   });
 
   it('does not offer the download to a local volunteer', () => {

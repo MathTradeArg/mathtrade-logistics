@@ -95,6 +95,26 @@ describe('useXlsxExport: each event sheet has its own endpoint and file name pre
     expect(b.result.current.lastDownloadedAt).toBeNull();
   });
 
+  it('sends the optional query params (an admin asking for one city)', async () => {
+    fetchMock.mockResolvedValue(xlsx());
+    const { result } = renderHook(() => useXlsxExport('cobro', 'cobro_cordoba', { as_location: 9 }));
+    await act(async () => {
+      await result.current.download();
+    });
+    expect(fetchMock.mock.calls[0][0]).toBe(`${API}logistics/export/cobro/?as_location=9`);
+    expect(mockDownloadBlob.mock.calls[0][1]).toBe('cobro_cordoba_2026-11-08_0905.xlsx');
+  });
+
+  it('shows the backend message for a 400 (a city that does not exist)', async () => {
+    fetchMock.mockResolvedValue(failure(400, { detail: 'Ciudad inválida.' }));
+    const { result } = renderHook(() => useXlsxExport('cobro', 'cobro_x', { as_location: 999 }));
+    await act(async () => {
+      await result.current.download();
+    });
+    expect(result.current.error).toBe('Ciudad inválida.');
+    expect(mockDownloadBlob).not.toHaveBeenCalled();
+  });
+
   it('the three-sheet export keeps its endpoint and file name', async () => {
     fetchMock.mockResolvedValue(xlsx());
     const { result } = renderHook(() => useOperationalExport());

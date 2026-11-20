@@ -30,9 +30,16 @@ export const EVENT_SHEETS = {
 } as const;
 
 /** Admin download of `logistics/export/<endpoint>/` (an .xlsx, not JSON, so
- *  not `useApi`). Each call of the hook has its own state. One attempt only: rebuilding the workbook is costly, the admin
+ *  not `useApi`), with optional query params (e.g. `as_location`). Each call of the hook has its own state. One attempt only: rebuilding the workbook is costly, the admin
  *  taps again. A call made while one is in flight is ignored. */
-export function useXlsxExport(endpoint: string, filePrefix: string) {
+export function useXlsxExport(
+  endpoint: string,
+  filePrefix: string,
+  query?: Record<string, string | number>,
+) {
+  const search = query
+    ? new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)])).toString()
+    : '';
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastDownloadedAt, setLastDownloadedAt] = useState<Date | null>(null);
@@ -50,7 +57,7 @@ export function useXlsxExport(endpoint: string, filePrefix: string) {
     setError(null);
     try {
       const response = await fetchWithTimeout(
-        `${process.env.NEXT_PUBLIC_MT_API_HOST}logistics/export/${endpoint}/`,
+        `${process.env.NEXT_PUBLIC_MT_API_HOST}logistics/export/${endpoint}/${search ? `?${search}` : ''}`,
         { headers: { Authorization: `token ${token}` } },
         { timeoutMs: EXPORT_TIMEOUT_MS, retries: 0 },
       );
@@ -79,7 +86,7 @@ export function useXlsxExport(endpoint: string, filePrefix: string) {
       inFlight.current = false;
       setIsLoading(false);
     }
-  }, [endpoint, filePrefix]);
+  }, [endpoint, filePrefix, search]);
 
   return { download, isLoading, error, lastDownloadedAt };
 }

@@ -94,13 +94,16 @@ const cobroFilePrefix = (cityName: string) =>
       .replace(/^-+|-+$/g, '') || 'ciudad'
   }`;
 
-/** The referrer's download of what each participant of their city pays
- *  (`logistics/export/cobro/`; the backend scopes it to their city). A
+/** The download of what each participant of the city pays
+ *  (`logistics/export/cobro/`). The backend scopes a referrer to their city;
+ *  an admin asks for the city they are viewing with `as_location`. A
  *  component of its own so the hook isn't called after the early returns. */
-function CobroButton({ cityName }: { cityName: string }) {
+function CobroButton({ cityName, asLocation }: { cityName: string; asLocation?: number }) {
+  const query = useMemo(() => (asLocation != null ? { as_location: asLocation } : undefined), [asLocation]);
   const { download, isLoading, error, lastDownloadedAt } = useXlsxExport(
     EVENT_SHEETS.cobro.endpoint,
     cobroFilePrefix(cityName),
+    query,
   );
   return (
     <div className="mt-3">
@@ -185,8 +188,8 @@ export default function CityReceivedPage() {
 
       {tab === 'boxes' && (
         <>
-          {/* Admins download every city from /more, not the city they are viewing. */}
-          {!isAdmin && <CobroButton cityName={cityName} />}
+          {/* An admin gets the city they are viewing; every city is in /more. */}
+          <CobroButton cityName={cityName} asLocation={isAdmin ? cityId : undefined} />
           {!isLoading && !error && trackings.length === 0 && (
             <StaffEmpty>Todavía no hay envíos hacia tu ciudad.</StaffEmpty>
           )}
