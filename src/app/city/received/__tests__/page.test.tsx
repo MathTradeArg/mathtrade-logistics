@@ -57,6 +57,10 @@ describe('city received', () => {
     mockUseXlsxExport.mockReturnValue({ download: jest.fn(), isLoading: false, error: null, lastDownloadedAt: null });
   });
 
+  afterEach(() => {
+    sessionStorage.clear();
+  });
+
   it('lists the shipments to the city with total and price per game', async () => {
     render(<CityReceivedPage />);
     expect(await screen.findByText('Salta · AR123')).toBeInTheDocument();
@@ -138,6 +142,7 @@ describe('city received', () => {
     await screen.findByText('Salta · AR123');
     // No query: the backend scopes the referrer to their own city.
     expect(mockUseXlsxExport).toHaveBeenCalledWith('cobro', 'cobro_mendoza', undefined);
+    expect(screen.getByText(/cada participante de tu ciudad/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: COBRO_BUTTON }));
     expect(download).toHaveBeenCalledTimes(1);
   });
@@ -176,7 +181,21 @@ describe('city received', () => {
     await waitFor(() =>
       expect(mockUseXlsxExport).toHaveBeenLastCalledWith('cobro', 'cobro_cordoba', { as_location: 9 }));
     expect(screen.getByRole('button', { name: COBRO_BUTTON })).toBeInTheDocument();
-    sessionStorage.clear();
+    expect(screen.getByText(/cada participante de la ciudad que estás viendo/)).toBeInTheDocument();
+  });
+
+  it('an admin looking at a past edition sees no download (the backend only builds the active one)', async () => {
+    sessionStorage.setItem(CITY_VIEW_STORAGE_KEY, JSON.stringify({ asLocation: 9, mathtradeId: 2 }));
+    (cityApi.listLocations as jest.Mock).mockResolvedValue([{ id: 9, name: 'Córdoba' }]);
+    (cityApi.listMathtrades as jest.Mock).mockResolvedValue([
+      { id: 1, name: 'MT', active: true }, { id: 2, name: 'MT viejo', active: false },
+    ]);
+    mockUseAuth.mockReturnValue({ isAdmin: true, cityAccess: null });
+    render(<CityViewProvider><CityReceivedPage /></CityViewProvider>);
+    await waitFor(() =>
+      expect(cityApi.listTrackings).toHaveBeenCalledWith({ destination: 9, as_location: 9, mathtrade: 2 }));
+    await screen.findByText('Salta · AR123');
+    expect(screen.queryByRole('button', { name: COBRO_BUTTON })).not.toBeInTheDocument();
   });
 
   it('an admin without a city picked sees no download', () => {

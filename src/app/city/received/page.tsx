@@ -116,7 +116,8 @@ function CobroButton({ cityName, asLocation }: { cityName: string; asLocation?: 
         {isLoading ? 'Armando la planilla...' : 'Descargar cobro'}
       </button>
       <p className="mt-1 text-body text-gray-500">
-        Lo que tiene que pagar cada participante de tu ciudad por sus envíos recibidos.
+        Lo que tiene que pagar cada participante de{' '}
+        {asLocation != null ? 'la ciudad que estás viendo' : 'tu ciudad'} por sus envíos recibidos.
       </p>
       {error && <StaffError>{error}</StaffError>}
       {lastDownloadedAt && <p className="mt-2 text-body text-gray-500">Descargada.</p>}
@@ -188,8 +189,9 @@ export default function CityReceivedPage() {
 
       {tab === 'boxes' && (
         <>
-          {/* An admin gets the city they are viewing; every city is in /more. */}
-          <CobroButton cityName={cityName} asLocation={isAdmin ? cityId : undefined} />
+          {/* An admin gets the city they are viewing; every city is in /more.
+              The backend only builds the active edition, so no button on a past one. */}
+          {mathtrade == null && <CobroButton cityName={cityName} asLocation={isAdmin ? cityId : undefined} />}
           {!isLoading && !error && trackings.length === 0 && (
             <StaffEmpty>Todavía no hay envíos hacia tu ciudad.</StaffEmpty>
           )}

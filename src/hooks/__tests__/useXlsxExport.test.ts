@@ -59,7 +59,12 @@ describe('useXlsxExport: each event sheet has its own endpoint and file name pre
   });
 
   it.each([
-    ['403', () => failure(403), 'Solo un organizador puede descargar la planilla.'],
+    ['403 without a body', () => failure(403), 'No tenés permiso para descargar esta planilla.'],
+    // A referrer without a city: the backend says why.
+    ['403 with a detail', () => failure(403, { detail: 'Sin ciudad.' }), 'Sin ciudad.'],
+    // DRF's default permission text is English: the neutral message instead.
+    ['403 with the DRF default', () => failure(403, { detail: 'You do not have permission to perform this action.' }),
+      'No tenés permiso para descargar esta planilla.'],
     ['404', () => failure(404, { detail: 'No active edition.' }), 'No hay una edición activa.'],
     ['500', () => failure(500), 'El servidor no pudo armar la planilla. Probá de nuevo en un minuto.'],
   ])('shows a clear message for %s', async (_c, response, message) => {
@@ -87,7 +92,7 @@ describe('useXlsxExport: each event sheet has its own endpoint and file name pre
     expect(a.result.current.isLoading).toBe(true);
     expect(a.result.current.error).toBeNull();
     expect(b.result.current.isLoading).toBe(false);
-    expect(b.result.current.error).toBe('Solo un organizador puede descargar la planilla.');
+    expect(b.result.current.error).toBe('No tenés permiso para descargar esta planilla.');
 
     await act(async () => { resolveFirst(xlsx()); await pending; });
     expect(a.result.current.error).toBeNull();

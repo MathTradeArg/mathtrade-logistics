@@ -7,7 +7,7 @@ const EXPORT_TIMEOUT_MS = 45000;
 
 export const EXPORT_MESSAGES = {
   noToken: 'No se encontró el token de autenticación.',
-  forbidden: 'Solo un organizador puede descargar la planilla.',
+  forbidden: 'No tenés permiso para descargar esta planilla.',
   noEdition: 'No hay una edición activa.',
   server: 'El servidor no pudo armar la planilla. Probá de nuevo en un minuto.',
   empty: 'La planilla vino vacía. Probá de nuevo.',
@@ -29,9 +29,15 @@ export const EVENT_SHEETS = {
   cobro: { endpoint: 'cobro', filePrefix: 'cobro_interior' },
 } as const;
 
-/** Admin download of `logistics/export/<endpoint>/` (an .xlsx, not JSON, so
- *  not `useApi`), with optional query params (e.g. `as_location`). Each call of the hook has its own state. One attempt only: rebuilding the workbook is costly, the admin
- *  taps again. A call made while one is in flight is ignored. */
+/** DRF's default 403 text (English): not worth showing, the neutral message instead. */
+const DRF_DEFAULT_FORBIDDEN = 'You do not have permission to perform this action.';
+
+/** Staff download (admins in /more, referrers in /city/received) of
+ *  `logistics/export/<endpoint>/` (an .xlsx, not JSON, so not `useApi`), with
+ *  optional query params (e.g. `as_location`). Each call of the hook has its
+ *  own state. One attempt only: rebuilding the workbook is costly, the user
+ *  taps again. A call made while one is in flight is ignored. A 403 shows the
+ *  backend's `detail` (e.g. a referrer without a city), else a neutral message. */
 export function useXlsxExport(
   endpoint: string,
   filePrefix: string,
@@ -62,8 +68,11 @@ export function useXlsxExport(
         { timeoutMs: EXPORT_TIMEOUT_MS, retries: 0 },
       );
       if (!response.ok) {
-        if (response.status === 403) setError(EXPORT_MESSAGES.forbidden);
-        else if (response.status === 404) setError(EXPORT_MESSAGES.noEdition);
+        if (response.status === 403) {
+          const body = await response.json().catch(() => null);
+          const message = apiErrorMessage(body, EXPORT_MESSAGES.forbidden);
+          setError(message === DRF_DEFAULT_FORBIDDEN ? EXPORT_MESSAGES.forbidden : message);
+        } else if (response.status === 404) setError(EXPORT_MESSAGES.noEdition);
         else if (response.status >= 500) setError(EXPORT_MESSAGES.server);
         else {
           const body = await response.json().catch(() => null);
