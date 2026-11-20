@@ -11,6 +11,7 @@ import { useCityView } from '@/contexts/CityViewContext';
 import { listItems } from '@/hooks/boxes/boxApi';
 import { boxLabel } from '@/hooks/boxes/boxGrouping';
 import { listTrackings } from '@/hooks/city/cityApi';
+import { EVENT_SHEETS, useXlsxExport } from '@/hooks/useXlsxExport';
 import type { Item, Tracking } from '@/types';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { formatMoney, formatTradeCode, itemBoxLabel, itemShippingCost, trackingUnits } from '@/utils/tradeCode';
@@ -82,10 +83,52 @@ function TrackingCard({ tracking, onOpenImage }: { tracking: Tracking; onOpenIma
   );
 }
 
+/** `cobro_<city>`, the same slug the backend puts in its file name. */
+const cobroFilePrefix = (cityName: string) =>
+  `cobro_${
+    cityName
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'ciudad'
+  }`;
+
+/** The download of what each participant of the city pays
+ *  (`logistics/export/cobro/`). The backend scopes a referrer to their city;
+ *  an admin asks for the city they are viewing with `as_location`. A
+ *  component of its own so the hook isn't called after the early returns. */
+function CobroButton({ cityName, asLocation }: { cityName: string; asLocation?: number }) {
+  const query = useMemo(() => (asLocation != null ? { as_location: asLocation } : undefined), [asLocation]);
+  const { download, isLoading, error, lastDownloadedAt } = useXlsxExport(
+    EVENT_SHEETS.cobro.endpoint,
+    cobroFilePrefix(cityName),
+    query,
+  );
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        className="staff-btn staff-btn-outline"
+        disabled={isLoading}
+        onClick={() => download()}
+      >
+        {isLoading ? 'Armando la planilla...' : 'Descargar cobro'}
+      </button>
+      <p className="mt-1 text-body text-gray-500">
+        Lo que tiene que pagar cada participante de{' '}
+        {asLocation != null ? 'la ciudad que estás viendo' : 'tu ciudad'} por sus envíos recibidos.
+      </p>
+      {error && <StaffError>{error}</StaffError>}
+      {lastDownloadedAt && <p className="mt-2 text-body text-gray-500">Descargada.</p>}
+    </div>
+  );
+}
+
 /** Recibidas: what other cities ship to this one. Read-only; the referrer
  *  (and the admin, as a referrer) only. */
 export default function CityReceivedPage() {
-  const { cityId, kind, params } = useCityView();
+  const { cityId, cityName, isAdmin, kind, params } = useCityView();
   const asLocation = params.as_location;
   const mathtrade = params.mathtrade;
   const isReferrer = kind === 'referrer';
@@ -146,6 +189,9 @@ export default function CityReceivedPage() {
 
       {tab === 'boxes' && (
         <>
+          {/* An admin gets the city they are viewing; every city is in /more.
+              The backend only builds the active edition, so no button on a past one. */}
+          {mathtrade == null && <CobroButton cityName={cityName} asLocation={isAdmin ? cityId : undefined} />}
           {!isLoading && !error && trackings.length === 0 && (
             <StaffEmpty>Todavía no hay envíos hacia tu ciudad.</StaffEmpty>
           )}

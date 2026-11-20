@@ -7,7 +7,7 @@ const EXPORT_TIMEOUT_MS = 45000;
 
 export const EXPORT_MESSAGES = {
   noToken: 'No se encontró el token de autenticación.',
-  forbidden: 'Solo un organizador puede descargar la planilla.',
+  forbidden: 'No tenés permiso para descargar esta planilla.',
   noEdition: 'No hay una edición activa.',
   server: 'El servidor no pudo armar la planilla. Probá de nuevo en un minuto.',
   empty: 'La planilla vino vacía. Probá de nuevo.',
@@ -19,19 +19,33 @@ const pad = (n: number) => String(n).padStart(2, '0');
 export const xlsxFileName = (prefix: string, at: Date) =>
   `${prefix}_${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}_${pad(at.getHours())}${pad(at.getMinutes())}.xlsx`;
 
-/** The five per-purpose sheets of `/more` (endpoint under `logistics/export/` and file name prefix). */
+/** The per-purpose sheets of `/more` (endpoint under `logistics/export/` and file name prefix). */
 export const EVENT_SHEETS = {
   incomingBoxes: { endpoint: 'incoming-boxes', filePrefix: 'cajas_entrantes' },
   outgoingGames: { endpoint: 'outgoing-games', filePrefix: 'juegos_que_salen' },
   toReceive: { endpoint: 'to-receive', filePrefix: 'juegos_a_recibir' },
   toDeliver: { endpoint: 'to-deliver', filePrefix: 'juegos_a_entregar' },
   shipments: { endpoint: 'shipments', filePrefix: 'envios' },
+  cobro: { endpoint: 'cobro', filePrefix: 'cobro_interior' },
 } as const;
 
-/** Admin download of `logistics/export/<endpoint>/` (an .xlsx, not JSON, so
- *  not `useApi`). Each call of the hook has its own state. One attempt only: rebuilding the workbook is costly, the admin
- *  taps again. A call made while one is in flight is ignored. */
-export function useXlsxExport(endpoint: string, filePrefix: string) {
+/** DRF's default 403 text (English): not worth showing, the neutral message instead. */
+const DRF_DEFAULT_FORBIDDEN = 'You do not have permission to perform this action.';
+
+/** Staff download (admins in /more, referrers in /city/received) of
+ *  `logistics/export/<endpoint>/` (an .xlsx, not JSON, so not `useApi`), with
+ *  optional query params (e.g. `as_location`). Each call of the hook has its
+ *  own state. One attempt only: rebuilding the workbook is costly, the user
+ *  taps again. A call made while one is in flight is ignored. A 403 shows the
+ *  backend's `detail` (e.g. a referrer without a city), else a neutral message. */
+export function useXlsxExport(
+  endpoint: string,
+  filePrefix: string,
+  query?: Record<string, string | number>,
+) {
+  const search = query
+    ? new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)])).toString()
+    : '';
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastDownloadedAt, setLastDownloadedAt] = useState<Date | null>(null);
@@ -49,13 +63,16 @@ export function useXlsxExport(endpoint: string, filePrefix: string) {
     setError(null);
     try {
       const response = await fetchWithTimeout(
-        `${process.env.NEXT_PUBLIC_MT_API_HOST}logistics/export/${endpoint}/`,
+        `${process.env.NEXT_PUBLIC_MT_API_HOST}logistics/export/${endpoint}/${search ? `?${search}` : ''}`,
         { headers: { Authorization: `token ${token}` } },
         { timeoutMs: EXPORT_TIMEOUT_MS, retries: 0 },
       );
       if (!response.ok) {
-        if (response.status === 403) setError(EXPORT_MESSAGES.forbidden);
-        else if (response.status === 404) setError(EXPORT_MESSAGES.noEdition);
+        if (response.status === 403) {
+          const body = await response.json().catch(() => null);
+          const message = apiErrorMessage(body, EXPORT_MESSAGES.forbidden);
+          setError(message === DRF_DEFAULT_FORBIDDEN ? EXPORT_MESSAGES.forbidden : message);
+        } else if (response.status === 404) setError(EXPORT_MESSAGES.noEdition);
         else if (response.status >= 500) setError(EXPORT_MESSAGES.server);
         else {
           const body = await response.json().catch(() => null);
@@ -78,7 +95,7 @@ export function useXlsxExport(endpoint: string, filePrefix: string) {
       inFlight.current = false;
       setIsLoading(false);
     }
-  }, [endpoint, filePrefix]);
+  }, [endpoint, filePrefix, search]);
 
   return { download, isLoading, error, lastDownloadedAt };
 }

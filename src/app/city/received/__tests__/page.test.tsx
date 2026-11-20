@@ -1,13 +1,19 @@
 import * as boxApi from '@/hooks/boxes/boxApi';
 import * as cityApi from '@/hooks/city/cityApi';
 import { useAuth } from '@/hooks/useAuth';
+import { useXlsxExport } from '@/hooks/useXlsxExport';
 import '@testing-library/jest-dom';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { CITY_VIEW_STORAGE_KEY, CityViewProvider } from '@/contexts/CityViewContext';
 import CityReceivedPage from '../page';
 
 jest.mock('@/hooks/useAuth');
 jest.mock('@/hooks/city/cityApi');
 jest.mock('@/hooks/boxes/boxApi');
+jest.mock('@/hooks/useXlsxExport', () => ({
+  ...jest.requireActual('@/hooks/useXlsxExport'),
+  useXlsxExport: jest.fn(),
+}));
 jest.mock('@/components/common/ui', () => ({
   LoadingSpinner: ({ message }: { message?: string }) => <div data-testid="loading-spinner">{message}</div>,
 }));
@@ -18,6 +24,8 @@ jest.mock('@/components/common/FullScreenImageModal', () => ({
 }));
 
 const mockUseAuth = useAuth as jest.Mock;
+const mockUseXlsxExport = useXlsxExport as jest.Mock;
+const COBRO_BUTTON = 'Descargar cobro';
 
 const tracking = {
   id: 4, tracking_code: 'AR123', destiny: 7, price: 6000, weight: 3, image: null, item_count: 3,
@@ -46,6 +54,11 @@ describe('city received', () => {
     mockUseAuth.mockReturnValue({ cityAccess: { kind: 'referrer', city: { id: 7, name: 'Mendoza' } } });
     (cityApi.listTrackings as jest.Mock).mockResolvedValue([tracking, empty]);
     (boxApi.listItems as jest.Mock).mockResolvedValue(items);
+    mockUseXlsxExport.mockReturnValue({ download: jest.fn(), isLoading: false, error: null, lastDownloadedAt: null });
+  });
+
+  afterEach(() => {
+    sessionStorage.clear();
   });
 
   it('lists the shipments to the city with total and price per game', async () => {
@@ -120,5 +133,82 @@ describe('city received', () => {
     render(<CityReceivedPage />);
     expect(screen.getByText('Solo el referente de la ciudad ve lo que recibe.')).toBeInTheDocument();
     expect(cityApi.listTrackings).not.toHaveBeenCalled();
+  });
+
+  it('lets the referrer download what each participant of the city pays', async () => {
+    const download = jest.fn();
+    mockUseXlsxExport.mockReturnValue({ download, isLoading: false, error: null, lastDownloadedAt: null });
+    render(<CityReceivedPage />);
+    await screen.findByText('Salta · AR123');
+    // No query: the backend scopes the referrer to their own city.
+    expect(mockUseXlsxExport).toHaveBeenCalledWith('cobro', 'cobro_mendoza', undefined);
+    expect(screen.getByText(/cada participante de tu ciudad/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: COBRO_BUTTON }));
+    expect(download).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the download error and the busy state', async () => {
+    mockUseXlsxExport.mockReturnValue({
+      download: jest.fn(), isLoading: true, error: 'El servidor no pudo armar la planilla.', lastDownloadedAt: null,
+    });
+    render(<CityReceivedPage />);
+    await screen.findByText('Salta · AR123');
+    expect(screen.getByText('El servidor no pudo armar la planilla.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Armando la planilla...' })).toBeDisabled();
+  });
+
+  it('offers an admin the download of the city they are viewing, not the global one', async () => {
+    const download = jest.fn();
+    mockUseXlsxExport.mockReturnValue({ download, isLoading: false, error: null, lastDownloadedAt: null });
+    mockUseAuth.mockReturnValue({
+      isAdmin: true, cityAccess: { kind: 'referrer', city: { id: 7, name: 'Mendoza' } },
+    });
+    render(<CityReceivedPage />);
+    await screen.findByText('Salta · AR123');
+    expect(mockUseXlsxExport).toHaveBeenLastCalledWith('cobro', 'cobro_mendoza', { as_location: 7 });
+    fireEvent.click(screen.getByRole('button', { name: COBRO_BUTTON }));
+    expect(download).toHaveBeenCalledTimes(1);
+  });
+
+  it('an admin who picked another city ("Ver como") downloads that city', async () => {
+    sessionStorage.setItem(CITY_VIEW_STORAGE_KEY, JSON.stringify({ asLocation: 9, mathtradeId: null }));
+    (cityApi.listLocations as jest.Mock).mockResolvedValue([{ id: 9, name: 'Córdoba' }]);
+    (cityApi.listMathtrades as jest.Mock).mockResolvedValue([{ id: 1, name: 'MT', active: true }]);
+    mockUseAuth.mockReturnValue({ isAdmin: true, cityAccess: null });
+    render(<CityViewProvider><CityReceivedPage /></CityViewProvider>);
+    await screen.findByText('Salta · AR123');
+    expect(cityApi.listTrackings).toHaveBeenCalledWith({ destination: 9, as_location: 9 });
+    await waitFor(() =>
+      expect(mockUseXlsxExport).toHaveBeenLastCalledWith('cobro', 'cobro_cordoba', { as_location: 9 }));
+    expect(screen.getByRole('button', { name: COBRO_BUTTON })).toBeInTheDocument();
+    expect(screen.getByText(/cada participante de la ciudad que estás viendo/)).toBeInTheDocument();
+  });
+
+  it('an admin looking at a past edition sees no download (the backend only builds the active one)', async () => {
+    sessionStorage.setItem(CITY_VIEW_STORAGE_KEY, JSON.stringify({ asLocation: 9, mathtradeId: 2 }));
+    (cityApi.listLocations as jest.Mock).mockResolvedValue([{ id: 9, name: 'Córdoba' }]);
+    (cityApi.listMathtrades as jest.Mock).mockResolvedValue([
+      { id: 1, name: 'MT', active: true }, { id: 2, name: 'MT viejo', active: false },
+    ]);
+    mockUseAuth.mockReturnValue({ isAdmin: true, cityAccess: null });
+    render(<CityViewProvider><CityReceivedPage /></CityViewProvider>);
+    await waitFor(() =>
+      expect(cityApi.listTrackings).toHaveBeenCalledWith({ destination: 9, as_location: 9, mathtrade: 2 }));
+    await screen.findByText('Salta · AR123');
+    expect(screen.queryByRole('button', { name: COBRO_BUTTON })).not.toBeInTheDocument();
+  });
+
+  it('an admin without a city picked sees no download', () => {
+    mockUseAuth.mockReturnValue({ isAdmin: true, cityAccess: null });
+    render(<CityReceivedPage />);
+    expect(screen.queryByRole('button', { name: COBRO_BUTTON })).not.toBeInTheDocument();
+    expect(cityApi.listTrackings).not.toHaveBeenCalled();
+  });
+
+  it('does not offer the download to a local volunteer', () => {
+    mockUseAuth.mockReturnValue({ cityAccess: { kind: 'local', city: { id: 7, name: 'Mendoza' } } });
+    render(<CityReceivedPage />);
+    expect(screen.getByText('Solo el referente de la ciudad ve lo que recibe.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: COBRO_BUTTON })).not.toBeInTheDocument();
   });
 });

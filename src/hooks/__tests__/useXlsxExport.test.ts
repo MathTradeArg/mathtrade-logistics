@@ -42,6 +42,7 @@ describe('useXlsxExport: each event sheet has its own endpoint and file name pre
     ['toReceive', 'to-receive', 'juegos_a_recibir'],
     ['toDeliver', 'to-deliver', 'juegos_a_entregar'],
     ['shipments', 'shipments', 'envios'],
+    ['cobro', 'cobro', 'cobro_interior'],
   ] as const)('%s downloads logistics/export/%s/ as %s_<date>.xlsx', async (key, path, prefix) => {
     fetchMock.mockResolvedValue(xlsx());
     const sheet = EVENT_SHEETS[key];
@@ -58,7 +59,12 @@ describe('useXlsxExport: each event sheet has its own endpoint and file name pre
   });
 
   it.each([
-    ['403', () => failure(403), 'Solo un organizador puede descargar la planilla.'],
+    ['403 without a body', () => failure(403), 'No tenés permiso para descargar esta planilla.'],
+    // A referrer without a city: the backend says why.
+    ['403 with a detail', () => failure(403, { detail: 'Sin ciudad.' }), 'Sin ciudad.'],
+    // DRF's default permission text is English: the neutral message instead.
+    ['403 with the DRF default', () => failure(403, { detail: 'You do not have permission to perform this action.' }),
+      'No tenés permiso para descargar esta planilla.'],
     ['404', () => failure(404, { detail: 'No active edition.' }), 'No hay una edición activa.'],
     ['500', () => failure(500), 'El servidor no pudo armar la planilla. Probá de nuevo en un minuto.'],
   ])('shows a clear message for %s', async (_c, response, message) => {
@@ -86,12 +92,32 @@ describe('useXlsxExport: each event sheet has its own endpoint and file name pre
     expect(a.result.current.isLoading).toBe(true);
     expect(a.result.current.error).toBeNull();
     expect(b.result.current.isLoading).toBe(false);
-    expect(b.result.current.error).toBe('Solo un organizador puede descargar la planilla.');
+    expect(b.result.current.error).toBe('No tenés permiso para descargar esta planilla.');
 
     await act(async () => { resolveFirst(xlsx()); await pending; });
     expect(a.result.current.error).toBeNull();
     expect(a.result.current.lastDownloadedAt).not.toBeNull();
     expect(b.result.current.lastDownloadedAt).toBeNull();
+  });
+
+  it('sends the optional query params (an admin asking for one city)', async () => {
+    fetchMock.mockResolvedValue(xlsx());
+    const { result } = renderHook(() => useXlsxExport('cobro', 'cobro_cordoba', { as_location: 9 }));
+    await act(async () => {
+      await result.current.download();
+    });
+    expect(fetchMock.mock.calls[0][0]).toBe(`${API}logistics/export/cobro/?as_location=9`);
+    expect(mockDownloadBlob.mock.calls[0][1]).toBe('cobro_cordoba_2026-11-08_0905.xlsx');
+  });
+
+  it('shows the backend message for a 400 (a city that does not exist)', async () => {
+    fetchMock.mockResolvedValue(failure(400, { detail: 'Ciudad inválida.' }));
+    const { result } = renderHook(() => useXlsxExport('cobro', 'cobro_x', { as_location: 999 }));
+    await act(async () => {
+      await result.current.download();
+    });
+    expect(result.current.error).toBe('Ciudad inválida.');
+    expect(mockDownloadBlob).not.toHaveBeenCalled();
   });
 
   it('the three-sheet export keeps its endpoint and file name', async () => {
