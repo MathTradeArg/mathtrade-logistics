@@ -36,4 +36,6 @@ export interface WindowDisplay {
   ready_count: number;
   attended_count: number;
   no_show_count: number;
+  /** Extra card for users whose table has no window. */
+  unassigned?: boolean;
 }
