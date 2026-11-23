@@ -390,3 +390,37 @@ describe('DeliverPage: "Reintentar" sends bulk-update-status exactly once more',
     expect(bulkCalls()).toHaveLength(2);
   });
 });
+
+describe('DeliverPage: user status updates never send force (the backend keeps a rescan from lowering it)', () => {
+  const originalHost = process.env.NEXT_PUBLIC_MT_API_HOST;
+
+  beforeAll(() => { process.env.NEXT_PUBLIC_MT_API_HOST = 'http://api.test/'; });
+  afterAll(() => { process.env.NEXT_PUBLIC_MT_API_HOST = originalHost; });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    fetchMock.resetMocks();
+    localStorage.setItem('authToken', 'fake-token');
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, userId: '1', isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 2, isLoadingEventPhase: false });
+    mockUseSearchParams.mockReturnValue(new URLSearchParams());
+    mockUsePathname.mockReturnValue('/deliver');
+  });
+
+  it('el escaneo (receiving) y el cierre (completed) no incluyen force', async () => {
+    routeApi({ scan: { status: 200, body: mockTradesResponse } });
+    render(<DeliverPage />);
+    fireEvent.click(screen.getByRole('button', { name: 'Simulate Scan' }));
+    await waitFor(() => expect(screen.getByTestId('game-list')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Update All Items' }));
+
+    const statusBodies = () => fetchMock.mock.calls
+      .filter(([url]) => String(url).includes('users/update-status/'))
+      .map(([, init]) => JSON.parse(String(init?.body)));
+    await waitFor(() => expect(statusBodies()).toHaveLength(2));
+    expect(statusBodies()).toEqual([
+      { user_id: 123, status: 'receiving' },
+      { user_id: 123, status: 'completed' },
+    ]);
+  });
+});
