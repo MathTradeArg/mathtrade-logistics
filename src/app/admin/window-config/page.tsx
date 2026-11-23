@@ -10,6 +10,8 @@ import { useHapticClick } from '@/hooks/useHapticClick';
 import { getGlobalDisplayConfig, updateGlobalMaxUsers, updateGlobalPollingInterval } from '@/utils/windowStorage';
 import { apiErrorMessage } from '@/components/city/errors';
 import { LoadingSpinner } from '@/components/common/ui';
+import StaffDialog from '@/components/staff/StaffDialog';
+import { StaffBanner } from '@/components/staff/StaffPage';
 
 interface WindowConfig {
   /** Server id; windows added on screen get a negative list id and `isNew`. */
@@ -36,6 +38,10 @@ export default function WindowConfigPage() {
   const [globalMaxUsers, setGlobalMaxUsers] = useState(10);
   const [pollingInterval, setPollingInterval] = useState(10);
   const [showGlobalConfig, setShowGlobalConfig] = useState(false);
+  // A failed load must never show the form: saving it would POST an empty
+  // list and wipe every window on the server.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
 
   const { execute: fetchWindowConfig } = useApi<WindowConfig[]>('logistics/windows/config/', { method: 'GET' });
   const { execute: saveWindowConfig } = useApi<any>('logistics/windows/config/', { method: 'POST' });
@@ -46,27 +52,29 @@ export default function WindowConfigPage() {
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
-      
+      setLoadFailed(false);
+
       const globalConfig = getGlobalDisplayConfig();
       setGlobalMaxUsers(globalConfig.maxUsers);
       setPollingInterval(globalConfig.pollingInterval);
       
       const configData = await fetchWindowConfig();
-      if (configData) {
-        setWindows(configData || []);
+      if (!Array.isArray(configData)) {
+        throw new Error('La configuración de ventanillas llegó vacía.');
       }
-      
+      setWindows(configData);
+
       const tablesData = await fetchAvailableTables();
       if (tablesData) {
-        setAvailableTables(selectableTables(tablesData.available_tables || [], configData || []));
+        setAvailableTables(selectableTables(tablesData.available_tables || [], configData));
       }
     } catch (err) {
       console.error('Error al cargar configuración:', err);
-      setError(err instanceof Error ? err.message : 'Error al cargar la configuración.');
+      setLoadFailed(true);
     } finally {
       setIsLoading(false);
     }
-  }, [fetchWindowConfig, fetchAvailableTables, setError]);
+  }, [fetchWindowConfig, fetchAvailableTables]);
 
   useEffect(() => {
     if (isAuthenticated && isAdmin) {
@@ -139,12 +147,24 @@ export default function WindowConfigPage() {
     return map;
   }, [windows, getAvailableTablesForWindow]);
 
-  const saveConfiguration = async () => {
+  /** Tables with games that no window covers: their participants never show on the TV. */
+  const freeTables = useMemo(
+    () => availableTables.filter(t => !windows.some(w => w.tables.includes(t))),
+    [availableTables, windows],
+  );
+
+  const doSave = async () => {
+    setConfirmEmpty(false);
     try {
       const config = windows.map(w => w.isNew
         ? { name: w.name, tables: w.tables }
         : { id: w.id, name: w.name, tables: w.tables });
-      await saveWindowConfig(config);
+      if (config.length === 0) {
+        // The backend rejects an empty list unless it is explicitly confirmed.
+        await saveWindowConfig(config, '?allow_empty=1');
+      } else {
+        await saveWindowConfig(config);
+      }
       
       setSuccess('Configuración guardada exitosamente.');
     } catch (err) {
@@ -153,6 +173,14 @@ export default function WindowConfigPage() {
       return;
     }
     await loadData();
+  };
+
+  const saveConfiguration = async () => {
+    if (windows.length === 0) {
+      setConfirmEmpty(true);
+      return;
+    }
+    await doSave();
   };
 
   const handleAddWindow = useHapticClick(addWindow);
@@ -178,6 +206,10 @@ export default function WindowConfigPage() {
           <div className="flex justify-center items-center py-12">
             <p className="text-gray-500 ">Cargando configuración...</p>
           </div>
+        ) : loadFailed ? (
+          <StaffBanner onRetry={loadData}>
+            No se pudo cargar la configuración de ventanillas. No guardes nada hasta que cargue.
+          </StaffBanner>
         ) : (
           <div className="space-y-4 md:space-y-6">
             <div className="rounded-lg bg-white p-4 md:p-6">
@@ -324,8 +356,13 @@ export default function WindowConfigPage() {
               </div>
             </div>
 
+            {freeTables.length > 0 && (
+              <p role="status" className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-body font-medium text-orange-800">
+                {`${freeTables.length} mesa${freeTables.length === 1 ? '' : 's'} con juegos sin ventanilla: ${freeTables.join(', ')}. Sus participantes no aparecen en la tele.`}
+              </p>
+            )}
+
             <div className="flex flex-col sm:flex-row justify-between gap-3">
-            
               <button
                 onClick={handleSaveConfiguration}
                 className="min-h-14 rounded-lg bg-brand px-4 font-semibold text-brand-ink hover:brightness-95 flex items-center justify-center gap-2 text-body px-4 py-2"
@@ -338,6 +375,16 @@ export default function WindowConfigPage() {
         )}
         </div>
       </main>
+      <StaffDialog
+        open={confirmEmpty}
+        title="Borrar todas las ventanillas"
+        variant="danger"
+        confirmLabel="Sí, borrar todo"
+        onConfirm={doSave}
+        onCancel={() => setConfirmEmpty(false)}
+      >
+        Vas a borrar todas las ventanillas. Hasta que cargues una nueva, nadie aparece en la tele.
+      </StaffDialog>
     </div>
   );
 }

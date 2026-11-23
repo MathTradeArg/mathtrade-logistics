@@ -167,4 +167,111 @@ describe('WindowConfigPage', () => {
       expect(configExecute).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('una carga fallida no permite guardar', () => {
+    beforeEach(() => {
+      jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    });
+
+    it('si la carga falla no muestra el formulario ni Guardar', async () => {
+      configExecute.mockRejectedValue(new Error('Network'));
+      tablesExecute.mockResolvedValue({ available_tables: ['1'], assigned_tables: [] });
+      renderPage();
+
+      expect(await screen.findByText(/No se pudo cargar la configuración de ventanillas/)).toBeInTheDocument();
+      const banner = screen.getByText(/No se pudo cargar la configuración de ventanillas/).closest('[role="alert"]') as HTMLElement;
+      expect(banner).toBeInTheDocument();
+      expect(within(banner).getByRole('button', { name: 'Reintentar' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Guardar Configuración/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Agregar Ventanilla/ })).not.toBeInTheDocument();
+      expect(saveExecute).not.toHaveBeenCalled();
+    });
+
+    it('una respuesta vacía del GET también cuenta como carga fallida', async () => {
+      configExecute.mockResolvedValue(undefined);
+      tablesExecute.mockResolvedValue({ available_tables: [], assigned_tables: [] });
+      renderPage();
+
+      expect(await screen.findByText(/No se pudo cargar la configuración de ventanillas/)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Guardar Configuración/ })).not.toBeInTheDocument();
+    });
+
+    it('Reintentar recarga y recién ahí aparece el formulario', async () => {
+      configExecute
+        .mockRejectedValueOnce(new Error('Network'))
+        .mockResolvedValueOnce([{ id: 7, name: 'V1', tables: ['10'] }]);
+      tablesExecute.mockResolvedValue({ available_tables: [], assigned_tables: ['10'] });
+      renderPage();
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
+
+      expect(await screen.findByRole('button', { name: /Guardar Configuración/ })).toBeInTheDocument();
+      expect(screen.getByDisplayValue('V1')).toBeInTheDocument();
+      expect(configExecute).toHaveBeenCalledTimes(2);
+      expect(screen.queryByText(/No se pudo cargar la configuración de ventanillas/)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('guardar cero ventanillas es una decisión explícita', () => {
+    it('guardar con cero ventanillas pide confirmar y manda ?allow_empty=1', async () => {
+      serverHas([]);
+      renderPage();
+      await screen.findByRole('button', { name: /Guardar Configuración/ });
+      save();
+
+      const dialog = await screen.findByRole('dialog');
+      expect(dialog).toHaveTextContent('Vas a borrar todas las ventanillas');
+      expect(saveExecute).not.toHaveBeenCalled();
+
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Sí, borrar todo' }));
+      await waitFor(() => expect(saveExecute).toHaveBeenCalledTimes(1));
+      expect(saveExecute).toHaveBeenCalledWith([], '?allow_empty=1');
+    });
+
+    it('al cancelar no guarda nada', async () => {
+      serverHas([]);
+      renderPage();
+      await screen.findByRole('button', { name: /Guardar Configuración/ });
+      save();
+
+      const dialog = await screen.findByRole('dialog');
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(saveExecute).not.toHaveBeenCalled();
+    });
+
+    it('guardar con ventanillas no pide confirmación ni manda el flag', async () => {
+      serverHas([{ id: 7, name: 'V1', tables: ['10'] }]);
+      renderPage();
+      await screen.findByDisplayValue('V1');
+      save();
+
+      await waitFor(() => expect(saveExecute).toHaveBeenCalledTimes(1));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(saveExecute.mock.calls[0][1]).toBeUndefined();
+    });
+  });
+
+  describe('avisa qué mesas no tienen ventanilla (sus participantes no salen en la tele)', () => {
+    it('avisa cuántas mesas quedan sin ventanilla', async () => {
+      serverHas([{ id: 1, name: 'A', tables: ['1'] }], ['2', '3']);
+      renderPage();
+      await screen.findByDisplayValue('A');
+
+      expect(screen.getByText('2 mesas con juegos sin ventanilla: 2, 3. Sus participantes no aparecen en la tele.'))
+        .toHaveAttribute('role', 'status');
+
+      fireEvent.change(within(card('A')).getByRole('combobox'), { target: { value: '2' } });
+      expect(screen.getByText('1 mesa con juegos sin ventanilla: 3. Sus participantes no aparecen en la tele.'))
+        .toBeInTheDocument();
+    });
+
+    it('sin mesas libres no hay aviso', async () => {
+      serverHas([{ id: 1, name: 'A', tables: ['1', '2'] }], []);
+      renderPage();
+      await screen.findByDisplayValue('A');
+
+      expect(screen.queryByText(/sin ventanilla/)).not.toBeInTheDocument();
+    });
+  });
 });

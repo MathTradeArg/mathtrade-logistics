@@ -65,10 +65,25 @@ export default function DisplayReadyToPickupPage() {
       });
     });
 
+    // Users whose table has no window (or a window that no longer exists) go to
+    // one extra card, so nobody is left uncalled.
+    let orphanWindow: WindowDisplay | null = null;
+
     users.filter((user) => !isStaff(user)).forEach((user) => {
-      if (!user.window_id) return;
-      const windowData = windowMap.get(user.window_id.toString());
-      if (!windowData) return;
+      const known = user.window_id != null ? windowMap.get(user.window_id.toString()) : undefined;
+      if (!known && !orphanWindow) {
+        orphanWindow = {
+          id: -1,
+          name: 'Sin ventanilla',
+          users: [],
+          max_users: 0,
+          ready_count: 0,
+          attended_count: 0,
+          no_show_count: 0,
+          unassigned: true,
+        };
+      }
+      const windowData = (known ?? orphanWindow) as WindowDisplay;
 
       if (user.status !== 'completed') {
         windowData.users.push(user);
@@ -90,7 +105,14 @@ export default function DisplayReadyToPickupPage() {
       }
     });
 
-    return Array.from(windowMap.values()).filter((window) => window.users.length > 0);
+    const result = Array.from(windowMap.values());
+    if (orphanWindow) {
+      const orphan: WindowDisplay = orphanWindow;
+      // No cap: these participants have to be called by hand.
+      orphan.max_users = orphan.users.length;
+      result.push(orphan);
+    }
+    return result.filter((window) => window.users.length > 0);
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -143,7 +165,6 @@ export default function DisplayReadyToPickupPage() {
   }, [pollingInterval]);
 
   const totalStats = windowsData
-    .filter((window) => window.id !== -1)
     .reduce(
       (acc, window) => ({
         ready: acc.ready + window.ready_count,
@@ -218,7 +239,9 @@ export default function DisplayReadyToPickupPage() {
                       {window.name}
                     </h2>
                     <p className="text-center text-body text-gray-600">
-                      Hasta {window.max_users} en Listos / En mesa
+                      {window.unassigned
+                        ? 'Mesas sin ventanilla: avisá a un organizador'
+                        : `Hasta ${window.max_users} en Listos / En mesa`}
                     </p>
                   </header>
 
