@@ -4,7 +4,8 @@ import { GameDetail, GameStatusCode, GameStatusMap } from '@/types';
 import { WarningCircle, CheckCircle, Info, MapPin, Package, Tag, User } from 'phosphor-react';
 import { LoadingSpinner } from '@/components/common/ui'; 
 import { useHapticClick } from '@/hooks/useHapticClick';
-import { formatTradeCode } from '@/utils/tradeCode'; 
+import { formatTradeCode } from '@/utils/tradeCode';
+import { REVERT_DELIVERY_WARNING } from '@/utils/revertDeliveryWarning';
 
 interface GameDetailsDisplayProps {
   gameDetail: GameDetail;
@@ -47,7 +48,9 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
   const { title } = item_to;
 
   const handleAction = useHapticClick((newStatus: GameStatusCode) => {
-    if (window.confirm(`¿Seguro que quieres marcar este juego como "${GameStatusMap[newStatus]}"?`)) {
+    const question = `¿Seguro que quieres marcar este juego como "${GameStatusMap[newStatus]}"?`;
+    const revertsDelivery = status === 6 && newStatus < 6;
+    if (window.confirm(revertsDelivery ? `${question}\n\n${REVERT_DELIVERY_WARNING}` : question)) {
       onGameAction(assigned_trade_code, newStatus);
     }
   });

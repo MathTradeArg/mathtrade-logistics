@@ -109,6 +109,23 @@ describe('GameDetailsDisplay', () => {
       expect(mockOnGameAction).not.toHaveBeenCalled();
     });
 
+    // Rule: taking a delivered game (6) back only changes its status; the
+    // transfer stays, so the confirm says so.
+    it('reverting a delivered game warns that it does not undo the transfer', () => {
+      render(<GameDetailsDisplay {...defaultProps} isAdmin={true} gameDetail={{ ...baseGameDetail, status: 6 }} />);
+      fireEvent.click(screen.getAllByRole('button', { name: 'Pendiente' })[0]);
+
+      expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('esto no deshace el traspaso'));
+      expect(mockOnGameAction).toHaveBeenCalledWith(12345, 4);
+    });
+
+    it('a game that is not delivered does not get the transfer warning', () => {
+      render(<GameDetailsDisplay {...defaultProps} isAdmin={true} gameDetail={{ ...baseGameDetail, status: 5 }} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Pendiente' }));
+
+      expect(window.confirm).toHaveBeenCalledWith(expect.not.stringContaining('traspaso'));
+    });
+
     it('disables buttons when isPerformingGameAction is true', () => {
       render(<GameDetailsDisplay {...defaultProps} isAdmin={true} isPerformingGameAction={true} />);
       expect(screen.getAllByRole('button', { name: 'En evento' })[0]).toBeDisabled();

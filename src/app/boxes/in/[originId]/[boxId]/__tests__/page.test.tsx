@@ -2,7 +2,7 @@ import { ActionStatusProvider } from '@/contexts/ActionStatusContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import * as boxApi from '@/hooks/boxes/boxApi';
 import { useAuth } from '@/hooks/useAuth';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import IncomingBoxPage from '../page';
 
 jest.mock('@/hooks/useAuth');
@@ -338,8 +338,26 @@ describe('IncomingBoxPage: every game of an opened box is marked en evento, also
     const receiveButtons = screen.getAllByRole('button', { name: 'Marcar recibido' });
     expect(receiveButtons).toHaveLength(2);
     fireEvent.click(receiveButtons[0]);
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Marcar recibido' }));
 
     await waitFor(() => expect(boxApi.markItemsReceived).toHaveBeenCalledWith([20040], '1'));
+  });
+
+  // Rule: marking a single game En evento is irreversible for a volunteer, so
+  // the per-game button asks first.
+  it('"Marcar recibido" on a game asks first and Cancelar does not mark it', async () => {
+    render(<IncomingBoxPage />, { wrapper });
+
+    await screen.findByRole('button', { name: 'Cerrar de nuevo' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Marcar recibido' })[0]);
+
+    expect(boxApi.markItemsReceived).not.toHaveBeenCalled();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('Marcar «Wingspan» como En evento');
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(boxApi.markItemsReceived).not.toHaveBeenCalled();
   });
 
   it('does not tell volunteers that games going on to other cities are not marked', async () => {

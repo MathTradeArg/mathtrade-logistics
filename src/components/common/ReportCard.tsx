@@ -11,6 +11,7 @@ import { formatTradeCode } from '@/utils/tradeCode';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import { Card } from '@/components/common/ui/Card';
 import { Chip } from '@/components/common/ui/Chip';
+import StaffDialog from '@/components/staff/StaffDialog';
 
 function itemCodeLabel(report: EnrichedReport): string {
   const code = report.itemData?.assigned_trade_code || report.assigned_trade_code;
@@ -33,6 +34,7 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState<ReportComment[]>(report.comments || []);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showResolveModal, setShowResolveModal] = useState(false);
   
   const { execute: addComment, isLoading: isAddingComment } = useApi<ReportComment>(`reports/${report.id}/comments/`, { method: 'POST' });
   const { execute: deleteReport, isLoading: isDeletingReport } = useApi(`reports/${report.id}/`, { method: 'DELETE' });
@@ -67,7 +69,10 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
     }
   });
 
+  const handleShowResolveModal = useHapticClick(() => setShowResolveModal(true));
+
   const handleResolveReport = useHapticClick(async () => {
+    setShowResolveModal(false);
     try {
       const updated = await resolveReport();
       triggerHaptic(15);
@@ -199,7 +204,7 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
         {!report.resolved_at && (
           <button
             type="button"
-            onClick={handleResolveReport}
+            onClick={handleShowResolveModal}
             disabled={isResolving}
             className="staff-btn staff-btn-want"
           >
@@ -295,6 +300,17 @@ export default function ReportCard({ report, onImageClick, onReportDeleted, onRe
           )}
         </div>
       </div>
+
+      <StaffDialog
+        open={showResolveModal}
+        title="Marcar solucionado"
+        confirmLabel="Marcar solucionado"
+        confirmDisabled={isResolving}
+        onConfirm={handleResolveReport}
+        onCancel={() => setShowResolveModal(false)}
+      >
+        Vas a cerrar este reporte para todo el equipo y avisarle a quien lo reportó. No se puede reabrir desde acá.
+      </StaffDialog>
 
       <ConfirmationModal
         isOpen={showDeleteModal}
