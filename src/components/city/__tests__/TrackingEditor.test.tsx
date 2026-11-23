@@ -116,6 +116,79 @@ describe('TrackingEditor', () => {
     expect(await screen.findByText('Solo cajas cerradas de tu ciudad.')).toBeInTheDocument();
   });
 
+  describe('price and weight must be greater than 0 (0 means "not loaded")', () => {
+    const fillAll = async (price: string, weight: string) => {
+      await screen.findByLabelText('Destino');
+      fill(/Destino/, '1');
+      fireEvent.click(screen.getByRole('checkbox', { name: /Caja 1\b/ }));
+      fill(/Código de seguimiento/, 'AR1');
+      fill(/Precio/, price);
+      fill(/Peso/, weight);
+    };
+    const MESSAGE = 'El precio y el peso tienen que ser mayores a 0.';
+
+    it.each([
+      ['0', '1'],
+      ['1', '0'],
+      ['-3', '1'],
+      ['1', '0.00'],
+    ])('price %s / weight %s disables save and explains why', async (price, weight) => {
+      render(<TrackingEditor cityId={7} onSaved={jest.fn()} onCancel={jest.fn()} />);
+      await fillAll(price, weight);
+      expect(screen.getByRole('button', { name: 'Guardar envío' })).toBeDisabled();
+      expect(screen.getByText(MESSAGE)).toBeInTheDocument();
+      fireEvent.submit(screen.getByRole('button', { name: 'Guardar envío' }).closest('form')!);
+      expect(cityApi.saveTracking).not.toHaveBeenCalled();
+    });
+
+    it('accepts decimals above 0', async () => {
+      render(<TrackingEditor cityId={7} onSaved={jest.fn()} onCancel={jest.fn()} />);
+      await fillAll('0.5', '0.5');
+      expect(screen.getByRole('button', { name: 'Guardar envío' })).toBeEnabled();
+      expect(screen.queryByText(MESSAGE)).not.toBeInTheDocument();
+    });
+
+    it('does not show the message while the fields are still empty', async () => {
+      render(<TrackingEditor cityId={7} onSaved={jest.fn()} onCancel={jest.fn()} />);
+      await screen.findByLabelText('Destino');
+      expect(screen.queryByText(MESSAGE)).not.toBeInTheDocument();
+    });
+
+    it('uses min 0.01 on both inputs', async () => {
+      render(<TrackingEditor cityId={7} onSaved={jest.fn()} onCancel={jest.fn()} />);
+      await screen.findByLabelText('Destino');
+      expect(screen.getByLabelText(/Precio/)).toHaveAttribute('min', '0.01');
+      expect(screen.getByLabelText(/Peso/)).toHaveAttribute('min', '0.01');
+    });
+
+    it('an old shipment saved with price 0 asks for a real price before saving', async () => {
+      const editing: Tracking = {
+        id: 5, tracking_code: 'OTHER-CODE', destiny: 1, price: 0, weight: 0, image: null, item_count: 1,
+        boxes: [box(31, 2, 1, 'OTHER-CODE')],
+      };
+      render(<TrackingEditor cityId={7} tracking={editing} onSaved={jest.fn()} onCancel={jest.fn()} />);
+      await screen.findByRole('checkbox', { name: /Caja 2\b/ });
+      expect(screen.getByRole('button', { name: 'Guardar envío' })).toBeDisabled();
+      expect(screen.getByText(MESSAGE)).toBeInTheDocument();
+    });
+
+    it('shows the backend price/weight errors in Spanish', async () => {
+      (cityApi.saveTracking as jest.Mock).mockRejectedValue(
+        Object.assign(new Error('Error: Bad Request'), {
+          status: 400,
+          body: { price: ['El precio tiene que ser mayor a 0.'], weight: ['El peso tiene que ser mayor a 0.'] },
+        }),
+      );
+      render(<TrackingEditor cityId={7} onSaved={jest.fn()} onCancel={jest.fn()} />);
+      await fillAll('1', '1');
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Guardar envío' }));
+      });
+      expect(await screen.findByText('El precio tiene que ser mayor a 0. El peso tiene que ser mayor a 0.'))
+        .toBeInTheDocument();
+    });
+  });
+
   describe('direct AMBA and via-AMBA boxes (both destiny 1, one shipment)', () => {
     const viaBox = (id: number, number: number): Box => ({
       ...box(id, number, 1),

@@ -121,12 +121,14 @@ export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: 
   };
 
   const boxIds = boxOptions.filter((box) => selected.has(box.id)).map((box) => box.id);
+  // 0 means "not loaded" in the backend (Mis pagos, cobro export): both must be > 0.
+  const filled = price.trim() !== '' && weight.trim() !== '';
+  const positive = filled && Number(price) > 0 && Number(weight) > 0;
   const canSave =
     destination != null &&
     boxIds.length > 0 &&
     code.trim() !== '' &&
-    price.trim() !== '' &&
-    weight.trim() !== '' &&
+    positive &&
     !uploading &&
     !saving;
 
@@ -213,7 +215,7 @@ export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: 
             id="tracking-price"
             type="number"
             inputMode="decimal"
-            min="0"
+            min="0.01"
             step="any"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
@@ -227,7 +229,7 @@ export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: 
             id="tracking-weight"
             type="number"
             inputMode="decimal"
-            min="0"
+            min="0.01"
             step="any"
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
@@ -236,6 +238,11 @@ export default function TrackingEditor({ cityId, tracking, onSaved, onCancel }: 
           />
         </div>
       </div>
+      {filled && !positive && (
+        <p className="-mt-4 text-body text-danger" role="alert">
+          El precio y el peso tienen que ser mayores a 0.
+        </p>
+      )}
 
       <div>
         <span className={labelClass}>Comprobante</span>
