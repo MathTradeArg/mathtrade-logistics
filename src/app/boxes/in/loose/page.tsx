@@ -1,7 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, PhaseBlocked, StaffEmpty, StaffError, StaffPage, StaffSearch, ThumbCta } from '@/components/staff';
+import { GameRow, PhaseBlocked, StaffDialog, StaffEmpty, StaffError, StaffPage, StaffSearch, ThumbCta } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
@@ -21,6 +21,7 @@ export default function LooseIncomingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useStaffTitle('Sueltos');
 
@@ -75,8 +76,12 @@ export default function LooseIncomingPage() {
       setError(err instanceof Error ? err.message : 'No se pudieron marcar los juegos.');
     } finally {
       setIsSaving(false);
+      setShowConfirm(false);
     }
   };
+
+  // Every selected game, also the ones the current search hides.
+  const selectedItems = items.filter((item) => selected.has(item.assigned_trade_code));
 
   if (authIsLoading || isAuthenticated === null || isLoadingEventPhase) {
     return <div className="flex min-h-[50dvh] items-center justify-center"><LoadingSpinner message="Cargando..." /></div>;
@@ -134,10 +139,27 @@ export default function LooseIncomingPage() {
       <ThumbCta
         variant="success"
         disabled={selected.size === 0 || isSaving}
-        onClick={handleReceive}
+        onClick={() => setShowConfirm(true)}
       >
         Marcar En evento ({selected.size})
       </ThumbCta>
+
+      <StaffDialog
+        open={showConfirm}
+        title="Marcar en evento"
+        confirmLabel={`Confirmar (${selected.size})`}
+        confirmDisabled={isSaving}
+        onConfirm={handleReceive}
+        onCancel={() => setShowConfirm(false)}
+      >
+        <p>Vas a marcar {selected.size} {selected.size === 1 ? 'juego' : 'juegos'} como En evento:</p>
+        <ul className="mt-2 flex flex-col gap-1 font-semibold text-gray-900">
+          {selectedItems.map((item) => (
+            <li key={item.id}>{`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}</li>
+          ))}
+        </ul>
+        <p className="mt-3">Si alguno no llegó físicamente, no lo marques: solo un organizador puede deshacerlo.</p>
+      </StaffDialog>
     </StaffPage>
   );
 }

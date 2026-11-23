@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { listAmbaPending, markItemsReceived } from '@/hooks/boxes/boxApi';
 import '@testing-library/jest-dom';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import AmbaPendingOriginPage from '../[originId]/page';
 
 jest.mock('@/hooks/useAuth');
@@ -82,7 +82,16 @@ describe('AmbaPendingOriginPage', () => {
     expect(summary.closest('details')).toContainElement(screen.getByText('No hay juegos pendientes a AMBA.'));
   });
 
-  it('marks the selected games as en evento from the bottom button', async () => {
+  const selectBoth = async () => {
+    render(<AmbaPendingOriginPage />);
+    await screen.findByText('Juegos no recibidos (2)');
+    const [first, second] = screen.getAllByRole('checkbox', { hidden: true });
+    fireEvent.click(first);
+    fireEvent.click(second);
+    return { first, second };
+  };
+
+  it('marks the selected games as en evento from the bottom button, after confirming', async () => {
     render(<AmbaPendingOriginPage />);
     await screen.findByText('Juegos no recibidos (2)');
 
@@ -94,9 +103,50 @@ describe('AmbaPendingOriginPage', () => {
     expect(first).toHaveAttribute('aria-checked', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: 'Marcar 2 en evento' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirmar (2)' }));
 
     await waitFor(() => expect(mockMark).toHaveBeenCalledWith([101, 102], 9));
     await waitFor(() => expect(mockList).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.queryByRole('button', { name: /en evento/ })).not.toBeInTheDocument());
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  // Rule: any volunteer can mark games En evento from here, but only after a
+  // confirmation that says how many and which games (only an organizer can undo it).
+  it('the bottom button opens a confirmation with the count and the games, and does not mark yet', async () => {
+    await selectBoth();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar 2 en evento' }));
+
+    expect(mockMark).not.toHaveBeenCalled();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('Vas a marcar 2 juegos como En evento');
+    expect(dialog).toHaveTextContent('00101 Catan');
+    expect(dialog).toHaveTextContent('00102 Azul');
+    expect(dialog).toHaveTextContent('Si alguno no llegó físicamente, no lo marques: solo un organizador puede deshacerlo.');
+  });
+
+  it('Cancelar does not mark and keeps the selection', async () => {
+    const { first, second } = await selectBoth();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar 2 en evento' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockMark).not.toHaveBeenCalled();
+    expect(first).toHaveAttribute('aria-checked', 'true');
+    expect(second).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('button', { name: 'Marcar 2 en evento' })).toBeInTheDocument();
+  });
+
+  it('if marking fails the dialog closes and the error shows on the screen', async () => {
+    mockMark.mockRejectedValue(new Error('Sin conexión'));
+    await selectBoth();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar 2 en evento' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirmar (2)' }));
+
+    expect(await screen.findByText('Sin conexión')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

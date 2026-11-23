@@ -64,4 +64,33 @@ describe('ToolsPage', () => {
     expect(screen.queryByText('Interior')).not.toBeInTheDocument();
     expect(mockUseApi).not.toHaveBeenCalledWith('logistics/users/update-status/', expect.anything());
   });
+
+  // Rule: reverting a delivered game (6) to pending only changes its status:
+  // the transfer stays (traded, elements belong to the receiver), so warn.
+  const searchGame = async (status: number) => {
+    mockUseApi.mockReturnValue({ execute: jest.fn().mockResolvedValue({ ...game, status }) });
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false, userId: '1' });
+    render(
+      <ActionStatusProvider>
+        <ToolsPage />
+      </ActionStatusProvider>,
+    );
+    fireEvent.change(screen.getByLabelText('Buscar juego por código'), { target: { value: '123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar código' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Volver a pendiente' }));
+    return screen.getByRole('dialog');
+  };
+
+  it('reverting a delivered game warns that it does not undo the transfer', async () => {
+    const dialog = await searchGame(6);
+    expect(dialog).toHaveTextContent(
+      'esto no deshace el traspaso (el juego sigue marcado como intercambiado y los elementos quedan del receptor)',
+    );
+  });
+
+  it('reverting a game En evento keeps the usual text', async () => {
+    const dialog = await searchGame(5);
+    expect(dialog).toHaveTextContent('Vas a volver este juego a pendiente.');
+    expect(dialog).not.toHaveTextContent('traspaso');
+  });
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, StaffEmpty, StaffError, StaffPage, ThumbCta } from '@/components/staff';
+import { GameRow, StaffDialog, StaffEmpty, StaffError, StaffPage, ThumbCta } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { listAmbaPending, markItemsReceived, type AmbaPendingOrigin } from '@/hooks/boxes/boxApi';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,6 +19,7 @@ export default function AmbaPendingOriginPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useStaffTitle(origin?.origin_name || 'Pendientes AMBA');
 
@@ -63,8 +64,11 @@ export default function AmbaPendingOriginPage() {
       setError(err instanceof Error ? err.message : 'No se pudieron marcar los juegos.');
     } finally {
       setIsSaving(false);
+      setShowConfirm(false);
     }
   };
+
+  const selectedTrades = (origin?.trades ?? []).filter((trade) => selected.has(trade.assigned_trade_code));
 
   if (authIsLoading || isAuthenticated === null) {
     return <div className="flex min-h-[50dvh] items-center justify-center"><LoadingSpinner message="Cargando..." /></div>;
@@ -143,10 +147,27 @@ export default function AmbaPendingOriginPage() {
       )}
 
       {selected.size > 0 && (
-        <ThumbCta onClick={handleReceive} disabled={isSaving} variant="success">
+        <ThumbCta onClick={() => setShowConfirm(true)} disabled={isSaving} variant="success">
           Marcar {selected.size} en evento
         </ThumbCta>
       )}
+
+      <StaffDialog
+        open={showConfirm}
+        title="Marcar en evento"
+        confirmLabel={`Confirmar (${selected.size})`}
+        confirmDisabled={isSaving}
+        onConfirm={handleReceive}
+        onCancel={() => setShowConfirm(false)}
+      >
+        <p>Vas a marcar {selected.size} {selected.size === 1 ? 'juego' : 'juegos'} como En evento:</p>
+        <ul className="mt-2 flex flex-col gap-1 font-semibold text-gray-900">
+          {selectedTrades.map((trade) => (
+            <li key={trade.assigned_trade_code}>{`${formatTradeCode(trade.assigned_trade_code)} ${trade.title}`}</li>
+          ))}
+        </ul>
+        <p className="mt-3">Si alguno no llegó físicamente, no lo marques: solo un organizador puede deshacerlo.</p>
+      </StaffDialog>
     </StaffPage>
   );
 }

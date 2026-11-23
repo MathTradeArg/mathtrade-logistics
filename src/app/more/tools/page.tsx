@@ -8,6 +8,7 @@ import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
 import type { GameDetail } from '@/types';
 import { formatTradeCode, parseTradeCodeQuery } from '@/utils/tradeCode';
+import { REVERT_DELIVERY_WARNING } from '@/utils/revertDeliveryWarning';
 import { FormEvent, useState } from 'react';
 
 export default function ToolsPage() {
@@ -126,6 +127,9 @@ export default function ToolsPage() {
         {pendingStatus === 5 && 'Vas a marcar este juego como en evento. Avisá si no estás seguro.'}
         {pendingStatus === 6 && 'Vas a marcar este juego como entregado. Avisá si no estás seguro.'}
         {pendingStatus === 4 && 'Vas a volver este juego a pendiente.'}
+        {pendingStatus === 4 && game?.status === 6 && (
+          <p className="mt-2 font-semibold text-gray-900">{REVERT_DELIVERY_WARNING}</p>
+        )}
       </StaffDialog>
     </StaffPage>
   );

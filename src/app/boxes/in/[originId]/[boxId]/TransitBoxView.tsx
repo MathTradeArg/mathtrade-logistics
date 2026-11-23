@@ -57,6 +57,7 @@ export default function TransitBoxView({
   const [selectedAdds, setSelectedAdds] = useState<Set<number>>(new Set());
   const [movingTradeId, setMovingTradeId] = useState<number | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Item | null>(null);
+  const [receiveTarget, setReceiveTarget] = useState<Item | null>(null);
   const [closedNumber, setClosedNumber] = useState<number | null>(null);
   const [addSummary, setAddSummary] = useState<AddSummary | null>(null);
   const [extrasError, setExtrasError] = useState<string | null>(null);
@@ -137,6 +138,7 @@ export default function TransitBoxView({
       setError(err instanceof Error ? err.message : 'No se pudo marcar el juego.');
     } finally {
       setReceivingCode(null);
+      setReceiveTarget(null);
     }
   };
 
@@ -261,7 +263,7 @@ export default function TransitBoxView({
                         <button
                           type="button"
                           disabled={inFlight || receivingCode != null}
-                          onClick={() => handleReceive(item)}
+                          onClick={() => setReceiveTarget(item)}
                           className="staff-btn staff-btn-outline"
                         >
                           Marcar recibido
@@ -386,6 +388,21 @@ export default function TransitBoxView({
         onCancel={() => setRemoveTarget(null)}
       >
         {removeTarget && `¿Sacar ${removeTarget.title} de esta caja?`}
+      </StaffDialog>
+
+      <StaffDialog
+        open={receiveTarget != null}
+        title={receiveTarget ? `Marcar «${receiveTarget.title}» como En evento` : 'Marcar como En evento'}
+        confirmLabel="Marcar recibido"
+        confirmDisabled={receivingCode != null}
+        onConfirm={() => { if (receiveTarget) void handleReceive(receiveTarget); }}
+        onCancel={() => setReceiveTarget(null)}
+      >
+        {receiveTarget && (
+          <p>
+            {`${formatTradeCode(receiveTarget.assigned_trade_code)} · ${receiveTarget.title}`}. Si no llegó físicamente, no lo marques: solo un organizador puede deshacerlo.
+          </p>
+        )}
       </StaffDialog>
 
       <AddResultDialog summary={addSummary} onClose={() => setAddSummary(null)} />
