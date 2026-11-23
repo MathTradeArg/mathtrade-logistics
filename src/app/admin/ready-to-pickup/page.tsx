@@ -160,7 +160,10 @@ export default function ReadyToPickupPage() {
     try {
       await updateUserStatus({
         user_id: userId,
-        status: newStatus
+        status: newStatus,
+        // Manual admin change: the backend only lets a forced change lower a
+        // status (a rescan in /receive or /deliver never does).
+        force: true
       });
 
       setUsers(prevUsers =>

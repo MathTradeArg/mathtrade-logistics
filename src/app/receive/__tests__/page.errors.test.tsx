@@ -202,3 +202,33 @@ describe('ReceivePage: a network or server error must not lock the screen', () =
     expect(screen.queryByText('Usuario no encontrado')).not.toBeInTheDocument();
   });
 });
+
+describe('ReceivePage: the scan never sends force (the backend keeps it from lowering the user status)', () => {
+  const originalHost = process.env.NEXT_PUBLIC_MT_API_HOST;
+
+  beforeAll(() => { process.env.NEXT_PUBLIC_MT_API_HOST = 'http://api.test/'; });
+  afterAll(() => { process.env.NEXT_PUBLIC_MT_API_HOST = originalHost; });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    fetchMock.resetMocks();
+    localStorage.setItem('authToken', 'fake-token');
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, userId: '1', isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockUseSearchParams.mockReturnValue(new URLSearchParams());
+    mockUsePathname.mockReturnValue('/receive');
+  });
+
+  it('marca present sin force', async () => {
+    routeApi({ scan: { status: 200, body: mockTradesResponse } });
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Simulate Scan' }));
+    await waitFor(() => expect(screen.getByTestId('game-list')).toBeInTheDocument());
+
+    const statusBodies = () => fetchMock.mock.calls
+      .filter(([url]) => String(url).includes('users/update-status/'))
+      .map(([, init]) => JSON.parse(String(init?.body)));
+    await waitFor(() => expect(statusBodies()).toHaveLength(1));
+    expect(statusBodies()[0]).toEqual({ user_id: 123, status: 'present' });
+  });
+});
