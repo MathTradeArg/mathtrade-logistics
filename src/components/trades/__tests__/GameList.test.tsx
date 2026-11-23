@@ -141,6 +141,40 @@ describe('GameList', () => {
       expect(mockOnUpdateItems).toHaveBeenCalledWith([101], 1);
       expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalled();
     });
+    it('si onUpdateItems devuelve false la selección se conserva y no scrollea', async () => {
+      jest.useFakeTimers();
+      const failing = jest.fn().mockResolvedValue(false);
+      render(<GameList {...deliverProps} onUpdateItems={failing} />);
+      fireEvent.click(screen.getByRole('button', { name: /Entregar TODO lo listo/i }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+      });
+      act(() => { jest.runAllTimers(); });
+
+      expect(failing).toHaveBeenCalledWith([101], 1);
+      expect(screen.getByRole('button', { name: /Entregar lo marcado \(1\)/i })).toBeInTheDocument();
+      expect(window.HTMLElement.prototype.scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it('con isUpdating los botones se deshabilitan y dicen "Guardando..."', () => {
+      render(<GameList {...deliverProps} isUpdating />);
+      expect(screen.queryByRole('button', { name: /Entregar TODO lo listo/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Guardando\.\.\./i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /Entregar lo marcado \(1\)/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /Escanear otro QR/i })).toBeDisabled();
+    });
+
+    it('un doble toque en confirmar manda una sola actualización', async () => {
+      const hanging = jest.fn(() => new Promise<boolean>(() => undefined));
+      render(<GameList {...deliverProps} onUpdateItems={hanging} />);
+      fireEvent.click(screen.getByRole('button', { name: /Entregar TODO lo listo/i }));
+      const confirm = screen.getByRole('button', { name: 'Confirm' });
+      await act(async () => {
+        fireEvent.click(confirm);
+        fireEvent.click(confirm);
+      });
+      expect(hanging).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('in "receive" mode', () => {

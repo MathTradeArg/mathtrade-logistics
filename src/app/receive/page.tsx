@@ -35,6 +35,7 @@ function ReceivePageContent() {
   const [updateError, setUpdateError] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const lastUpdate = useRef<{ ids: number[]; by: number } | null>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [initialQrProcessed, setInitialQrProcessed] = useState(false);
@@ -102,16 +103,17 @@ function ReceivePageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, isLoading, games, initialQrProcessed, handleScan, pathname]);
 
-  const handleUpdateItems = useCallback(async (itemIds: number[], deliveredByUserId: number) => {
+  /** Resolves true only when the PATCH went through; GameList keeps the selection otherwise. */
+  const handleUpdateItems = useCallback(async (itemIds: number[], deliveredByUserId: number): Promise<boolean> => {
     setUpdateError('');
     if (!qrData || !games || !deliveredByUserId || games.length === 0) {
       setUpdateError('Faltan datos para la actualización.');
-      return;
+      return false;
     }
 
     const itemsToUpdate = games.filter(game => itemIds.includes(game.result.assigned_trade_code) && game.result.status_display != "Delivered");
     const idsToUpdate = itemsToUpdate.map(game => game.result.assigned_trade_code);
-    if (idsToUpdate.length === 0) return;
+    if (idsToUpdate.length === 0) return false;
 
     lastUpdate.current = { ids: itemIds, by: deliveredByUserId };
     setIsUpdating(true);
@@ -133,10 +135,12 @@ function ReceivePageContent() {
         );
       });
       lastUpdate.current = null;
+      return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Falló la actualización.';
       setUpdateError(errorMessage);
       setActionError(errorMessage);
+      return false;
     } finally {
       setIsUpdating(false);
     }
@@ -145,6 +149,11 @@ function ReceivePageContent() {
   const retryUpdate = useCallback(() => {
     if (lastUpdate.current) handleUpdateItems(lastUpdate.current.ids, lastUpdate.current.by);
   }, [handleUpdateItems]);
+
+  // Bring the error next to the action: the list can be long and the banner sits above it.
+  useEffect(() => {
+    if (updateError) bannerRef.current?.scrollIntoView({ block: 'center' });
+  }, [updateError]);
 
   const resetToScanner = useCallback(() => {
     setQrData(null);
@@ -183,14 +192,17 @@ function ReceivePageContent() {
             ) : games && (
               <>
                 {updateError && (
-                  <StaffBanner onRetry={lastUpdate.current ? retryUpdate : undefined} retrying={isUpdating}>
-                    {updateError}
-                  </StaffBanner>
+                  <div ref={bannerRef}>
+                    <StaffBanner onRetry={lastUpdate.current ? retryUpdate : undefined} retrying={isUpdating}>
+                      {updateError}
+                    </StaffBanner>
+                  </div>
                 )}
                 <GameList
                   trades={games}
                   user={user}
                   onUpdateItems={handleUpdateItems}
+                  isUpdating={isUpdating}
                   disabled={!isReceivingEnabled}
                   onFinish={resetToScanner}
                   mode="receive"

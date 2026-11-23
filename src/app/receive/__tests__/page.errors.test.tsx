@@ -28,13 +28,14 @@ jest.mock('@/components/qr/QrScanner', () => {
   ));
 });
 jest.mock('@/components/trades/GameList', () => {
-  return jest.fn(({ trades, onUpdateItems, onFinish, deliveredByUserId }) => (
+  return jest.fn(({ trades, onUpdateItems, onFinish, deliveredByUserId, isUpdating }) => (
     <div data-testid="game-list">
       <p>Trades: {trades.length}</p>
       <button onClick={() => onUpdateItems(trades.map((t: { result: { assigned_trade_code: number } }) => t.result.assigned_trade_code), deliveredByUserId)}>
         Update All Items
       </button>
-      <button onClick={onFinish}>Finish</button>
+      {/* GameList disables "Escanear otro QR" with isUpdating; the mock mirrors it. */}
+      <button onClick={onFinish} disabled={!!isUpdating}>Finish</button>
     </div>
   ));
 });
@@ -71,9 +72,70 @@ function routeApi({ scan, patchReplies }: { scan: Reply; patchReplies?: Reply[] 
   });
 }
 
+// jsdom has no scrollIntoView; the page scrolls the error banner into view.
+// A plain function records `this` in mock.instances (the scrolled element).
+const scrollSpy = jest.fn(function (this: Element) { return undefined; });
+Element.prototype.scrollIntoView = scrollSpy;
+
 const bulkCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).includes('games/bulk-update-status/'));
 
 const renderPage = () => render(<ActionStatusProvider><ReceivePage /></ActionStatusProvider>);
+
+describe('ReceivePage: a failed PATCH stays in view and actions are blocked while saving', () => {
+  const originalHost = process.env.NEXT_PUBLIC_MT_API_HOST;
+
+  beforeAll(() => { process.env.NEXT_PUBLIC_MT_API_HOST = 'http://api.test/'; });
+  afterAll(() => { process.env.NEXT_PUBLIC_MT_API_HOST = originalHost; });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    fetchMock.resetMocks();
+    localStorage.setItem('authToken', 'fake-token');
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, userId: '1', isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockUseSearchParams.mockReturnValue(new URLSearchParams());
+    mockUsePathname.mockReturnValue('/receive');
+  });
+
+  it('un PATCH que falla lleva el error a la vista', async () => {
+    routeApi({
+      scan: { status: 200, body: mockTradesResponse },
+      patchReplies: [{ status: 500, body: { detail: 'Falló el servidor' } }],
+    });
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Simulate Scan' }));
+    await waitFor(() => expect(screen.getByTestId('game-list')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Update All Items' }));
+    const alert = await screen.findByRole('alert');
+
+    await waitFor(() => expect(scrollSpy).toHaveBeenCalled());
+    const scrolled = scrollSpy.mock.instances as unknown as Element[];
+    expect(scrolled.some((el) => el.contains(alert))).toBe(true);
+  });
+
+  it('mientras el PATCH está colgado, "Escanear otro" está deshabilitado', async () => {
+    let release: (reply: { status: number; body: string }) => void = () => undefined;
+    fetchMock.mockResponse(async (req) => {
+      if (req.url.includes('/games/receive/')) return json({ status: 200, body: mockTradesResponse });
+      if (req.url.includes('games/bulk-update-status/')) return new Promise((resolve) => { release = resolve; });
+      if (req.url.includes('users/update-status/')) return json({ status: 200, body: {} });
+      return json({ status: 404, body: { detail: 'unexpected url' } });
+    });
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Simulate Scan' }));
+    await waitFor(() => expect(screen.getByTestId('game-list')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Finish' })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Update All Items' }));
+    await waitFor(() => expect(bulkCalls()).toHaveLength(1));
+    expect(screen.getByRole('button', { name: 'Finish' })).toBeDisabled();
+
+    await act(async () => { release(json({ status: 503, body: { detail: 'Servicio no disponible' } })); });
+    expect(await screen.findByRole('alert')).toHaveTextContent('Servicio no disponible');
+    expect(screen.getByRole('button', { name: 'Finish' })).toBeEnabled();
+  });
+});
 
 describe('ReceivePage: a network or server error must not lock the screen', () => {
   const originalHost = process.env.NEXT_PUBLIC_MT_API_HOST;
@@ -121,6 +183,8 @@ describe('ReceivePage: a network or server error must not lock the screen', () =
     });
     expect(screen.getByTestId('game-list')).toBeInTheDocument();
 
+    // "Finish" stays blocked until the retried PATCH settles.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Finish' })).toBeEnabled());
     fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
     await waitFor(() => expect(screen.getByTestId('qr-scanner')).toBeInTheDocument());
   });

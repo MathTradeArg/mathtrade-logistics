@@ -6,19 +6,22 @@ import { formatTradeCode } from '@/utils/tradeCode';
 import { ConfirmationModal } from '@/components/trades';
 import { useHapticClick } from '@/hooks/useHapticClick';
 import type { Trade, User } from "@/types";
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface GameListProps {
   trades: Trade[];
   user: User | null;
-  onUpdateItems: (itemIds: number[], deliveredByUserId: number) => Promise<void>;
+  /** Resolves false when the update failed: the selection is kept so it can be retried. */
+  onUpdateItems: (itemIds: number[], deliveredByUserId: number) => Promise<boolean | void>;
   onFinish: () => void;
   deliveredByUserId: number | null;
   disabled?: boolean;
+  /** An update is in flight: every action (and "Escanear otro QR") is blocked. */
+  isUpdating?: boolean;
   mode: 'receive' | 'deliver';
 }
 
-const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, onFinish, deliveredByUserId, mode, user }) => {
+const GameList: React.FC<GameListProps> = ({ disabled, isUpdating = false, trades, onUpdateItems, onFinish, deliveredByUserId, mode, user }) => {
   const config = useMemo(() => {
     const receiveConfig = {
       isUnavailable: (trade: Trade) => false,
@@ -130,10 +133,21 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
     setSelectedItems(initialSelected);
   }, [pendingItems]);
 
+  // Guards a double tap on confirm before the parent's isUpdating re-renders.
+  const submitting = useRef(false);
+
   const executeConfirmedAction = async () => {
     const itemIdsToUpdate = itemsToConfirm.map(trade => trade.result.assigned_trade_code);
     if (itemIdsToUpdate.length > 0 && deliveredByUserId !== null) {
-      await onUpdateItems(itemIdsToUpdate, deliveredByUserId);
+      if (submitting.current) return;
+      submitting.current = true;
+      let ok: boolean | void;
+      try {
+        ok = await onUpdateItems(itemIdsToUpdate, deliveredByUserId);
+      } finally {
+        submitting.current = false;
+      }
+      if (ok === false) return;
 
       setSelectedItems(prev => {
         const newSet = new Set(prev);
@@ -214,10 +228,10 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
         <button
           onClick={handleConfirmAllPending}
           className="staff-btn staff-btn-primary mb-8"
-          disabled={disabled}
+          disabled={disabled || isUpdating}
           title={disabled ? config.texts.disabledMessage : ""}
         >
-          {config.texts.mainAction} ({pendingItems.length})
+          {isUpdating ? 'Guardando...' : `${config.texts.mainAction} (${pendingItems.length})`}
         </button>
       )}
 
@@ -286,7 +300,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
         <button
           onClick={handleConfirmSelected}
           className="staff-btn staff-btn-outline mt-8"
-          disabled={disabled}
+          disabled={disabled || isUpdating}
           title={disabled ? config.texts.disabledMessage : ""}
         >
           {config.texts.secondaryAction} ({selectedItems.size})
@@ -297,6 +311,7 @@ const GameList: React.FC<GameListProps> = ({ disabled, trades, onUpdateItems, on
         onClick={handleFinish}
         id="finish-button"
         className="staff-btn staff-btn-want mt-3"
+        disabled={isUpdating}
       >
         {pendingItems.length === 0 && notArrivedCount === 0 && trades.length > 0 ? config.texts.finishButtonCompleted : config.texts.finishButtonIdle}
       </button>
