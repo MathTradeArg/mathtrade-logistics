@@ -153,4 +153,173 @@ describe('TablesPage', () => {
       expect(mockPatchMe).toHaveBeenCalledWith({ tables: ['01', '02'] });
     });
   });
+
+  it('does not count already delivered games in the recipient missing/on-table totals', async () => {
+    const game = (id: number, code: number, title: string, status: number) => ({
+      trade_id: id,
+      assigned_trade_code: code,
+      title,
+      status,
+      status_display: 'x',
+      from_first_name: 'Pedro',
+      from_last_name: 'Gomez',
+      from_location: 'Rosario',
+    });
+    mockFetchTables.mockResolvedValue({
+      all_tables: ['01'],
+      assigned_tables: ['01'],
+      tables: [
+        {
+          table_number: '01',
+          volunteers: [],
+          summary: {
+            recipients_total: 1,
+            recipients_ready: 0,
+            recipients_complete_on_table: 0,
+            games_total: 5,
+            games_on_table: 1,
+            games_missing: 1,
+            games_delivered: 3,
+          },
+          recipients: [
+            {
+              membership_id: 300,
+              user_id: 400,
+              uuid: 'uuid-3',
+              first_name: 'Carla',
+              last_name: 'Casas',
+              username: 'carla_c',
+              table_number: '01',
+              status: null,
+              games_total: 5,
+              games_ready: 1,
+              games_missing: 1,
+              games_delivered: 3,
+              pending_drop_off_count: 0,
+              is_table_complete: false,
+              is_ready_to_pickup: false,
+              games: [
+                game(10, 201, 'Uno', 6),
+                game(11, 202, 'Dos', 6),
+                game(12, 203, 'Tres', 6),
+                game(13, 204, 'Cuatro', 5),
+                game(14, 205, 'Cinco', 2),
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    render(<TablesPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Casas Carla/)).toBeInTheDocument();
+    });
+    expect(screen.getByText('Faltan 1 de 2')).toBeInTheDocument();
+    expect(screen.getByText(/1\/2 en mesa/)).toBeInTheDocument();
+    expect(screen.getByText(/3 ya entregados/)).toBeInTheDocument();
+    // top summary card: 1 on table out of the 2 not yet delivered (summary says 5 total, 3 delivered)
+    expect(screen.getByText('Juegos en mesa').nextElementSibling).toHaveTextContent('1/2');
+  });
+
+  it('searching a person only matches recipients, not the people who deliver games to them', async () => {
+    render(<TablesPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Biazzi Bruno/)).toBeInTheDocument();
+    });
+
+    // "Perez" only appears as the sender of Bruno's game (Luis Perez)
+    fireEvent.change(screen.getByLabelText('Buscar en las mesas'), { target: { value: 'perez' } });
+    expect(screen.queryByText(/Biazzi Bruno/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Alvarez Ana/)).not.toBeInTheDocument();
+
+    // the recipient's own name still works
+    fireEvent.change(screen.getByLabelText('Buscar en las mesas'), { target: { value: 'bruno' } });
+    expect(screen.getByText(/Biazzi Bruno/)).toBeInTheDocument();
+
+    // and so does the "Faltan" tab
+    fireEvent.change(screen.getByLabelText('Buscar en las mesas'), { target: { value: 'mario' } });
+    fireEvent.click(screen.getByRole('button', { name: /Faltan/i }));
+    expect(screen.queryByText('00104 · Root')).not.toBeInTheDocument();
+  });
+
+  it('groups recipients by table and lets you collapse each group and each recipient', async () => {
+    const rec = (id: number, first: string, last: string, table: string, gameTitle: string) => ({
+      membership_id: id,
+      user_id: id + 1000,
+      uuid: `uuid-${id}`,
+      first_name: first,
+      last_name: last,
+      username: `${first.toLowerCase()}_x`,
+      table_number: table,
+      status: null,
+      games_total: 1,
+      games_ready: 1,
+      games_missing: 0,
+      games_delivered: 0,
+      pending_drop_off_count: 0,
+      is_table_complete: true,
+      is_ready_to_pickup: true,
+      games: [
+        {
+          trade_id: id,
+          assigned_trade_code: id,
+          title: gameTitle,
+          status: 5,
+          status_display: 'En evento',
+          from_first_name: 'Pedro',
+          from_last_name: 'Gomez',
+          from_location: 'Rosario',
+        },
+      ],
+    });
+    const summary = {
+      recipients_total: 1,
+      recipients_ready: 1,
+      recipients_complete_on_table: 1,
+      games_total: 1,
+      games_on_table: 1,
+      games_missing: 0,
+      games_delivered: 0,
+    };
+    mockFetchTables.mockResolvedValue({
+      all_tables: ['01', '02'],
+      assigned_tables: ['01', '02'],
+      tables: [
+        { table_number: '01', volunteers: [], summary, recipients: [rec(1, 'Zoe', 'Zapata', '01', 'Juego Zoe')] },
+        { table_number: '02', volunteers: [], summary, recipients: [rec(2, 'Abel', 'Aguirre', '02', 'Juego Abel')] },
+      ],
+    });
+
+    render(<TablesPage />);
+
+    const group01 = await screen.findByRole('button', { name: /^Mesa 01 · 1 receptor/ });
+    const group02 = screen.getByRole('button', { name: /^Mesa 02 · 1 receptor/ });
+    expect(group01).toHaveAttribute('aria-expanded', 'true');
+
+    // groups are ordered by table, not by recipient name (Zapata is on table 01)
+    expect(
+      group01.compareDocumentPosition(group02) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getByText(/Juego Zoe/)).toBeInTheDocument();
+    expect(screen.getByText(/Juego Abel/)).toBeInTheDocument();
+
+    // collapse a recipient: games hidden, name still visible
+    fireEvent.click(screen.getByRole('button', { name: /Zapata Zoe/ }));
+    expect(screen.queryByText(/Juego Zoe/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Zapata Zoe/)).toBeInTheDocument();
+    expect(screen.getByText(/Juego Abel/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Zapata Zoe/ }));
+    expect(screen.getByText(/Juego Zoe/)).toBeInTheDocument();
+
+    // collapse a whole table group
+    fireEvent.click(group02);
+    expect(group02).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText(/Aguirre Abel/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Zapata Zoe/)).toBeInTheDocument();
+    fireEvent.click(group02);
+    expect(screen.getByText(/Aguirre Abel/)).toBeInTheDocument();
+  });
 });
