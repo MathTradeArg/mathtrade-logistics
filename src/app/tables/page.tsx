@@ -110,6 +110,17 @@ export default function TablesPage() {
   const [draftTables, setDraftTables] = useState<string[]>([]);
   const [customTableInput, setCustomTableInput] = useState('');
   const [savingTables, setSavingTables] = useState(false);
+  const [collapsedTables, setCollapsedTables] = useState<Set<string>>(new Set());
+  const [collapsedRecipients, setCollapsedRecipients] = useState<Set<string>>(new Set());
+
+  const toggleInSet = (setter: (fn: (prev: Set<string>) => Set<string>) => void, key: string) => {
+    setter((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const loadTables = useCallback(async () => {
     setIsLoading(true);
@@ -181,7 +192,6 @@ export default function TablesPage() {
         (g) =>
           tradeCodeSearchText(g.assigned_trade_code).includes(q) ||
           g.title.toLowerCase().includes(q) ||
-          `${g.from_first_name} ${g.from_last_name}`.toLowerCase().includes(q) ||
           g.from_location.toLowerCase().includes(q),
       );
       return name.includes(q) || tableMatch || gameMatch;
@@ -204,7 +214,6 @@ export default function TablesPage() {
             tradeCodeSearchText(game.assigned_trade_code).includes(q) ||
             game.title.toLowerCase().includes(q) ||
             `${rec.first_name} ${rec.last_name} ${rec.username}`.toLowerCase().includes(q) ||
-            `${game.from_first_name} ${game.from_last_name}`.toLowerCase().includes(q) ||
             game.from_location.toLowerCase().includes(q) ||
             rec.table_number.toLowerCase().includes(q);
           if (!matches) continue;
@@ -225,6 +234,7 @@ export default function TablesPage() {
         games_total: acc.games_total + t.summary.games_total,
         games_on_table: acc.games_on_table + t.summary.games_on_table,
         games_missing: acc.games_missing + t.summary.games_missing,
+        games_delivered: acc.games_delivered + t.summary.games_delivered,
       }),
       {
         recipients_total: 0,
@@ -233,6 +243,7 @@ export default function TablesPage() {
         games_total: 0,
         games_on_table: 0,
         games_missing: 0,
+        games_delivered: 0,
       },
     );
   }, [visibleTables]);
@@ -383,7 +394,7 @@ export default function TablesPage() {
         <div className="staff-card p-3 text-center">
           <p className="text-caption text-gray-500">Juegos en mesa</p>
           <p className="mt-1 text-heading font-bold text-want-ink">
-            {totals.games_on_table}/{totals.games_total}
+            {totals.games_on_table}/{totals.games_total - totals.games_delivered}
           </p>
         </div>
         <div className="staff-card p-3 text-center">
@@ -457,13 +468,15 @@ export default function TablesPage() {
               </StaffEmpty>
             );
           }
-          return (
-            <ul className="mt-4 flex flex-col gap-4">
-              {list.map((rec) => {
+              const renderRecipient = (rec: TableRecipient) => {
                 const allDelivered = rec.games_total > 0 && rec.games_delivered === rec.games_total;
+                // Games already handed over earlier no longer count as pending.
+                const pendingTotal = rec.games_total - rec.games_delivered;
+                const recKey = `${rec.table_number}-${rec.membership_id}`;
+                const recipientCollapsed = collapsedRecipients.has(recKey);
                 return (
                   <li
-                    key={`${rec.table_number}-${rec.membership_id}`}
+                    key={recKey}
                     className={`staff-card p-4 ${
                       rec.is_ready_to_pickup
                         ? 'border-l-4 border-want'
@@ -473,14 +486,22 @@ export default function TablesPage() {
                     }`}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
+                      <button
+                        type="button"
+                        onClick={() => toggleInSet(setCollapsedRecipients, recKey)}
+                        aria-expanded={!recipientCollapsed}
+                        className="min-w-0 text-left"
+                      >
                         <p className="text-body-lg font-bold text-gray-900">
+                          <span aria-hidden="true">{recipientCollapsed ? '▸' : '▾'} </span>
                           {recipientFullName(rec)}
                         </p>
                         <p className="text-caption text-gray-500">
-                          @{rec.username} · Mesa {rec.table_number} · {rec.games_ready}/{rec.games_total} en mesa
+                          @{rec.username} · Mesa {rec.table_number} · {rec.games_ready}/{pendingTotal} en mesa
+                          {rec.games_delivered > 0 &&
+                            ` · ${rec.games_delivered} ya ${rec.games_delivered === 1 ? 'entregado' : 'entregados'}`}
                         </p>
-                      </div>
+                      </button>
                       <div className="flex flex-col items-end gap-1">
                         {allDelivered ? (
                           <Chip tone="done">
@@ -496,12 +517,13 @@ export default function TablesPage() {
                           </Chip>
                         ) : (
                           <Chip tone="used">
-                            Faltan {rec.games_missing} de {rec.games_total}
+                            Faltan {rec.games_missing} de {pendingTotal}
                           </Chip>
                         )}
                       </div>
                     </div>
 
+                    {!recipientCollapsed && (
                     <ul className="mt-3 divide-y divide-gray-100 border-t border-gray-100 pt-2">
                       {rec.games.map((g) => {
                         const isReady = g.status === 5;
@@ -530,11 +552,47 @@ export default function TablesPage() {
                         );
                       })}
                     </ul>
+                    )}
                   </li>
                 );
-              })}
-            </ul>
-          );
+              };
+              const byTable = new Map<string, TableRecipient[]>();
+              for (const rec of list) {
+                const arr = byTable.get(rec.table_number) ?? [];
+                arr.push(rec);
+                byTable.set(rec.table_number, arr);
+              }
+              const tableKeys = [...byTable.keys()].sort((x, y) =>
+                x.localeCompare(y, 'es', { numeric: true }),
+              );
+              return (
+                <div className="mt-4 flex flex-col gap-5">
+                  {tableKeys.map((tbl) => {
+                    const recs = byTable.get(tbl) ?? [];
+                    const tableCollapsed = collapsedTables.has(tbl);
+                    return (
+                      <section key={tbl}>
+                        <button
+                          type="button"
+                          onClick={() => toggleInSet(setCollapsedTables, tbl)}
+                          aria-expanded={!tableCollapsed}
+                          className="flex w-full items-center justify-between gap-2 rounded-main bg-white px-3 py-2 text-left text-body-lg font-bold text-gray-900 shadow-main"
+                        >
+                          <span>
+                            <span aria-hidden="true">{tableCollapsed ? '▸' : '▾'} </span>
+                            Mesa {tbl} · {recs.length} {recs.length === 1 ? 'receptor' : 'receptores'}
+                          </span>
+                        </button>
+                        {!tableCollapsed && (
+                          <ul className="mt-3 flex flex-col gap-4">
+                            {recs.map((rec) => renderRecipient(rec))}
+                          </ul>
+                        )}
+                      </section>
+                    );
+                  })}
+                </div>
+              );
         })()
       )}
 
