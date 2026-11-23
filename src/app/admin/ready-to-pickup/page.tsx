@@ -135,7 +135,9 @@ export default function ReadyToPickupPage() {
     try {
       setIsRefreshing(true);
 
-      const usersData = await fetchReadyUsers();
+      // include=completed: also who already picked up everything ("Completaron
+      // el retiro"). The TV calls the same endpoint without it.
+      const usersData = await fetchReadyUsers(undefined, '?include=completed');
       const processedUsers = (usersData || [])
         .map(user => ({
           ...user,

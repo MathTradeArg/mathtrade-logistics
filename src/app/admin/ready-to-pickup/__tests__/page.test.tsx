@@ -48,4 +48,22 @@ describe('/admin/ready-to-pickup ("Quién retiró")', () => {
     await waitFor(() => expect(statusExecute).toHaveBeenCalledTimes(1));
     expect(statusExecute).toHaveBeenCalledWith({ user_id: 7, status: 'receiving', force: true });
   });
+
+  it('pide la lista con ?include=completed (también los que ya retiraron todo)', async () => {
+    render(<ReadyToPickupPage />);
+    await waitFor(() => expect(usersExecute).toHaveBeenCalled());
+    usersExecute.mock.calls.forEach((args) => {
+      expect(args).toEqual([undefined, '?include=completed']);
+    });
+  });
+
+  it('un usuario que ya retiró todo aparece en "Completaron el retiro"', async () => {
+    render(<ReadyToPickupPage />);
+    const section = await screen.findByRole('button', { name: /Completaron el retiro\s*1/ });
+    expect(screen.queryByText('Lucía Pérez')).not.toBeInTheDocument();
+
+    fireEvent.click(section);
+    expect(await screen.findByText('Lucía Pérez')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Listos para retirar\s*0/ })).toBeInTheDocument();
+  });
 });
