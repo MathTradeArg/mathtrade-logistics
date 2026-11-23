@@ -91,3 +91,103 @@ describe('LooseIncomingPage: Marcar En evento asks first', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
+
+// Rule (decision 9): Cajas can mark En evento a loose game that continues to
+// another city. When nothing bound to AMBA matches, Sueltos also searches the
+// games of the other cities, and says where each one continues.
+describe('LooseIncomingPage: games that continue to other cities', () => {
+  const rosario = {
+    id: 30, item_id: 120, title: 'Brass', assigned_trade_code: 777, status: 4,
+    origin_location_name: 'Salta', location: 12, location_name: 'Funes',
+    send_to: 11, send_to_name: 'Rosario', receptor_first_name: 'Ana', receptor_last_name: 'Paz',
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, userId: 9 });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockMark.mockResolvedValue(undefined);
+  });
+
+  const mockLists = (amba: unknown[], others: unknown[] | Promise<unknown[]>) => {
+    mockList.mockImplementation((params: { destination?: number; excludeAmba?: number }) =>
+      params.excludeAmba ? Promise.resolve(others) : Promise.resolve(amba));
+  };
+
+  it('does not ask for the other cities on mount nor when something already matches', async () => {
+    mockLists(items, [rosario]);
+    render(<LooseIncomingPage />);
+    await waitFor(() => expect(mockList).toHaveBeenCalled());
+    fireEvent.change(screen.getByLabelText('Buscar sueltos'), { target: { value: 'Catan' } });
+    expect(await screen.findByRole('checkbox', { name: /Catan/ })).toBeInTheDocument();
+
+    expect(mockList).toHaveBeenCalledTimes(1);
+    expect(mockList).toHaveBeenCalledWith({ destination: 1 });
+  });
+
+  it('with no matches and 2+ characters, searches without the destination filter and shows where it continues', async () => {
+    mockLists(items, [rosario, { ...rosario, id: 31, assigned_trade_code: 778, title: 'Llegado', status: 5 }]);
+    render(<LooseIncomingPage />);
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(screen.getByLabelText('Buscar sueltos'), { target: { value: '777' } });
+
+    const row = await screen.findByRole('checkbox', { name: /Brass/ });
+    expect(mockList).toHaveBeenCalledWith({ excludeAmba: 1, excludeDelivered: true });
+    expect(row).toHaveTextContent('Sigue a Rosario');
+    expect(screen.queryByText('No hay pendientes que coincidan.')).not.toBeInTheDocument();
+
+    fireEvent.click(row);
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar En evento (1)' }));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('00777 · Brass');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Confirmar (1)' }));
+    await waitFor(() => expect(mockMark).toHaveBeenCalledWith([777], 9));
+  });
+
+  it('shows "Buscando en el resto de las ciudades..." while it loads', async () => {
+    let resolveOthers: (value: unknown[]) => void = () => undefined;
+    const pending = new Promise<unknown[]>((resolve) => { resolveOthers = resolve; });
+    mockLists(items, pending);
+    render(<LooseIncomingPage />);
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(1));
+
+    fireEvent.change(screen.getByLabelText('Buscar sueltos'), { target: { value: '777' } });
+
+    expect(await screen.findByText('Buscando en el resto de las ciudades...')).toBeInTheDocument();
+    resolveOthers([rosario]);
+    expect(await screen.findByRole('checkbox', { name: /Brass/ })).toBeInTheDocument();
+    expect(screen.queryByText('Buscando en el resto de las ciudades...')).not.toBeInTheDocument();
+  });
+
+  it('after marking, both lists are reloaded', async () => {
+    mockLists(items, [rosario]);
+    render(<LooseIncomingPage />);
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(1));
+    fireEvent.change(screen.getByLabelText('Buscar sueltos'), { target: { value: '777' } });
+    fireEvent.click(await screen.findByRole('checkbox', { name: /Brass/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Marcar En evento (1)' }));
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Confirmar (1)' }));
+
+    await waitFor(() => expect(mockList).toHaveBeenCalledTimes(4));
+    const calls = mockList.mock.calls.map(([params]) => params);
+    expect(calls.filter((p) => p.destination === 1)).toHaveLength(2);
+    expect(calls.filter((p) => p.excludeAmba === 1)).toHaveLength(2);
+  });
+
+  it('a game of a locality that ships as AMBA (La Plata) says "Retira en mesa especial", not "Sigue a"', async () => {
+    mockLists([{
+      id: 40, item_id: 130, title: 'Root', assigned_trade_code: 900, status: 4,
+      origin_location_name: 'Salta', location: 20, location_name: 'La Plata',
+      send_to: 1, send_to_name: 'AMBA', receptor_first_name: 'Leo', receptor_last_name: 'Gil',
+    }], []);
+    render(<LooseIncomingPage />);
+    await waitFor(() => expect(mockList).toHaveBeenCalled());
+    fireEvent.change(screen.getByLabelText('Buscar sueltos'), { target: { value: 'Root' } });
+
+    const row = await screen.findByRole('checkbox', { name: /Root/ });
+    expect(row).toHaveTextContent('Retira en mesa especial');
+    expect(row).toHaveTextContent('Retira en mesa especial · Leo Gil');
+    expect(row).not.toHaveTextContent('Sigue a');
+  });
+});

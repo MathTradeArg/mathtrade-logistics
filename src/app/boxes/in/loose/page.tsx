@@ -12,6 +12,25 @@ import { useAuth } from '@/hooks/useAuth';
 import type { Item } from '@/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+const OTHER_CITIES_FAILED = 'No se pudo buscar en el resto de las ciudades.';
+
+/** Where a loose game goes after the event: another city ("Sigue a Rosario"),
+ *  or the special table when its locality ships as AMBA (La Plata). */
+function itemSubtitle(item: Item): string {
+  const receptor = receptorName(item);
+  const destination = item.send_to ?? item.location;
+  const otherCity = destination != null && destination !== EVENT_LOCATION_ID;
+  const specialTable = !otherCity && item.location != null && item.location !== EVENT_LOCATION_ID;
+  const cityName = item.send_to_name ?? item.location_name;
+  return [
+    otherCity && cityName && `Sigue a ${cityName}`,
+    specialTable && 'Retira en mesa especial',
+    receptor && (specialTable ? receptor : `Retira ${receptor}`),
+    item.origin_location_name,
+    item.box_number != null && `Caja #${item.box_number}`,
+  ].filter(Boolean).join(' · ');
+}
+
 export default function LooseIncomingPage() {
   const { isAuthenticated, isLoading: authIsLoading, userId } = useAuth();
   const { eventPhase, isLoadingEventPhase } = useEventPhase();
@@ -22,6 +41,11 @@ export default function LooseIncomingPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  // Games bound to other cities, only fetched when nothing bound to AMBA matches.
+  const [extraItems, setExtraItems] = useState<Item[]>([]);
+  const [extraLoaded, setExtraLoaded] = useState(false);
+  const [extraLoading, setExtraLoading] = useState(false);
+  const [extraFailedQuery, setExtraFailedQuery] = useState<string | null>(null);
 
   useStaffTitle('Sueltos');
 
@@ -39,13 +63,24 @@ export default function LooseIncomingPage() {
     }
   }, []);
 
+  const loadExtra = useCallback(async () => {
+    const others = await listItems({ excludeAmba: EVENT_LOCATION_ID, excludeDelivered: true });
+    setExtraItems(others.filter(isPendingIncomingItem));
+    setExtraLoaded(true);
+  }, []);
+
   useEffect(() => {
     if (!isAuthenticated || eventPhase === 0) return;
     load();
   }, [isAuthenticated, eventPhase, load]);
 
+  const allItems = useMemo(() => {
+    const ids = new Set(items.map((item) => item.id));
+    return [...items, ...extraItems.filter((item) => !ids.has(item.id))];
+  }, [items, extraItems]);
+
   const visible = useMemo(() => {
-    return items.filter((item) => {
+    return allItems.filter((item) => {
       const haystack = [
         tradeCodeSearchText(item.assigned_trade_code),
         item.title,
@@ -54,7 +89,17 @@ export default function LooseIncomingPage() {
       ].join(' ');
       return matchesSearch(haystack, query);
     });
-  }, [items, query]);
+  }, [allItems, query]);
+
+  useEffect(() => {
+    if (isLoading || query.trim().length < 2 || visible.length > 0) return;
+    if (extraLoaded || extraLoading || extraFailedQuery === query) return;
+    setExtraLoading(true);
+    loadExtra()
+      .then(() => setExtraFailedQuery(null))
+      .catch(() => setExtraFailedQuery(query))
+      .finally(() => setExtraLoading(false));
+  }, [isLoading, query, visible.length, extraLoaded, extraLoading, extraFailedQuery, loadExtra]);
 
   const toggle = (code: number) => {
     setSelected((prev) => {
@@ -72,6 +117,7 @@ export default function LooseIncomingPage() {
     try {
       await markItemsReceived(Array.from(selected), userId);
       await load();
+      if (extraLoaded) await loadExtra();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudieron marcar los juegos.');
     } finally {
@@ -81,7 +127,7 @@ export default function LooseIncomingPage() {
   };
 
   // Every selected game, also the ones the current search hides.
-  const selectedItems = items.filter((item) => selected.has(item.assigned_trade_code));
+  const selectedItems = allItems.filter((item) => selected.has(item.assigned_trade_code));
 
   if (authIsLoading || isAuthenticated === null || isLoadingEventPhase) {
     return <div className="flex min-h-[50dvh] items-center justify-center"><LoadingSpinner message="Cargando..." /></div>;
@@ -94,7 +140,7 @@ export default function LooseIncomingPage() {
   return (
     <StaffPage className="pb-28">
       <p className="text-body text-gray-600">
-        Buscá por código de etiqueta o por el nombre de quien retira en AMBA. Si el juego venía en una caja, se recibe igual.
+        Buscá por código de etiqueta o por el nombre de quien retira en AMBA. Si el juego venía en una caja, se recibe igual. Si no aparece, se busca también en los juegos que siguen a otras ciudades.
       </p>
 
       <div className="mt-4">
@@ -112,21 +158,23 @@ export default function LooseIncomingPage() {
       {!isLoading && !error && (query.trim().length < 2 ? (
         <StaffEmpty>Escribí al menos 2 caracteres para buscar.</StaffEmpty>
       ) : visible.length === 0 ? (
-        <StaffEmpty>No hay pendientes que coincidan.</StaffEmpty>
+        extraLoading ? (
+          <div className="mt-8"><LoadingSpinner message="Buscando en el resto de las ciudades..." /></div>
+        ) : (
+          <>
+            {extraFailedQuery === query && <StaffError>{OTHER_CITIES_FAILED}</StaffError>}
+            <StaffEmpty>No hay pendientes que coincidan.</StaffEmpty>
+          </>
+        )
       ) : (
         <ul className="mt-4 flex flex-col gap-3">
           {visible.map((item) => {
             const checked = selected.has(item.assigned_trade_code);
-            const inBox = item.box_number != null;
             return (
               <li key={item.id}>
                 <GameRow
                   title={`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}
-                  subtitle={[
-                    receptorName(item) && `Retira ${receptorName(item)}`,
-                    item.origin_location_name,
-                    inBox && `Caja #${item.box_number}`,
-                  ].filter(Boolean).join(' · ')}
+                  subtitle={itemSubtitle(item)}
                   onClick={() => toggle(item.assigned_trade_code)}
                   selected={checked}
                 />
