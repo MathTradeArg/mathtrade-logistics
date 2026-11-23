@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useOperationalExport } from '@/hooks/useOperationalExport';
 import { useXlsxExport } from '@/hooks/useXlsxExport';
 import '@testing-library/jest-dom';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import MorePage from '../page';
 
 jest.mock('@/hooks/useAuth');
@@ -275,6 +275,70 @@ describe('MorePage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Cajas entrantes' }));
       expect(downloads[0]).toHaveBeenCalledTimes(1);
       expect(downloads[1]).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('el admin cambia la fase del evento', () => {
+    const phaseButton = (name: string) => screen.getByRole('button', { name });
+
+    beforeEach(() => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+    });
+
+    it('si el cambio de fase falla muestra el error', async () => {
+      const updateEventPhase = jest.fn().mockResolvedValue({ success: false, message: 'No autenticado.' });
+      mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false, updateEventPhase });
+      render(<MorePage />);
+      fireEvent.click(phaseButton('Entrega'));
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Pasar a Entrega' }));
+      expect(await screen.findByRole('alert')).toHaveTextContent('No autenticado.');
+      expect(updateEventPhase).toHaveBeenCalledWith(2);
+      expect(phaseButton('Recepción')).toHaveClass('staff-btn-primary');
+      expect(phaseButton('Entrega')).not.toHaveClass('staff-btn-primary');
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+
+    it('si anda muestra una confirmación', async () => {
+      const updateEventPhase = jest.fn().mockResolvedValue({ success: true, message: 'Fase del evento actualizada correctamente.' });
+      mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false, updateEventPhase });
+      render(<MorePage />);
+      fireEvent.click(phaseButton('Entrega'));
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Pasar a Entrega' }));
+      expect(await screen.findByRole('status')).toHaveTextContent('Fase del evento: Entrega');
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('retroceder pide un diálogo explícito', async () => {
+      const updateEventPhase = jest.fn().mockResolvedValue({ success: true, message: 'ok' });
+      mockUseEventPhase.mockReturnValue({ eventPhase: 2, isLoadingEventPhase: false, updateEventPhase });
+      render(<MorePage />);
+      fireEvent.click(phaseButton('Recepción'));
+      expect(updateEventPhase).not.toHaveBeenCalled();
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toHaveTextContent('frena la entrega para todos los voluntarios');
+      expect(dialog).toHaveTextContent('hasta 30 segundos');
+
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(updateEventPhase).not.toHaveBeenCalled();
+
+      fireEvent.click(phaseButton('Recepción'));
+      fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Volver a Recepción' }));
+      await waitFor(() => expect(updateEventPhase).toHaveBeenCalledWith(1));
+      expect(updateEventPhase).toHaveBeenCalledTimes(1);
+    });
+
+    it('avanzar pide un diálogo simple', async () => {
+      const updateEventPhase = jest.fn().mockResolvedValue({ success: true, message: 'ok' });
+      mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false, updateEventPhase });
+      render(<MorePage />);
+      fireEvent.click(phaseButton('Entrega'));
+      expect(updateEventPhase).not.toHaveBeenCalled();
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toHaveTextContent('¿Pasar a la fase de Entrega? Los voluntarios lo ven en hasta 30 segundos.');
+      expect(dialog).not.toHaveTextContent('frena la entrega');
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Pasar a Entrega' }));
+      await waitFor(() => expect(updateEventPhase).toHaveBeenCalledWith(2));
     });
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, StaffBanner, StaffPage } from '@/components/staff';
+import { GameRow, StaffBanner, StaffDialog, StaffPage } from '@/components/staff';
 import { ROLES } from '@/config/roles';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,6 +15,14 @@ const formatClock = (at: Date) =>
 
 const primaryRowClass = 'flex min-h-14 w-full items-center rounded-lg bg-brand px-4 text-left font-semibold text-brand-ink hover:brightness-95';
 const rowClass = 'staff-card flex min-h-14 w-full items-center px-4 text-left font-medium text-gray-900';
+
+const PHASES = [
+  { id: 0, label: 'No iniciado' },
+  { id: 1, label: 'Recepción' },
+  { id: 2, label: 'Entrega' },
+] as const;
+
+const phaseLabel = (id: number) => PHASES.find((p) => p.id === id)?.label ?? String(id);
 
 const EVENT_SHEET_BUTTONS = [
   { sheet: EVENT_SHEETS.incomingBoxes, title: 'Cajas entrantes', help: 'Una pestaña por origen y tipo de caja, con su estado de apertura.' },
@@ -47,12 +55,29 @@ export default function MorePage() {
   const [isUpdatingPhase, setIsUpdatingPhase] = useState(false);
   const operationalExport = useOperationalExport();
 
+  const [pendingPhase, setPendingPhase] = useState<number | null>(null);
+  const [phaseError, setPhaseError] = useState<string | null>(null);
+  const [phaseOk, setPhaseOk] = useState<string | null>(null);
+
+  // Going back (or to "No iniciado") stops what volunteers are doing, so it
+  // gets a louder dialog than moving forward.
+  const isGoingBack = pendingPhase !== null && (pendingPhase === 0 || (eventPhase !== null && pendingPhase < eventPhase));
+
   const handlePhase = async (phase: number) => {
-    const names = ['no iniciado', 'recepción', 'entrega'];
-    if (!window.confirm(`¿Pasar a la fase de ${names[phase]}?`)) return;
+    setPendingPhase(null);
     setIsUpdatingPhase(true);
-    await updateEventPhase(phase);
-    setIsUpdatingPhase(false);
+    setPhaseOk(null);
+    try {
+      const res = await updateEventPhase(phase);
+      if (res.success) {
+        setPhaseError(null);
+        setPhaseOk(`Fase del evento: ${phaseLabel(phase)}`);
+      } else {
+        setPhaseError(res.message);
+      }
+    } finally {
+      setIsUpdatingPhase(false);
+    }
   };
 
   if (authIsLoading || isAuthenticated === null || isLoadingEventPhase) {
@@ -147,18 +172,14 @@ export default function MorePage() {
           <div className="staff-panel mt-3 p-4">
             <p className="text-body font-medium text-gray-700">Fase del evento</p>
             <div className="mt-3 flex flex-col gap-3">
-              {[
-                { id: 0, label: 'No iniciado' },
-                { id: 1, label: 'Recepción' },
-                { id: 2, label: 'Entrega' },
-              ].map((phase) => (
+              {PHASES.map((phase) => (
                 <button
                   key={phase.id}
                   type="button"
                   disabled={isUpdatingPhase}
                   onClick={() => {
                     if (eventPhase === phase.id) return;
-                    handlePhase(phase.id);
+                    setPendingPhase(phase.id);
                   }}
                   className={`staff-btn ${
                     eventPhase === phase.id ? 'staff-btn-primary' : 'staff-btn-outline'
@@ -168,7 +189,23 @@ export default function MorePage() {
                 </button>
               ))}
             </div>
+            {phaseError && <StaffBanner>No se pudo cambiar la fase: {phaseError}</StaffBanner>}
+            {phaseOk && <p role="status" className="mt-3 text-body font-medium text-gray-700">{phaseOk}</p>}
           </div>
+          <StaffDialog
+            open={pendingPhase !== null}
+            title="Cambiar la fase del evento"
+            variant={isGoingBack ? 'danger' : 'primary'}
+            confirmLabel={pendingPhase === null ? '' : `${isGoingBack ? 'Volver a' : 'Pasar a'} ${phaseLabel(pendingPhase)}`}
+            onConfirm={() => {
+              if (pendingPhase !== null) handlePhase(pendingPhase);
+            }}
+            onCancel={() => setPendingPhase(null)}
+          >
+            {pendingPhase !== null && (isGoingBack
+              ? `Volver a ${phaseLabel(pendingPhase)} frena la entrega para todos los voluntarios (lo van a ver en hasta 30 segundos). ¿Seguro?`
+              : `¿Pasar a la fase de ${phaseLabel(pendingPhase)}? Los voluntarios lo ven en hasta 30 segundos.`)}
+          </StaffDialog>
           <ul className="mt-3 flex flex-col gap-3">
             <li>
               <GameRow title="Quién retiró" href="/admin/ready-to-pickup" />
