@@ -29,17 +29,18 @@ export function StaffError({ children }: { children: ReactNode }) {
 }
 
 /** Persistent error banner that leaves the content below it usable. */
-export function StaffBanner({ children, onRetry, retrying = false }: {
+export function StaffBanner({ children, onRetry, retrying = false, retryLabel = 'Reintentar' }: {
   children: ReactNode;
   onRetry?: () => void;
   retrying?: boolean;
+  retryLabel?: string;
 }) {
   return (
     <div role="alert" className="my-4 flex items-center gap-3 rounded-lg border border-danger/30 bg-danger/10 p-3 text-danger">
       <p className="flex-1 text-body">{children}</p>
       {onRetry && (
         <button type="button" className="staff-btn staff-btn-outline staff-btn-sm shrink-0" onClick={onRetry} disabled={retrying}>
-          Reintentar
+          {retryLabel}
         </button>
       )}
     </div>

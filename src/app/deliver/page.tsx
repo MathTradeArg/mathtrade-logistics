@@ -15,6 +15,14 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 
 type ApiRejection = Error & { status?: number; body?: { code?: string; assigned_trade_codes?: unknown } | null };
 
+const RELOAD_HINT = 'Recargá la lista para ver el estado actual.';
+
+/** 409/400: resending the same PATCH fails again, so the banner offers reloading the list instead. */
+function isRejection(err: unknown): boolean {
+  const { status } = err as ApiRejection;
+  return status === 409 || status === 400;
+}
+
 /** Banner text for a failed delivery PATCH: 409 shows the backend detail, 400 a generic message. */
 function deliveryErrorMessage(err: unknown): string {
   if (!(err instanceof Error)) return 'Falló la actualización.';
@@ -22,11 +30,11 @@ function deliveryErrorMessage(err: unknown): string {
   if (status === 409) {
     if (body?.code === 'wrong_receiver' && Array.isArray(body.assigned_trade_codes) && body.assigned_trade_codes.length > 0) {
       const n = body.assigned_trade_codes.length;
-      return `${err.message} ${n === 1 ? '1 juego no es de este usuario.' : `${n} juegos no son de este usuario.`}`;
+      return `${err.message} ${n === 1 ? '1 juego no es de este usuario.' : `${n} juegos no son de este usuario.`} ${RELOAD_HINT}`;
     }
-    return err.message;
+    return `${err.message} ${RELOAD_HINT}`;
   }
-  if (status === 400) return 'No se pudo validar la entrega. Escaneá el QR de nuevo e intentá otra vez.';
+  if (status === 400) return 'No se pudo validar la entrega. Recargá la lista e intentá otra vez.';
   return err.message;
 }
 
@@ -49,7 +57,10 @@ function DeliverPageContent() {
   const [scanError, setScanError] = useState<string>('');
   const [updateError, setUpdateError] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  // true after a 409/400: the banner offers "Recargar lista" instead of "Reintentar".
+  const [updateNeedsReload, setUpdateNeedsReload] = useState<boolean>(false);
   const lastUpdate = useRef<{ ids: number[]; by: number } | null>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
   const [initialQrProcessed, setInitialQrProcessed] = useState(false);
   const { eventPhase, isLoadingEventPhase } = useEventPhase();
@@ -64,6 +75,7 @@ function DeliverPageContent() {
       setIsLoading(true);
       setScanError('');
       setUpdateError('');
+      setUpdateNeedsReload(false);
       lastUpdate.current = null;
       setQrData(data);
       setGames(null);
@@ -129,16 +141,18 @@ function DeliverPageContent() {
     });
   }, []);
 
-  const handleUpdateItems = useCallback(async (itemIds: number[], deliveredByUserId: number) => {
+  /** Resolves true only when the PATCH went through; GameList keeps the selection otherwise. */
+  const handleUpdateItems = useCallback(async (itemIds: number[], deliveredByUserId: number): Promise<boolean> => {
     setUpdateError('');
+    setUpdateNeedsReload(false);
     if (!qrData || !games || !deliveredByUserId || games.length === 0) {
       setUpdateError('Faltan datos para la actualización.');
-      return;
+      return false;
     }
 
     const itemsToUpdate = games.filter(game => itemIds.includes(game.result.assigned_trade_code));
     const idsToUpdate = itemsToUpdate.map(game => game.result.assigned_trade_code);
-    if (idsToUpdate.length === 0) return;
+    if (idsToUpdate.length === 0) return false;
 
     lastUpdate.current = { ids: itemIds, by: deliveredByUserId };
     setIsUpdating(true);
@@ -166,8 +180,14 @@ function DeliverPageContent() {
 
       handleDeliverySuccess(itemIds);
       lastUpdate.current = null;
+      return true;
     } catch (err) {
+      if (isRejection(err)) {
+        lastUpdate.current = null;
+        setUpdateNeedsReload(true);
+      }
       setUpdateError(deliveryErrorMessage(err));
+      return false;
     } finally {
       setIsUpdating(false);
     }
@@ -177,11 +197,21 @@ function DeliverPageContent() {
     if (lastUpdate.current) handleUpdateItems(lastUpdate.current.ids, lastUpdate.current.by);
   }, [handleUpdateItems]);
 
+  const reloadList = useCallback(() => {
+    if (qrData) handleScan(qrData);
+  }, [qrData, handleScan]);
+
+  // Bring the error next to the action: the list can be long and the banner sits above it.
+  useEffect(() => {
+    if (updateError) bannerRef.current?.scrollIntoView({ block: 'center' });
+  }, [updateError]);
+
   const resetToScanner = useCallback(() => {
     setQrData(null);
     setGames(null);
     setScanError('');
     setUpdateError('');
+    setUpdateNeedsReload(false);
     lastUpdate.current = null;
   }, []);
 
@@ -219,9 +249,17 @@ function DeliverPageContent() {
             ) : games && (
               <>
                 {updateError && (
-                  <StaffBanner onRetry={lastUpdate.current ? retryUpdate : undefined} retrying={isUpdating}>
-                    {updateError}
-                  </StaffBanner>
+                  <div ref={bannerRef}>
+                    {updateNeedsReload ? (
+                      <StaffBanner onRetry={reloadList} retryLabel="Recargar lista" retrying={isUpdating || isLoading}>
+                        {updateError}
+                      </StaffBanner>
+                    ) : (
+                      <StaffBanner onRetry={lastUpdate.current ? retryUpdate : undefined} retrying={isUpdating}>
+                        {updateError}
+                      </StaffBanner>
+                    )}
+                  </div>
                 )}
                 <GameList
                   trades={games}
@@ -229,6 +267,7 @@ function DeliverPageContent() {
                   onFinish={resetToScanner}
                   deliveredByUserId={userId ? parseInt(userId, 10) : null}
                   onUpdateItems={handleUpdateItems}
+                  isUpdating={isUpdating}
                   mode="deliver"
                 />
               </>
