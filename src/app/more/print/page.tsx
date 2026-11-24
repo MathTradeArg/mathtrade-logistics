@@ -1034,11 +1034,9 @@ function PrintPageContent() {
               key={num}
               className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[184mm] flex-col items-center justify-center rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
             >
-              <h2 aria-label={`Mesa ${num}`} className="flex flex-col items-center">
-                <span className="block text-5xl print:text-[8rem] font-bold leading-none">Mesa</span>
-                <span className="block text-[10rem] print:text-[30rem] font-black leading-none tabular-nums whitespace-nowrap">
-                  {num}
-                </span>
+              {/* "Mesa 115" is 4.62em wide in sfprodisplay-bold: 12rem = 887px of the 975px sheet. */}
+              <h2 className="text-5xl sm:text-7xl md:text-9xl print:text-[12rem] font-black leading-none tabular-nums whitespace-nowrap">
+                {`Mesa ${num}`}
               </h2>
             </section>
           ))}

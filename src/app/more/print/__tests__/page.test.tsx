@@ -1,6 +1,6 @@
 import * as boxApi from '@/hooks/boxes/boxApi';
 import { useAuth } from '@/hooks/useAuth';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import PrintPage from '../page';
 
 jest.mock('@/hooks/useAuth');
@@ -120,7 +120,7 @@ describe('PrintPage', () => {
     ).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: 'Mesas' }));
-    expect(screen.getByText('15')).toBeInTheDocument();
+    expect(screen.getByText('Mesa 15')).toBeInTheDocument();
     expect(screen.queryByText(/MESA DE JUEGOS/i)).not.toBeInTheDocument();
   });
 
@@ -153,25 +153,25 @@ describe('PrintPage', () => {
       expect(screen.queryByText(/MATH TRADE ARGENTINA/i)).not.toBeInTheDocument();
     });
 
-    it('stacks "Mesa" over a giant, centered number with nothing else on the sheet', async () => {
+    it('puts "Mesa" and the number on one centered line at the same size, nothing else on the sheet', async () => {
       render(<PrintPage />);
       fireEvent.click(await screen.findByRole('button', { name: 'Mesas' }));
       const heading = screen.getByRole('heading', { name: 'Mesa 15' });
-      const word = within(heading).getByText('Mesa', { exact: true });
-      const number = within(heading).getByText('15', { exact: true });
-      expect(word).not.toBe(number);
-      expect(word).toHaveClass('block', 'print:text-[8rem]', 'font-bold');
-      expect(number).toHaveClass(
-        'block',
-        'print:text-[30rem]',
+      // One element, one line: "Mesa 115" measures 4.62em in sfprodisplay-bold,
+      // so 12rem (887px) fits the 975px landscape content width.
+      expect(heading.textContent).toBe('Mesa 15');
+      expect(heading.children).toHaveLength(0);
+      expect(heading).toHaveClass(
+        'print:text-[12rem]',
         'font-black',
         'leading-none',
-        'tabular-nums',
         'whitespace-nowrap',
+        'tabular-nums',
       );
-      const sheet = number.closest('section') as HTMLElement;
+      expect(heading).not.toHaveClass('flex-col');
+      const sheet = heading.closest('section') as HTMLElement;
       expect(sheet).toHaveClass('print-sheet-a4', 'print:h-[184mm]', 'flex-col', 'items-center', 'justify-center');
-      expect(sheet.textContent).toBe('Mesa15');
+      expect(sheet.textContent).toBe('Mesa 15');
     });
 
     it('lets long window names wrap instead of overflowing', async () => {
