@@ -33,8 +33,10 @@ const tracking = {
     {
       id: 30, number: 2, origin_number: 1, destiny: 7, origin_name: 'Salta', comment: null,
       math_items: [
-        { id: 1, title: 'Catan', assigned_trade_code: 12, receptor_first_name: 'Ana', receptor_last_name: 'Paz', size_units: 5 },
-        { id: 3, title: 'Combo', assigned_trade_code: 13, receptor_first_name: 'Eva', receptor_last_name: 'Sol', size_units: 1 },
+        { id: 1, title: 'Catan', assigned_trade_code: 12, receptor_first_name: 'Ana', receptor_last_name: 'Paz', size_units: 5,
+          first_name: 'Juan', last_name: 'Pérez' },
+        { id: 3, title: 'Combo', assigned_trade_code: 13, receptor_first_name: 'Eva', receptor_last_name: 'Sol', size_units: 1,
+          first_name: 'Lía', last_name: 'Río' },
       ],
     },
   ],
@@ -43,9 +45,11 @@ const empty = { ...tracking, id: 5, tracking_code: 'AR999', price: null, item_co
 
 const items = [
   { id: 1, title: 'Catan', assigned_trade_code: 12, receptor_first_name: 'Ana', receptor_last_name: 'Paz',
-    origin_location: 9, origin_location_name: 'Salta', via_meeting: true, box_number: 2 },
+    origin_location: 9, origin_location_name: 'Salta', via_meeting: true, box_number: 2,
+    first_name: 'Juan', last_name: 'Pérez' },
   { id: 2, title: 'Azul', assigned_trade_code: 6, receptor_first_name: 'Eva', receptor_last_name: 'Sol',
-    origin_location: 3, origin_location_name: 'Rosario', via_meeting: false, box_number: 5 },
+    origin_location: 3, origin_location_name: 'Rosario', via_meeting: false, box_number: 5,
+    first_name: 'Lía', last_name: 'Río' },
 ];
 
 describe('city received', () => {
@@ -71,8 +75,8 @@ describe('city received', () => {
 
     fireEvent.click(screen.getByText('Salta · AR123'));
     // Cost is proportional to size: 6000 * 5/6 = 5000 and 6000 * 1/6 = 1000.
-    expect(screen.getByText(/00012 · Catan → Ana Paz · .*5\.000,00/)).toBeInTheDocument();
-    expect(screen.getByText(/00013 · Combo → Eva Sol · .*1\.000,00/)).toBeInTheDocument();
+    expect(screen.getByText(/00012 · Catan · De Juan Pérez → Ana Paz · .*5\.000,00/)).toBeInTheDocument();
+    expect(screen.getByText(/00013 · Combo · De Lía Río → Eva Sol · .*1\.000,00/)).toBeInTheDocument();
   });
 
   it('labels a box that left AMBA as <destination code>-<number>', async () => {
@@ -91,9 +95,9 @@ describe('city received', () => {
     ]);
     render(<CityReceivedPage />);
     fireEvent.click(await screen.findByText('Ejemplares'));
-    expect(await screen.findByText(/de Salta \(AMBA\) · Caja CBA-1$/)).toBeInTheDocument();
+    expect(await screen.findByText(/de Salta \(AMBA\) · Caja CBA-1 · De: Juan Pérez$/)).toBeInTheDocument();
     // Sent straight from another city: plain number.
-    expect(screen.getByText(/de Rosario · Caja 5$/)).toBeInTheDocument();
+    expect(screen.getByText(/de Rosario · Caja 5 · De: Lía Río$/)).toBeInTheDocument();
   });
 
   it('shows the receipt photo and opens it full screen', async () => {
@@ -126,6 +130,14 @@ describe('city received', () => {
     fireEvent.click(screen.getByRole('checkbox'));
     expect(screen.getByText('00012 · Catan')).toBeInTheDocument();
     expect(screen.queryByText('00006 · Azul')).not.toBeInTheDocument();
+  });
+
+  it('shows who sent each game, with a dash when the name is missing', async () => {
+    (boxApi.listItems as jest.Mock).mockResolvedValue([items[0], { ...items[1], first_name: '', last_name: '' }]);
+    render(<CityReceivedPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Ejemplares' }));
+    expect(await screen.findByText(/De: Juan Pérez$/)).toBeInTheDocument();
+    expect(screen.getByText(/de Rosario · Caja 5 · De: —$/)).toBeInTheDocument();
   });
 
   it('is for the referrer only', () => {

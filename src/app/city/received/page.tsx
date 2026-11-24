@@ -27,6 +27,10 @@ const TABS: { id: Tab; label: string }[] = [
 const receiverName = (item: Item) =>
   `${item.receptor_first_name || '—'} ${item.receptor_last_name || ''}`.trim();
 
+/** Who sent the game (the giver). */
+const giverName = (item: Item) =>
+  `${item.first_name || '—'} ${item.last_name || ''}`.trim();
+
 function TrackingCard({ tracking, onOpenImage }: { tracking: Tracking; onOpenImage: (url: string) => void }) {
   const [open, setOpen] = useState(false);
   const origin = tracking.boxes.find((box) => box.origin_name)?.origin_name || '—';
@@ -70,7 +74,7 @@ function TrackingCard({ tracking, onOpenImage }: { tracking: Tracking; onOpenIma
               <ul className="mt-1 text-body text-gray-700">
                 {box.math_items.map((item) => (
                   <li key={item.id}>
-                    {formatTradeCode(item.assigned_trade_code)} · {item.title} → {receiverName(item)} ·{' '}
+                    {formatTradeCode(item.assigned_trade_code)} · {item.title} · De {giverName(item)} → {receiverName(item)} ·{' '}
                     {itemShippingCost(tracking.price, item.size_units, totalUnits)}
                   </li>
                 ))}
@@ -248,7 +252,7 @@ export default function CityReceivedPage() {
                         ...item,
                         // Via the meeting the box was packed at the event (AMBA); otherwise in the giver's city.
                         box_origin: item.via_meeting ? EVENT_LOCATION_ID : item.origin_location,
-                      })}`}
+                      })} · De: ${giverName(item)}`}
                     />
                   </li>
                 ))}
