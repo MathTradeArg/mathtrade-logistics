@@ -73,3 +73,12 @@ export function findReferrerInfo(
   if (directory.amba.locationId === locationId) return directory.amba;
   return directory.interior.find((info) => info.locationId === locationId);
 }
+
+/** Directory entry whose first referrer pre-fills the label sender for a user of `cityId`. */
+export function defaultSenderFor(
+  directory: ReferrerDirectory,
+  cityId: number | undefined,
+): LocationReferrerInfo | undefined {
+  if (cityId == null) return undefined;
+  return findReferrerInfo(directory, cityId);
+}

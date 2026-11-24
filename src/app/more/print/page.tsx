@@ -6,6 +6,7 @@ import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import {
   AMBA_FALLBACK_INFO,
   buildReferrerDirectory,
+  defaultSenderFor,
   findReferrerInfo,
   type DirectoryRow,
   type LocationReferrerInfo,
@@ -15,6 +16,7 @@ import { canPrintEventSheets } from '@/config/roles';
 import { boxFetch } from '@/hooks/boxes/boxApi';
 import { matchesSearch } from '@/hooks/boxes/boxGrouping';
 import { useAuth } from '@/hooks/useAuth';
+import { hasPersisted, numberSetCodec, usePersistedState } from '@/hooks/usePersistedState';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 
@@ -101,27 +103,41 @@ function PrintPageContent() {
   }, [canEventTabs, tab]);
 
   // --- Box Labels State ---
-  const [routeKind, setRouteKind] = useState<BoxRouteKind>('amba_direct');
-  const [copiesPerDest, setCopiesPerDest] = useState<number>(1);
-  const [boxNumberText, setBoxNumberText] = useState<string>('');
-  const [onwardCityText, setOnwardCityText] = useState<string>('');
-  const [senderCity, setSenderCity] = useState<string>('');
-  const [senderName, setSenderName] = useState<string>('');
-  const [senderDni, setSenderDni] = useState<string>('');
-  const [senderPhone, setSenderPhone] = useState<string>('');
+  // The label form lives in sessionStorage (per browser tab) so it survives
+  // reloads and navigation; searches and window/table config do not.
+  const [routeKind, setRouteKind] = usePersistedState<BoxRouteKind>('routeKind', 'amba_direct');
+  const [copiesPerDest, setCopiesPerDest] = usePersistedState<number>('copiesPerDest', 1);
+  const [boxNumberText, setBoxNumberText] = usePersistedState<string>('boxNumberText', '');
+  const [onwardCityText, setOnwardCityText] = usePersistedState<string>('onwardCityText', '');
+  const [senderCity, setSenderCity] = usePersistedState<string>('senderCity', '');
+  const [senderName, setSenderName] = usePersistedState<string>('senderName', '');
+  const [senderDni, setSenderDni] = usePersistedState<string>('senderDni', '');
+  const [senderPhone, setSenderPhone] = usePersistedState<string>('senderPhone', '');
   const [labelDestQuery, setLabelDestQuery] = useState<string>('');
   const [directory, setDirectory] = useState<ReferrerDirectory>({
     amba: AMBA_FALLBACK_INFO,
     interior: [],
   });
   const [directoryError, setDirectoryError] = useState<string | null>(null);
-  const [selectedLabelDests, setSelectedLabelDests] = useState<Set<number>>(() => new Set());
-  const [customAddresses, setCustomAddresses] = useState<Record<number, string>>({});
+  const [directoryLoaded, setDirectoryLoaded] = useState(false);
+  const [selectedLabelDests, setSelectedLabelDests] = usePersistedState<Set<number>>(
+    'selectedLabelDests',
+    new Set(),
+    numberSetCodec,
+  );
+  const [customAddresses, setCustomAddresses] = usePersistedState<Record<number, string>>(
+    'customAddresses',
+    {},
+  );
 
   // --- Sectors State ---
-  const [sectorKind, setSectorKind] = useState<SectorKind>('both');
+  const [sectorKind, setSectorKind] = usePersistedState<SectorKind>('sectorKind', 'both');
   const [sectorQuery, setSectorQuery] = useState<string>('');
-  const [selectedSectorLocs, setSelectedSectorLocs] = useState<Set<number>>(() => new Set());
+  const [selectedSectorLocs, setSelectedSectorLocs] = usePersistedState<Set<number>>(
+    'selectedSectorLocs',
+    new Set(),
+    numberSetCodec,
+  );
   const { amba: ambaInfo, interior: interiorDirectory } = directory;
 
   // --- Windows & Tables State ---
@@ -142,8 +158,14 @@ function PrintPageContent() {
         if (cancelled) return;
         const next = buildReferrerDirectory(Array.isArray(rows) ? rows : []);
         setDirectory(next);
-        setSelectedLabelDests(new Set(next.interior.slice(0, 1).map((loc) => loc.locationId)));
-        setSelectedSectorLocs(new Set(next.interior.map((loc) => loc.locationId)));
+        setDirectoryLoaded(true);
+        // Preselect only when the user never chose (nothing saved for this tab).
+        if (!hasPersisted('selectedLabelDests')) {
+          setSelectedLabelDests(new Set(next.interior.slice(0, 1).map((loc) => loc.locationId)));
+        }
+        if (!hasPersisted('selectedSectorLocs')) {
+          setSelectedSectorLocs(new Set(next.interior.map((loc) => loc.locationId)));
+        }
       })
       .catch(() => {
         if (!cancelled) setDirectoryError('No se pudo cargar el directorio de referentes.');
@@ -184,7 +206,16 @@ function PrintPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated]);
+    // Persisted setters are stable (keyed by a constant storage key).
+  }, [isAuthenticated, setSelectedLabelDests, setSelectedSectorLocs]);
+
+  const applySender = (info: LocationReferrerInfo) => {
+    const ref = info.referrers[0];
+    setSenderCity(info.city);
+    setSenderName(ref?.name ?? '');
+    setSenderDni(ref?.dni ?? '');
+    setSenderPhone(ref?.phone ?? '');
+  };
 
   const handleSenderPreset = (locationIdStr: string) => {
     if (!locationIdStr) {
@@ -199,12 +230,18 @@ function PrintPageContent() {
       ? ambaInfo
       : interiorDirectory.find((loc) => loc.locationId === id);
     if (!info) return;
-    const ref = info.referrers[0];
-    setSenderCity(info.city);
-    setSenderName(ref?.name ?? '');
-    setSenderDni(ref?.dni ?? '');
-    setSenderPhone(ref?.phone ?? '');
+    applySender(info);
   };
+
+  // Pre-fill the sender with the user's own city once, unless this tab
+  // already has sender data (typed, preset or cleared by the user).
+  useEffect(() => {
+    if (!directoryLoaded) return;
+    if (hasPersisted('senderCity', 'senderName', 'senderDni', 'senderPhone')) return;
+    const info = defaultSenderFor(directory, cityAccess?.city.id);
+    if (info) applySender(info);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [directoryLoaded, cityAccess?.city.id]);
 
   const filteredLabelLocations = useMemo(
     () =>
@@ -331,7 +368,7 @@ function PrintPageContent() {
   }
 
   return (
-    <StaffPage className="print-container pb-24">
+    <StaffPage className="print-container pb-24" width="wide">
       <div className="no-print space-y-6">
         {allowedTabs.length > 1 && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -944,20 +981,20 @@ function PrintPageContent() {
           sectorSigns.map((sign) => (
             <section
               key={sign.key}
-              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[260mm] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
+              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[184mm] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
             >
               <div className="border-b-4 border-black pb-6 print:pb-4">
-                <p className="text-3xl print:text-2xl font-black tracking-widest uppercase">
+                <p className="text-3xl print:text-4xl font-black tracking-widest uppercase">
                   {sign.mode === 'unpack'
                     ? 'SECTOR DESARMADO DE CAJAS (LLEGAN)'
                     : 'SECTOR ARMADO DE CAJAS (SALEN)'}
                 </p>
               </div>
               <div className="my-auto flex flex-1 flex-col items-center justify-center py-8 print:py-4">
-                <p className="text-9xl print:text-8xl font-black uppercase tracking-tight leading-none">
+                <p className="text-9xl print:text-[11rem] font-black uppercase tracking-tight leading-none">
                   {sign.loc.code}
                 </p>
-                <h2 className="mt-6 print:mt-4 text-7xl print:text-6xl font-black uppercase leading-tight">
+                <h2 className="mt-6 print:mt-4 text-7xl print:text-8xl font-black uppercase leading-tight break-words">
                   {sign.loc.city}
                 </h2>
               </div>
@@ -968,7 +1005,7 @@ function PrintPageContent() {
           windows.map((win, idx) => (
             <section
               key={idx}
-              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[260mm] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
+              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[184mm] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
             >
               <div className="border-b-4 border-black pb-6 print:pb-4">
                 <p className="text-3xl print:text-2xl font-black tracking-widest uppercase">
@@ -976,7 +1013,7 @@ function PrintPageContent() {
                 </p>
               </div>
               <div className="my-auto flex flex-1 items-center justify-center py-8 print:py-4">
-                <h2 className="text-8xl print:text-7xl font-black uppercase leading-none">
+                <h2 className="text-5xl md:text-7xl print:text-7xl font-black uppercase leading-none break-words">
                   {win.name}
                 </h2>
               </div>
@@ -995,20 +1032,19 @@ function PrintPageContent() {
           tableNumbers.map((num) => (
             <section
               key={num}
-              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[260mm] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
+              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[184mm] flex-col items-center justify-center rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
             >
-              <div className="border-b-4 border-black pb-6 print:pb-4">
-                <p className="text-3xl print:text-2xl font-black tracking-widest uppercase">
-                  MATH TRADE ARGENTINA · SECTOR DE MESAS
-                </p>
-              </div>
-              <div className="my-auto flex flex-1 flex-col items-center justify-center py-8 print:py-4">
-                <p className="text-6xl print:text-5xl font-bold uppercase">MESA</p>
-                <h2 className="mt-4 text-[11rem] print:text-[8.5rem] font-black leading-none">{num}</h2>
-              </div>
+              <h2 aria-label={`Mesa ${num}`} className="flex flex-col items-center">
+                <span className="block text-5xl print:text-[8rem] font-bold leading-none">Mesa</span>
+                <span className="block text-[10rem] print:text-[30rem] font-black leading-none tabular-nums whitespace-nowrap">
+                  {num}
+                </span>
+              </h2>
             </section>
           ))}
       </div>
+      {/* Outside the sheets container so the last sheet stays :last-child (no blank trailing page). */}
+      {tab !== 'labels' && <style>{'@page { size: A4 landscape; margin: 10mm; }'}</style>}
     </StaffPage>
   );
 }

@@ -1,6 +1,6 @@
 import * as boxApi from '@/hooks/boxes/boxApi';
 import { useAuth } from '@/hooks/useAuth';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import PrintPage from '../page';
 
 jest.mock('@/hooks/useAuth');
@@ -41,7 +41,22 @@ const DIRECTORY = [
   },
 ];
 
+// Two interior cities so the "first city" preselection is distinguishable.
+const DIRECTORY_TWO_INTERIOR = [
+  ...DIRECTORY,
+  {
+    location_id: 35,
+    city: 'Otra Ciudad',
+    code: 'OTC',
+    address: 'Calle Otra 1',
+    pay_on_delivery: false,
+    referrers: [{ name: 'Caro Otra', dni: '33333333', telegram: '', phone: '3300000000' }],
+  },
+];
+
 describe('PrintPage', () => {
+  afterEach(() => sessionStorage.clear());
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockSearch = '';
@@ -109,6 +124,65 @@ describe('PrintPage', () => {
     expect(screen.queryByText(/MESA DE JUEGOS/i)).not.toBeInTheDocument();
   });
 
+  describe('landscape event signs', () => {
+    const landscapeStyle = (container: HTMLElement) =>
+      Array.from(container.querySelectorAll('style')).find((el) =>
+        (el.textContent ?? '').includes('A4 landscape'),
+      );
+
+    it('prints labels in portrait (no landscape @page)', async () => {
+      const { container } = render(<PrintPage />);
+      await screen.findByRole('img', { name: /Círculo lleno/i });
+      expect(landscapeStyle(container)).toBeUndefined();
+    });
+
+    it.each(['Sectores (Localidades)', 'Ventanillas', 'Mesas'])(
+      'prints %s in A4 landscape',
+      async (tabName) => {
+        const { container } = render(<PrintPage />);
+        fireEvent.click(await screen.findByRole('button', { name: tabName }));
+        expect(landscapeStyle(container)).toBeDefined();
+      },
+    );
+
+    it('shows "Mesa" and the number on table signs without the old header', async () => {
+      render(<PrintPage />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Mesas' }));
+      expect(screen.getByRole('heading', { name: 'Mesa 15' })).toBeInTheDocument();
+      expect(screen.queryByText(/SECTOR DE MESAS/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/MATH TRADE ARGENTINA/i)).not.toBeInTheDocument();
+    });
+
+    it('stacks "Mesa" over a giant, centered number with nothing else on the sheet', async () => {
+      render(<PrintPage />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Mesas' }));
+      const heading = screen.getByRole('heading', { name: 'Mesa 15' });
+      const word = within(heading).getByText('Mesa', { exact: true });
+      const number = within(heading).getByText('15', { exact: true });
+      expect(word).not.toBe(number);
+      expect(word).toHaveClass('block', 'print:text-[8rem]', 'font-bold');
+      expect(number).toHaveClass(
+        'block',
+        'print:text-[30rem]',
+        'font-black',
+        'leading-none',
+        'tabular-nums',
+        'whitespace-nowrap',
+      );
+      const sheet = number.closest('section') as HTMLElement;
+      expect(sheet).toHaveClass('print-sheet-a4', 'print:h-[184mm]', 'flex-col', 'items-center', 'justify-center');
+      expect(sheet.textContent).toBe('Mesa15');
+    });
+
+    it('lets long window names wrap instead of overflowing', async () => {
+      render(<PrintPage />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Ventanillas' }));
+      const h2 = screen.getByRole('heading', { name: 'Ventanilla 1' });
+      expect(h2).toHaveClass('break-words');
+      expect(h2).not.toHaveClass('text-8xl');
+    });
+  });
+
   describe('city people without an event role', () => {
     const EVENT_TABS = ['Sectores (Localidades)', 'Ventanillas', 'Mesas'];
 
@@ -154,6 +228,126 @@ describe('PrintPage', () => {
       for (const name of EVENT_TABS) {
         expect(screen.getByRole('button', { name })).toBeInTheDocument();
       }
+    });
+  });
+
+  describe('label form keeps its data', () => {
+    const useTwoInterior = () =>
+      mockBoxFetch.mockImplementation(async (path: string) =>
+        path === 'logistics/directory/' ? DIRECTORY_TWO_INTERIOR : [],
+      );
+    const checkbox = (name: RegExp) => screen.getByRole('checkbox', { name }) as HTMLInputElement;
+
+    it('keeps sender, copies and box number after unmount and mount', async () => {
+      const first = render(<PrintPage />);
+      await screen.findByText(/Configurar etiquetas de cajas/i);
+      fireEvent.change(screen.getByPlaceholderText(/Localidad que envía/i), { target: { value: 'Rosario' } });
+      fireEvent.change(screen.getByPlaceholderText(/Nombre referente que envía/i), { target: { value: 'Juan' } });
+      fireEvent.change(screen.getByPlaceholderText(/DNI referente que envía/i), { target: { value: '123' } });
+      fireEvent.change(screen.getByPlaceholderText(/Teléfono referente que envía/i), { target: { value: '456' } });
+      fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '4' } });
+      fireEvent.change(screen.getByPlaceholderText(/Vacío = recuadro rellenable/i), { target: { value: '17' } });
+      first.unmount();
+
+      render(<PrintPage />);
+      await screen.findByText(/Configurar etiquetas de cajas/i);
+      expect(screen.getByPlaceholderText(/Localidad que envía/i)).toHaveValue('Rosario');
+      expect(screen.getByPlaceholderText(/Nombre referente que envía/i)).toHaveValue('Juan');
+      expect(screen.getByPlaceholderText(/DNI referente que envía/i)).toHaveValue('123');
+      expect(screen.getByPlaceholderText(/Teléfono referente que envía/i)).toHaveValue('456');
+      expect(screen.getByRole('spinbutton')).toHaveValue(4);
+      expect(screen.getByPlaceholderText(/Vacío = recuadro rellenable/i)).toHaveValue('17');
+    });
+
+    it('keeps interior destinations across route kinds and a remount', async () => {
+      useTwoInterior();
+      const first = render(<PrintPage />);
+      fireEvent.click(await screen.findByRole('button', { name: /Viaja a localidad del interior/i }));
+      await waitFor(() => expect(checkbox(/Ciudad Prueba/)).toBeChecked());
+      fireEvent.click(checkbox(/Otra Ciudad/));
+      fireEvent.click(screen.getByRole('button', { name: /SIGUE A OTRA LOCALIDAD · Vía CABA/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Viaja a localidad del interior/i }));
+      expect(checkbox(/Ciudad Prueba/)).toBeChecked();
+      expect(checkbox(/Otra Ciudad/)).toBeChecked();
+      first.unmount();
+
+      render(<PrintPage />);
+      // routeKind is persisted too: the interior list shows without clicking.
+      await waitFor(() => expect(checkbox(/Otra Ciudad/)).toBeChecked());
+      expect(checkbox(/Ciudad Prueba/)).toBeChecked();
+    });
+
+    it('does not replace saved destinations with the first city when the directory loads', async () => {
+      useTwoInterior();
+      sessionStorage.setItem('printForm:v1:routeKind', JSON.stringify('interior'));
+      sessionStorage.setItem('printForm:v1:selectedLabelDests', JSON.stringify([35]));
+      render(<PrintPage />);
+
+      await waitFor(() => expect(checkbox(/Otra Ciudad/)).toBeChecked());
+      expect(checkbox(/Ciudad Prueba/)).not.toBeChecked();
+    });
+
+    it('preselects the first interior city when nothing is saved', async () => {
+      useTwoInterior();
+      render(<PrintPage />);
+      fireEvent.click(await screen.findByRole('button', { name: /Viaja a localidad del interior/i }));
+
+      await waitFor(() => expect(checkbox(/Ciudad Prueba/)).toBeChecked());
+      expect(checkbox(/Otra Ciudad/)).not.toBeChecked();
+    });
+  });
+
+  describe('default sender from the directory', () => {
+    const field = (placeholder: RegExp) => screen.getByPlaceholderText(placeholder);
+    const withCity = (id: number) =>
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true, isLoading: false, isAdmin: false, role: null,
+        cityAccess: { kind: 'referrer', city: { id, name: 'X' } },
+      });
+
+    it('fills the hub referrer for a user of location 1', async () => {
+      withCity(1);
+      render(<PrintPage />);
+
+      await waitFor(() => expect(field(/Nombre referente que envía/i)).toHaveValue('Ana Hub'));
+      expect(field(/Localidad que envía/i)).toHaveValue('CABA');
+      expect(field(/DNI referente que envía/i)).toHaveValue('11111111');
+      expect(field(/Teléfono referente que envía/i)).toHaveValue('1100000000');
+    });
+
+    it("fills that city's referrer for a user of another city", async () => {
+      withCity(34);
+      render(<PrintPage />);
+
+      await waitFor(() => expect(field(/Nombre referente que envía/i)).toHaveValue('Beto Interior'));
+      expect(field(/Localidad que envía/i)).toHaveValue('Ciudad Prueba');
+      expect(field(/DNI referente que envía/i)).toHaveValue('22222222');
+      expect(field(/Teléfono referente que envía/i)).toHaveValue('2200000000');
+    });
+
+    it('leaves the sender empty without a city', async () => {
+      render(<PrintPage />);
+      await waitFor(() =>
+        expect(mockBoxFetch).toHaveBeenCalledWith('logistics/directory/'),
+      );
+      await screen.findAllByText(/Ana Hub/);
+
+      expect(field(/Localidad que envía/i)).toHaveValue('');
+      expect(field(/Nombre referente que envía/i)).toHaveValue('');
+      expect(field(/DNI referente que envía/i)).toHaveValue('');
+      expect(field(/Teléfono referente que envía/i)).toHaveValue('');
+    });
+
+    it('does not overwrite a sender already saved in this tab', async () => {
+      withCity(1);
+      sessionStorage.setItem('printForm:v1:senderName', JSON.stringify(''));
+      sessionStorage.setItem('printForm:v1:senderCity', JSON.stringify('Mi Pueblo'));
+      render(<PrintPage />);
+      await screen.findAllByText(/Ana Hub/);
+
+      expect(field(/Localidad que envía/i)).toHaveValue('Mi Pueblo');
+      expect(field(/Nombre referente que envía/i)).toHaveValue('');
+      expect(field(/DNI referente que envía/i)).toHaveValue('');
     });
   });
 });
