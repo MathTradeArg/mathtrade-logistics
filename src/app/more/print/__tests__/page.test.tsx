@@ -1,6 +1,6 @@
 import * as boxApi from '@/hooks/boxes/boxApi';
 import { useAuth } from '@/hooks/useAuth';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import PrintPage from '../page';
 
 jest.mock('@/hooks/useAuth');
@@ -41,7 +41,22 @@ const DIRECTORY = [
   },
 ];
 
+// Two interior cities so the "first city" preselection is distinguishable.
+const DIRECTORY_TWO_INTERIOR = [
+  ...DIRECTORY,
+  {
+    location_id: 35,
+    city: 'Otra Ciudad',
+    code: 'OTC',
+    address: 'Calle Otra 1',
+    pay_on_delivery: false,
+    referrers: [{ name: 'Caro Otra', dni: '33333333', telegram: '', phone: '3300000000' }],
+  },
+];
+
 describe('PrintPage', () => {
+  afterEach(() => sessionStorage.clear());
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockSearch = '';
@@ -154,6 +169,72 @@ describe('PrintPage', () => {
       for (const name of EVENT_TABS) {
         expect(screen.getByRole('button', { name })).toBeInTheDocument();
       }
+    });
+  });
+
+  describe('label form keeps its data', () => {
+    const useTwoInterior = () =>
+      mockBoxFetch.mockImplementation(async (path: string) =>
+        path === 'logistics/directory/' ? DIRECTORY_TWO_INTERIOR : [],
+      );
+    const checkbox = (name: RegExp) => screen.getByRole('checkbox', { name }) as HTMLInputElement;
+
+    it('keeps sender, copies and box number after unmount and mount', async () => {
+      const first = render(<PrintPage />);
+      await screen.findByText(/Configurar etiquetas de cajas/i);
+      fireEvent.change(screen.getByPlaceholderText(/Localidad que envía/i), { target: { value: 'Rosario' } });
+      fireEvent.change(screen.getByPlaceholderText(/Nombre referente que envía/i), { target: { value: 'Juan' } });
+      fireEvent.change(screen.getByPlaceholderText(/DNI referente que envía/i), { target: { value: '123' } });
+      fireEvent.change(screen.getByPlaceholderText(/Teléfono referente que envía/i), { target: { value: '456' } });
+      fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '4' } });
+      fireEvent.change(screen.getByPlaceholderText(/Vacío = recuadro rellenable/i), { target: { value: '17' } });
+      first.unmount();
+
+      render(<PrintPage />);
+      await screen.findByText(/Configurar etiquetas de cajas/i);
+      expect(screen.getByPlaceholderText(/Localidad que envía/i)).toHaveValue('Rosario');
+      expect(screen.getByPlaceholderText(/Nombre referente que envía/i)).toHaveValue('Juan');
+      expect(screen.getByPlaceholderText(/DNI referente que envía/i)).toHaveValue('123');
+      expect(screen.getByPlaceholderText(/Teléfono referente que envía/i)).toHaveValue('456');
+      expect(screen.getByRole('spinbutton')).toHaveValue(4);
+      expect(screen.getByPlaceholderText(/Vacío = recuadro rellenable/i)).toHaveValue('17');
+    });
+
+    it('keeps interior destinations across route kinds and a remount', async () => {
+      useTwoInterior();
+      const first = render(<PrintPage />);
+      fireEvent.click(await screen.findByRole('button', { name: /Viaja a localidad del interior/i }));
+      await waitFor(() => expect(checkbox(/Ciudad Prueba/)).toBeChecked());
+      fireEvent.click(checkbox(/Otra Ciudad/));
+      fireEvent.click(screen.getByRole('button', { name: /SIGUE A OTRA LOCALIDAD · Vía CABA/i }));
+      fireEvent.click(screen.getByRole('button', { name: /Viaja a localidad del interior/i }));
+      expect(checkbox(/Ciudad Prueba/)).toBeChecked();
+      expect(checkbox(/Otra Ciudad/)).toBeChecked();
+      first.unmount();
+
+      render(<PrintPage />);
+      // routeKind is persisted too: the interior list shows without clicking.
+      await waitFor(() => expect(checkbox(/Otra Ciudad/)).toBeChecked());
+      expect(checkbox(/Ciudad Prueba/)).toBeChecked();
+    });
+
+    it('does not replace saved destinations with the first city when the directory loads', async () => {
+      useTwoInterior();
+      sessionStorage.setItem('printForm:v1:routeKind', JSON.stringify('interior'));
+      sessionStorage.setItem('printForm:v1:selectedLabelDests', JSON.stringify([35]));
+      render(<PrintPage />);
+
+      await waitFor(() => expect(checkbox(/Otra Ciudad/)).toBeChecked());
+      expect(checkbox(/Ciudad Prueba/)).not.toBeChecked();
+    });
+
+    it('preselects the first interior city when nothing is saved', async () => {
+      useTwoInterior();
+      render(<PrintPage />);
+      fireEvent.click(await screen.findByRole('button', { name: /Viaja a localidad del interior/i }));
+
+      await waitFor(() => expect(checkbox(/Ciudad Prueba/)).toBeChecked());
+      expect(checkbox(/Otra Ciudad/)).not.toBeChecked();
     });
   });
 });

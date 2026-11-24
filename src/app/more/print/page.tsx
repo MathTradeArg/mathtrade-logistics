@@ -15,6 +15,7 @@ import { canPrintEventSheets } from '@/config/roles';
 import { boxFetch } from '@/hooks/boxes/boxApi';
 import { matchesSearch } from '@/hooks/boxes/boxGrouping';
 import { useAuth } from '@/hooks/useAuth';
+import { hasPersisted, numberSetCodec, usePersistedState } from '@/hooks/usePersistedState';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 
@@ -101,27 +102,40 @@ function PrintPageContent() {
   }, [canEventTabs, tab]);
 
   // --- Box Labels State ---
-  const [routeKind, setRouteKind] = useState<BoxRouteKind>('amba_direct');
-  const [copiesPerDest, setCopiesPerDest] = useState<number>(1);
-  const [boxNumberText, setBoxNumberText] = useState<string>('');
-  const [onwardCityText, setOnwardCityText] = useState<string>('');
-  const [senderCity, setSenderCity] = useState<string>('');
-  const [senderName, setSenderName] = useState<string>('');
-  const [senderDni, setSenderDni] = useState<string>('');
-  const [senderPhone, setSenderPhone] = useState<string>('');
+  // The label form lives in sessionStorage (per browser tab) so it survives
+  // reloads and navigation; searches and window/table config do not.
+  const [routeKind, setRouteKind] = usePersistedState<BoxRouteKind>('routeKind', 'amba_direct');
+  const [copiesPerDest, setCopiesPerDest] = usePersistedState<number>('copiesPerDest', 1);
+  const [boxNumberText, setBoxNumberText] = usePersistedState<string>('boxNumberText', '');
+  const [onwardCityText, setOnwardCityText] = usePersistedState<string>('onwardCityText', '');
+  const [senderCity, setSenderCity] = usePersistedState<string>('senderCity', '');
+  const [senderName, setSenderName] = usePersistedState<string>('senderName', '');
+  const [senderDni, setSenderDni] = usePersistedState<string>('senderDni', '');
+  const [senderPhone, setSenderPhone] = usePersistedState<string>('senderPhone', '');
   const [labelDestQuery, setLabelDestQuery] = useState<string>('');
   const [directory, setDirectory] = useState<ReferrerDirectory>({
     amba: AMBA_FALLBACK_INFO,
     interior: [],
   });
   const [directoryError, setDirectoryError] = useState<string | null>(null);
-  const [selectedLabelDests, setSelectedLabelDests] = useState<Set<number>>(() => new Set());
-  const [customAddresses, setCustomAddresses] = useState<Record<number, string>>({});
+  const [selectedLabelDests, setSelectedLabelDests] = usePersistedState<Set<number>>(
+    'selectedLabelDests',
+    new Set(),
+    numberSetCodec,
+  );
+  const [customAddresses, setCustomAddresses] = usePersistedState<Record<number, string>>(
+    'customAddresses',
+    {},
+  );
 
   // --- Sectors State ---
-  const [sectorKind, setSectorKind] = useState<SectorKind>('both');
+  const [sectorKind, setSectorKind] = usePersistedState<SectorKind>('sectorKind', 'both');
   const [sectorQuery, setSectorQuery] = useState<string>('');
-  const [selectedSectorLocs, setSelectedSectorLocs] = useState<Set<number>>(() => new Set());
+  const [selectedSectorLocs, setSelectedSectorLocs] = usePersistedState<Set<number>>(
+    'selectedSectorLocs',
+    new Set(),
+    numberSetCodec,
+  );
   const { amba: ambaInfo, interior: interiorDirectory } = directory;
 
   // --- Windows & Tables State ---
@@ -142,8 +156,13 @@ function PrintPageContent() {
         if (cancelled) return;
         const next = buildReferrerDirectory(Array.isArray(rows) ? rows : []);
         setDirectory(next);
-        setSelectedLabelDests(new Set(next.interior.slice(0, 1).map((loc) => loc.locationId)));
-        setSelectedSectorLocs(new Set(next.interior.map((loc) => loc.locationId)));
+        // Preselect only when the user never chose (nothing saved for this tab).
+        if (!hasPersisted('selectedLabelDests')) {
+          setSelectedLabelDests(new Set(next.interior.slice(0, 1).map((loc) => loc.locationId)));
+        }
+        if (!hasPersisted('selectedSectorLocs')) {
+          setSelectedSectorLocs(new Set(next.interior.map((loc) => loc.locationId)));
+        }
       })
       .catch(() => {
         if (!cancelled) setDirectoryError('No se pudo cargar el directorio de referentes.');
@@ -184,7 +203,8 @@ function PrintPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated]);
+    // Persisted setters are stable (keyed by a constant storage key).
+  }, [isAuthenticated, setSelectedLabelDests, setSelectedSectorLocs]);
 
   const handleSenderPreset = (locationIdStr: string) => {
     if (!locationIdStr) {
