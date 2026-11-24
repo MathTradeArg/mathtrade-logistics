@@ -1032,11 +1032,13 @@ function PrintPageContent() {
           tableNumbers.map((num) => (
             <section
               key={num}
-              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[184mm] items-center justify-center rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
+              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[184mm] flex-col items-center justify-center rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
             >
-              <h2 className="font-black leading-none">
-                <span className="text-5xl print:text-8xl font-bold">Mesa </span>
-                <span className="text-[8rem] print:text-[16rem]">{num}</span>
+              <h2 aria-label={`Mesa ${num}`} className="flex flex-col items-center">
+                <span className="block text-5xl print:text-[8rem] font-bold leading-none">Mesa</span>
+                <span className="block text-[10rem] print:text-[30rem] font-black leading-none tabular-nums whitespace-nowrap">
+                  {num}
+                </span>
               </h2>
             </section>
           ))}
