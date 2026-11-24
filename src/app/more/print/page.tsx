@@ -6,6 +6,7 @@ import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import {
   AMBA_FALLBACK_INFO,
   buildReferrerDirectory,
+  defaultSenderFor,
   findReferrerInfo,
   type DirectoryRow,
   type LocationReferrerInfo,
@@ -118,6 +119,7 @@ function PrintPageContent() {
     interior: [],
   });
   const [directoryError, setDirectoryError] = useState<string | null>(null);
+  const [directoryLoaded, setDirectoryLoaded] = useState(false);
   const [selectedLabelDests, setSelectedLabelDests] = usePersistedState<Set<number>>(
     'selectedLabelDests',
     new Set(),
@@ -156,6 +158,7 @@ function PrintPageContent() {
         if (cancelled) return;
         const next = buildReferrerDirectory(Array.isArray(rows) ? rows : []);
         setDirectory(next);
+        setDirectoryLoaded(true);
         // Preselect only when the user never chose (nothing saved for this tab).
         if (!hasPersisted('selectedLabelDests')) {
           setSelectedLabelDests(new Set(next.interior.slice(0, 1).map((loc) => loc.locationId)));
@@ -206,6 +209,14 @@ function PrintPageContent() {
     // Persisted setters are stable (keyed by a constant storage key).
   }, [isAuthenticated, setSelectedLabelDests, setSelectedSectorLocs]);
 
+  const applySender = (info: LocationReferrerInfo) => {
+    const ref = info.referrers[0];
+    setSenderCity(info.city);
+    setSenderName(ref?.name ?? '');
+    setSenderDni(ref?.dni ?? '');
+    setSenderPhone(ref?.phone ?? '');
+  };
+
   const handleSenderPreset = (locationIdStr: string) => {
     if (!locationIdStr) {
       setSenderCity('');
@@ -219,12 +230,18 @@ function PrintPageContent() {
       ? ambaInfo
       : interiorDirectory.find((loc) => loc.locationId === id);
     if (!info) return;
-    const ref = info.referrers[0];
-    setSenderCity(info.city);
-    setSenderName(ref?.name ?? '');
-    setSenderDni(ref?.dni ?? '');
-    setSenderPhone(ref?.phone ?? '');
+    applySender(info);
   };
+
+  // Pre-fill the sender with the user's own city once, unless this tab
+  // already has sender data (typed, preset or cleared by the user).
+  useEffect(() => {
+    if (!directoryLoaded) return;
+    if (hasPersisted('senderCity', 'senderName', 'senderDni', 'senderPhone')) return;
+    const info = defaultSenderFor(directory, cityAccess?.city.id);
+    if (info) applySender(info);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [directoryLoaded, cityAccess?.city.id]);
 
   const filteredLabelLocations = useMemo(
     () =>

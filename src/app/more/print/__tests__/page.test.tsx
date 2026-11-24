@@ -237,4 +237,58 @@ describe('PrintPage', () => {
       expect(checkbox(/Otra Ciudad/)).not.toBeChecked();
     });
   });
+
+  describe('default sender from the directory', () => {
+    const field = (placeholder: RegExp) => screen.getByPlaceholderText(placeholder);
+    const withCity = (id: number) =>
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true, isLoading: false, isAdmin: false, role: null,
+        cityAccess: { kind: 'referrer', city: { id, name: 'X' } },
+      });
+
+    it('fills the hub referrer for a user of location 1', async () => {
+      withCity(1);
+      render(<PrintPage />);
+
+      await waitFor(() => expect(field(/Nombre referente que envía/i)).toHaveValue('Ana Hub'));
+      expect(field(/Localidad que envía/i)).toHaveValue('CABA');
+      expect(field(/DNI referente que envía/i)).toHaveValue('11111111');
+      expect(field(/Teléfono referente que envía/i)).toHaveValue('1100000000');
+    });
+
+    it("fills that city's referrer for a user of another city", async () => {
+      withCity(34);
+      render(<PrintPage />);
+
+      await waitFor(() => expect(field(/Nombre referente que envía/i)).toHaveValue('Beto Interior'));
+      expect(field(/Localidad que envía/i)).toHaveValue('Ciudad Prueba');
+      expect(field(/DNI referente que envía/i)).toHaveValue('22222222');
+      expect(field(/Teléfono referente que envía/i)).toHaveValue('2200000000');
+    });
+
+    it('leaves the sender empty without a city', async () => {
+      render(<PrintPage />);
+      await waitFor(() =>
+        expect(mockBoxFetch).toHaveBeenCalledWith('logistics/directory/'),
+      );
+      await screen.findAllByText(/Ana Hub/);
+
+      expect(field(/Localidad que envía/i)).toHaveValue('');
+      expect(field(/Nombre referente que envía/i)).toHaveValue('');
+      expect(field(/DNI referente que envía/i)).toHaveValue('');
+      expect(field(/Teléfono referente que envía/i)).toHaveValue('');
+    });
+
+    it('does not overwrite a sender already saved in this tab', async () => {
+      withCity(1);
+      sessionStorage.setItem('printForm:v1:senderName', JSON.stringify(''));
+      sessionStorage.setItem('printForm:v1:senderCity', JSON.stringify('Mi Pueblo'));
+      render(<PrintPage />);
+      await screen.findAllByText(/Ana Hub/);
+
+      expect(field(/Localidad que envía/i)).toHaveValue('Mi Pueblo');
+      expect(field(/Nombre referente que envía/i)).toHaveValue('');
+      expect(field(/DNI referente que envía/i)).toHaveValue('');
+    });
+  });
 });
