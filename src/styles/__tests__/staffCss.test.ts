@@ -18,3 +18,13 @@ describe('staff.css buttons', () => {
     expect(b).toContain('var(--color-ink)');
   });
 });
+
+describe('staff.css A4 print sheets', () => {
+  it('sizes .print-sheet-a4 for an A4 landscape page', () => {
+    const b = block('.print-sheet-a4');
+    expect(b).toContain('min-height: 180mm');
+    expect(b).toContain('max-height: 186mm');
+    expect(b).not.toContain('250mm');
+    expect(b).not.toContain('265mm');
+  });
+});

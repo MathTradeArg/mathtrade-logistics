@@ -128,8 +128,8 @@
 
   .print-sheet-a4 {
     width: 100% !important;
-    min-height: 250mm !important;
-    max-height: 265mm !important;
+    min-height: 180mm !important;
+    max-height: 186mm !important; /* A4 landscape: 210mm - 2 x 10mm margin = 190mm */
     box-sizing: border-box !important;
     page-break-after: always;
     break-after: page;

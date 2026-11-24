@@ -981,20 +981,20 @@ function PrintPageContent() {
           sectorSigns.map((sign) => (
             <section
               key={sign.key}
-              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[260mm] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
+              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[184mm] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
             >
               <div className="border-b-4 border-black pb-6 print:pb-4">
-                <p className="text-3xl print:text-2xl font-black tracking-widest uppercase">
+                <p className="text-3xl print:text-4xl font-black tracking-widest uppercase">
                   {sign.mode === 'unpack'
                     ? 'SECTOR DESARMADO DE CAJAS (LLEGAN)'
                     : 'SECTOR ARMADO DE CAJAS (SALEN)'}
                 </p>
               </div>
               <div className="my-auto flex flex-1 flex-col items-center justify-center py-8 print:py-4">
-                <p className="text-9xl print:text-8xl font-black uppercase tracking-tight leading-none">
+                <p className="text-9xl print:text-[11rem] font-black uppercase tracking-tight leading-none">
                   {sign.loc.code}
                 </p>
-                <h2 className="mt-6 print:mt-4 text-7xl print:text-6xl font-black uppercase leading-tight">
+                <h2 className="mt-6 print:mt-4 text-7xl print:text-8xl font-black uppercase leading-tight break-words">
                   {sign.loc.city}
                 </h2>
               </div>
@@ -1005,7 +1005,7 @@ function PrintPageContent() {
           windows.map((win, idx) => (
             <section
               key={idx}
-              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[260mm] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
+              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[184mm] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
             >
               <div className="border-b-4 border-black pb-6 print:pb-4">
                 <p className="text-3xl print:text-2xl font-black tracking-widest uppercase">
@@ -1013,7 +1013,7 @@ function PrintPageContent() {
                 </p>
               </div>
               <div className="my-auto flex flex-1 items-center justify-center py-8 print:py-4">
-                <h2 className="text-8xl print:text-7xl font-black uppercase leading-none">
+                <h2 className="text-5xl md:text-7xl print:text-7xl font-black uppercase leading-none break-words">
                   {win.name}
                 </h2>
               </div>
@@ -1032,20 +1032,17 @@ function PrintPageContent() {
           tableNumbers.map((num) => (
             <section
               key={num}
-              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[260mm] flex-col justify-between rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
+              className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[184mm] items-center justify-center rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black"
             >
-              <div className="border-b-4 border-black pb-6 print:pb-4">
-                <p className="text-3xl print:text-2xl font-black tracking-widest uppercase">
-                  MATH TRADE ARGENTINA · SECTOR DE MESAS
-                </p>
-              </div>
-              <div className="my-auto flex flex-1 flex-col items-center justify-center py-8 print:py-4">
-                <p className="text-6xl print:text-5xl font-bold uppercase">MESA</p>
-                <h2 className="mt-4 text-[11rem] print:text-[8.5rem] font-black leading-none">{num}</h2>
-              </div>
+              <h2 className="font-black leading-none">
+                <span className="text-5xl print:text-8xl font-bold">Mesa </span>
+                <span className="text-[8rem] print:text-[16rem]">{num}</span>
+              </h2>
             </section>
           ))}
       </div>
+      {/* Outside the sheets container so the last sheet stays :last-child (no blank trailing page). */}
+      {tab !== 'labels' && <style>{'@page { size: A4 landscape; margin: 10mm; }'}</style>}
     </StaffPage>
   );
 }

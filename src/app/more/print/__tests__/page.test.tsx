@@ -124,6 +124,44 @@ describe('PrintPage', () => {
     expect(screen.queryByText(/MESA DE JUEGOS/i)).not.toBeInTheDocument();
   });
 
+  describe('landscape event signs', () => {
+    const landscapeStyle = (container: HTMLElement) =>
+      Array.from(container.querySelectorAll('style')).find((el) =>
+        (el.textContent ?? '').includes('A4 landscape'),
+      );
+
+    it('prints labels in portrait (no landscape @page)', async () => {
+      const { container } = render(<PrintPage />);
+      await screen.findByRole('img', { name: /Círculo lleno/i });
+      expect(landscapeStyle(container)).toBeUndefined();
+    });
+
+    it.each(['Sectores (Localidades)', 'Ventanillas', 'Mesas'])(
+      'prints %s in A4 landscape',
+      async (tabName) => {
+        const { container } = render(<PrintPage />);
+        fireEvent.click(await screen.findByRole('button', { name: tabName }));
+        expect(landscapeStyle(container)).toBeDefined();
+      },
+    );
+
+    it('shows "Mesa" and the number on table signs without the old header', async () => {
+      render(<PrintPage />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Mesas' }));
+      expect(screen.getByRole('heading', { name: 'Mesa 15' })).toBeInTheDocument();
+      expect(screen.queryByText(/SECTOR DE MESAS/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/MATH TRADE ARGENTINA/i)).not.toBeInTheDocument();
+    });
+
+    it('lets long window names wrap instead of overflowing', async () => {
+      render(<PrintPage />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Ventanillas' }));
+      const h2 = screen.getByRole('heading', { name: 'Ventanilla 1' });
+      expect(h2).toHaveClass('break-words');
+      expect(h2).not.toHaveClass('text-8xl');
+    });
+  });
+
   describe('city people without an event role', () => {
     const EVENT_TABS = ['Sectores (Localidades)', 'Ventanillas', 'Mesas'];
 
