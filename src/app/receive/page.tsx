@@ -2,7 +2,7 @@
 
 import { LoadingSpinner } from '@/components/common/ui';
 import QrScanner from '@/components/qr/QrScanner';
-import { StaffBanner } from '@/components/staff';
+import { StaffBanner, StaffPage } from '@/components/staff';
 import MemberNameSearch from '@/components/staff/MemberNameSearch';
 import { GameList } from '@/components/trades';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
@@ -174,7 +174,7 @@ function ReceivePageContent() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-col items-center px-4 py-4 text-gray-900">
+    <StaffPage className="flex flex-col items-center py-4!">
       <section className="w-full">
         {isLoading && <LoadingSpinner message="Buscando información..." />}
         {scanError && <p className="my-4 rounded-lg border border-danger/30 bg-danger/10 p-4 text-center text-danger">{scanError}</p>}
@@ -243,6 +243,6 @@ function ReceivePageContent() {
         </div>
       )}
 
-    </main>
+    </StaffPage>
   );
 }

@@ -39,6 +39,11 @@ const report = {
 } as EnrichedReport;
 
 describe('ReportCard', () => {
+  it('wraps a long comment without spaces instead of widening the page', () => {
+    render(<ReportCard report={report} onImageClick={jest.fn()} />);
+    expect(screen.getByText('No coincide la edición')).toHaveClass('min-w-0', 'break-words');
+  });
+
   it('shows the item owner with WhatsApp and Telegram links', () => {
     render(<ReportCard report={report} onImageClick={jest.fn()} />);
     expect(screen.getByText(/Leo/)).toBeInTheDocument();

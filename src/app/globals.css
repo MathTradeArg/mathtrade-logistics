@@ -5,13 +5,16 @@ body {
   font-family: var(--font-main, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
 }
 
-::-webkit-scrollbar {
-  display: none;
-}
+/* Hidden only on touch screens; with a mouse (notebook) the scrollbar stays visible. */
+@media (pointer: coarse) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
 
-html {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  html {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
 }
 
 :root {

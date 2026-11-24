@@ -368,7 +368,7 @@ function PrintPageContent() {
   }
 
   return (
-    <StaffPage className="print-container pb-24">
+    <StaffPage className="print-container pb-24" width="wide">
       <div className="no-print space-y-6">
         {allowedTabs.length > 1 && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

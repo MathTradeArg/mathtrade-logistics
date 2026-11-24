@@ -118,6 +118,11 @@ describe('DeliverPage', () => {
     expect(screen.getByLabelText('Buscar participante por nombre')).toBeInTheDocument();
   });
 
+  it('uses the shared container, which clips horizontal overflow', () => {
+    render(<DeliverPage />);
+    expect(screen.getByRole('main')).toHaveClass('overflow-x-clip');
+  });
+
   it('disables QR scanner if event phase is not "Entrega"', () => {
     mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
     render(<DeliverPage />);

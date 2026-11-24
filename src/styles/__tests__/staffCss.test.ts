@@ -19,6 +19,29 @@ describe('staff.css buttons', () => {
   });
 });
 
+describe('globals.css scrollbar', () => {
+  const globals = readFileSync(join(__dirname, '..', '..', 'app', 'globals.css'), 'utf8');
+  const coarse = globals.match(/@media \(pointer: coarse\)\s*\{([\s\S]*?)\n\}/);
+
+  it('hides the scrollbar only on touch screens (pointer: coarse)', () => {
+    expect(coarse).not.toBeNull();
+    expect(coarse![1]).toContain('::-webkit-scrollbar');
+    expect(coarse![1]).toContain('scrollbar-width: none');
+  });
+
+  it('does not hide it outside that media query (mouse/notebook)', () => {
+    const outside = globals.replace(coarse ? coarse[0] : '', '');
+    expect(outside).not.toContain('::-webkit-scrollbar');
+    expect(outside).not.toContain('scrollbar-width: none');
+  });
+});
+
+describe('staff.css print container', () => {
+  it('undoes StaffPage overflow-x-clip when printing so no sheet is cut', () => {
+    expect(block('.print-container')).toContain('overflow: visible !important');
+  });
+});
+
 describe('staff.css A4 print sheets', () => {
   it('sizes .print-sheet-a4 for an A4 landscape page', () => {
     const b = block('.print-sheet-a4');

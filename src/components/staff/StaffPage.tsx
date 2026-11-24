@@ -7,9 +7,14 @@ import Link from 'next/link';
 import type { Icon } from 'phosphor-react';
 import { ReactNode } from 'react';
 
-export function StaffPage({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function StaffPage({
+  children,
+  className = '',
+  width = 'default',
+}: { children: ReactNode; className?: string; width?: 'default' | 'wide' }) {
+  const max = width === 'wide' ? 'max-w-lg md:max-w-4xl' : 'max-w-lg';
   return (
-    <main className={`mx-auto w-full max-w-lg px-4 py-main text-gray-900 ${className}`}>
+    <main className={`mx-auto w-full ${max} min-w-0 overflow-x-clip px-4 py-main text-gray-900 ${className}`}>
       {children}
     </main>
   );
