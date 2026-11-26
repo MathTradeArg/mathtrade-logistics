@@ -245,6 +245,60 @@ describe('boxGrouping', () => {
     });
   });
 
+  describe('Santa Fe group leaving the hub (directory separate_from_hub)', () => {
+    const SFE = 33;
+    const ESP = 17;
+    const BBL = 20;
+    const IWH = 21;
+    const ROSARIO = 5;
+    const separate = new Set([SFE, ESP, 13, 9]);
+    const esp: Item = {
+      id: 1, title: 'A', assigned_trade_code: 1, status: 5, location: ESP, location_name: 'Esperanza',
+      send_to: SFE, send_to_name: 'Santa Fe', receptor_first_name: 'Eva', receptor_last_name: 'Paz',
+    };
+    const sfe: Item = { id: 2, title: 'B', assigned_trade_code: 2, status: 5, location: SFE, location_name: 'Santa Fe' };
+    const iwh: Item = {
+      id: 3, title: 'C', assigned_trade_code: 3, status: 5, location: IWH, location_name: 'Ingeniero White',
+      send_to: BBL, send_to_name: 'Bahía Blanca',
+    };
+
+    it('packs each city of the group under its own destination from the hub', () => {
+      expect(packingDestinationId(esp, EVENT_LOCATION_ID, separate)).toBe(ESP);
+      expect(packingDestinationId(sfe, EVENT_LOCATION_ID, separate)).toBe(SFE);
+      const groups = groupPackingDestinations([esp, sfe, iwh], [], false, EVENT_LOCATION_ID, separate);
+      expect(groups.map((g) => [g.destinationId, g.destinationName, g.readyCount])).toEqual([
+        [BBL, 'Bahía Blanca', 1],
+        [ESP, 'Esperanza', 1],
+        [SFE, 'Santa Fe', 1],
+      ]);
+    });
+
+    it('shows only the receiver from the hub: the box already says the city', () => {
+      expect(packingItemSubtitle(esp, EVENT_LOCATION_ID, separate)).toBe('Eva Paz');
+      expect(packingItemSubtitle(iwh, EVENT_LOCATION_ID, separate)).toBe('Ingeniero White');
+    });
+
+    it('keeps the send_as grouping elsewhere: other groups, other origins, older backend', () => {
+      expect(packingDestinationId(iwh, EVENT_LOCATION_ID, separate)).toBe(BBL);
+      expect(packingDestinationId(esp, ROSARIO, separate)).toBe(SFE);
+      expect(packingItemSubtitle(esp, ROSARIO, separate)).toBe('Esperanza · Eva Paz');
+      expect(packingDestinationId(esp, EVENT_LOCATION_ID)).toBe(SFE);
+      expect(packingDestinationId(esp, EVENT_LOCATION_ID, new Set())).toBe(SFE);
+    });
+
+    it('a hub box to Esperanza is its own lane, apart from Santa Fe', () => {
+      const espBox = box({
+        id: 30, origin: EVENT_LOCATION_ID, origin_name: 'AMBA', destiny: ESP, destination_name: 'Esperanza',
+        lane_destination: ESP, closed_at: null, number: null, math_items: [esp],
+      });
+      expect(boxLaneDestination(espBox)).toBe(ESP);
+      expect(boxMatchesLane(espBox, SFE)).toBe(false);
+      expect(boxMatchesLane(espBox, ESP)).toBe(true);
+      const groups = groupPackingDestinations([esp], [espBox], false, EVENT_LOCATION_ID, separate);
+      expect(groups.map((g) => [g.destinationId, g.inOpenCount])).toEqual([[ESP, 1]]);
+    });
+  });
+
   describe('delivered games (status 6)', () => {
     const it6 = { status: 6 } as Item;
     const it5 = { status: 5 } as Item;

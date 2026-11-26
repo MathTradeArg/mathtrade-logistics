@@ -508,4 +508,129 @@ describe('PrintPage', () => {
       expect(field(/DNI referente que envía/i)).toHaveValue('');
     });
   });
+
+  describe('Santa Fe group leaving AMBA (separate_from_hub)', () => {
+    const SPLIT_DIRECTORY = [
+      ...DIRECTORY,
+      { location_id: 50, city: 'Santa Fe', code: 'SFE', address: 'Dir SFE', separate_from_hub: true, pay_on_delivery: false, referrers: [{ name: 'Sofi Fe', dni: '5', telegram: '', phone: '5' }] },
+      { location_id: 51, city: 'Rafaela', code: 'RAF', address: 'Dir RAF', send_as: 50, separate_from_hub: true, pay_on_delivery: false, referrers: [] },
+      { location_id: 52, city: 'Esperanza', code: 'ESP', address: 'Dir ESP', send_as: 50, separate_from_hub: true, pay_on_delivery: false, referrers: [{ name: 'Eli Esp', dni: '6', telegram: '', phone: '6' }] },
+      { location_id: 53, city: 'Paraná', code: 'PAR', address: 'Dir PAR', send_as: 50, separate_from_hub: true, pay_on_delivery: false, referrers: [] },
+      { location_id: 60, city: 'Bahía Blanca', code: 'BBL', address: 'Dir BBL', separate_from_hub: false, pay_on_delivery: false, referrers: [] },
+      { location_id: 61, city: 'Ingeniero White', code: 'IWH', address: 'Dir IWH', send_as: 60, separate_from_hub: false, pay_on_delivery: false, referrers: [] },
+    ];
+    const withCity = (id: number) =>
+      mockUseAuth.mockReturnValue({
+        isAuthenticated: true, isLoading: false, isAdmin: true, role: null,
+        cityAccess: { kind: 'referrer', city: { id, name: 'X' } },
+      });
+
+    const openLabels = async (chosen: string[]) => {
+      mockBoxFetch.mockImplementation(async (path: string) =>
+        path === 'logistics/directory/' ? SPLIT_DIRECTORY : [],
+      );
+      render(<PrintPage />);
+      fireEvent.click(await screen.findByRole('button', { name: /Viaja a localidad del interior/i }));
+      await screen.findByRole('checkbox', { name: /Esperanza/ });
+      fireEvent.click(screen.getByRole('button', { name: 'Ninguna' }));
+      chosen.forEach((city) => fireEvent.click(screen.getByRole('checkbox', { name: new RegExp(city) })));
+    };
+
+    it('from AMBA prints each city of the group with its own name, address and referrer', async () => {
+      withCity(1);
+      await openLabels(['Esperanza']);
+      expect(screen.getByRole('heading', { name: 'Esperanza' })).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Santa Fe' })).not.toBeInTheDocument();
+      expect(screen.queryByText(/SIGUE A:/)).not.toBeInTheDocument();
+      expect(screen.getAllByText('Dir ESP').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Eli Esp').length).toBeGreaterThan(0);
+    });
+
+    it('from AMBA drops the "vía Santa Fe" chip but keeps "vía Bahía Blanca"', async () => {
+      withCity(1);
+      await openLabels([]);
+      expect(screen.queryByText('(vía Santa Fe)')).not.toBeInTheDocument();
+      expect(screen.getByText('(vía Bahía Blanca)')).toBeInTheDocument();
+    });
+
+    it('from AMBA "Todas" picks the four cities of the group, not Ingeniero White', async () => {
+      withCity(1);
+      await openLabels([]);
+      fireEvent.click(screen.getByRole('button', { name: 'Todas' }));
+      // Ciudad Prueba, Santa Fe, Rafaela, Esperanza, Paraná, Bahía Blanca
+      expect(screen.getByText('Localidades de destino (6 seleccionadas)')).toBeInTheDocument();
+      ['Santa Fe', 'Rafaela', 'Esperanza', 'Paraná'].forEach((city) =>
+        expect(screen.getByRole('heading', { name: city })).toBeInTheDocument(),
+      );
+    });
+
+    it('with no sender and no city of their own (admin at the event) it is from AMBA', async () => {
+      await openLabels(['Esperanza']);
+      expect(screen.getByRole('heading', { name: 'Esperanza' })).toBeInTheDocument();
+    });
+
+    it('a direct box from another city still goes to Santa Fe and continues to Esperanza', async () => {
+      withCity(34);
+      await openLabels(['Esperanza']);
+      expect(screen.getByRole('heading', { name: 'Santa Fe' })).toBeInTheDocument();
+      expect(screen.getByText(/SIGUE A:/)).toBeInTheDocument();
+      expect(screen.getAllByText('(vía Santa Fe)')).toHaveLength(3);
+    });
+
+    const openSectors = async () => {
+      mockBoxFetch.mockImplementation(async (path: string) =>
+        path === 'logistics/directory/' ? SPLIT_DIRECTORY : [],
+      );
+      render(<PrintPage />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Sectores (Localidades)' }));
+      await screen.findByRole('checkbox', { name: /Santa Fe/ });
+    };
+
+    it('the pack sign comes out per city of the group; the unpack sign stays grouped', async () => {
+      await openSectors();
+      fireEvent.click(screen.getByRole('button', { name: 'Ninguna' }));
+      fireEvent.click(screen.getByRole('checkbox', { name: /Esperanza/ }));
+      fireEvent.click(screen.getByRole('checkbox', { name: /Santa Fe/ }));
+      // unpack: Santa Fe with Incluye; pack: Esperanza and Santa Fe, no Incluye.
+      expect(screen.getAllByText(/SECTOR DESARMADO DE CAJAS/)).toHaveLength(1);
+      expect(screen.getAllByText(/SECTOR ARMADO DE CAJAS/)).toHaveLength(2);
+      expect(screen.getAllByRole('heading', { name: 'Santa Fe' })).toHaveLength(2);
+      expect(screen.getAllByRole('heading', { name: 'Esperanza' })).toHaveLength(1);
+      expect(screen.getAllByText('Incluye: Esperanza, Paraná, Rafaela')).toHaveLength(1);
+    });
+
+    it('pack lists the four cities apart and keeps Bahía Blanca grouped', async () => {
+      await openSectors();
+      fireEvent.click(screen.getByRole('button', { name: 'Solo Armado (Salen)' }));
+      ['Esperanza', 'Paraná', 'Rafaela'].forEach((city) =>
+        expect(screen.getByRole('checkbox', { name: new RegExp(city) })).toBeInTheDocument(),
+      );
+      expect(screen.queryByRole('checkbox', { name: /Ingeniero White/ })).not.toBeInTheDocument();
+      // Preselected: Ciudad Prueba, Santa Fe, Rafaela, Esperanza, Paraná, Bahía Blanca
+      expect(screen.getByText('Localidades (6 seleccionadas)')).toBeInTheDocument();
+      expect(screen.getAllByText(/SECTOR ARMADO DE CAJAS/)).toHaveLength(6);
+      expect(screen.getByText('Incluye: Ingeniero White')).toBeInTheDocument();
+      expect(screen.queryByText(/Incluye: Esperanza/)).not.toBeInTheDocument();
+    });
+
+    it('unpack hides the cities of the group and counts only what is listed', async () => {
+      await openSectors();
+      fireEvent.click(screen.getByRole('button', { name: 'Solo Desarmado (Llegan)' }));
+      ['Esperanza', 'Paraná', 'Rafaela'].forEach((city) =>
+        expect(screen.queryByRole('checkbox', { name: new RegExp(city) })).not.toBeInTheDocument(),
+      );
+      expect(screen.getByText('Localidades (3 seleccionadas)')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Ninguna' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Todas' }));
+      expect(screen.getByText('Localidades (3 seleccionadas)')).toBeInTheDocument();
+    });
+
+    it('in pack, searching Esperanza shows Esperanza, not Santa Fe', async () => {
+      await openSectors();
+      fireEvent.click(screen.getByRole('button', { name: 'Solo Armado (Salen)' }));
+      fireEvent.change(screen.getByPlaceholderText('Buscar localidad'), { target: { value: 'Esperanza' } });
+      expect(screen.getByRole('checkbox', { name: /Esperanza/ })).toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', { name: /Santa Fe/ })).not.toBeInTheDocument();
+    });
+  });
 });

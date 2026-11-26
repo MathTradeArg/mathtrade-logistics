@@ -118,6 +118,28 @@ export async function listBoxes(params: BoxListParams = {}): Promise<Box[]> {
   return Array.isArray(data) ? data : [];
 }
 
+let separateFromHubCache: ReadonlySet<number> | null = null;
+
+/** Ids of the locations whose boxes leave the hub on their own (directory
+ *  `separate_from_hub`: the Santa Fe group). Asked once per page load; empty,
+ *  and not kept, when the directory fails; empty with an older backend. Either
+ *  way the screens then group by send_as as before. */
+export async function listSeparateFromHub(options: { fresh?: boolean } = {}): Promise<ReadonlySet<number>> {
+  if (separateFromHubCache && !options.fresh) return separateFromHubCache;
+  try {
+    const rows = await boxFetch<{ location_id: number; separate_from_hub?: boolean }[]>('logistics/directory/');
+    const ids = new Set(
+      (Array.isArray(rows) ? rows : [])
+        .filter((row) => row.separate_from_hub === true)
+        .map((row) => row.location_id),
+    );
+    separateFromHubCache = ids;
+    return ids;
+  } catch {
+    return new Set();
+  }
+}
+
 export async function getBox(boxId: number): Promise<Box> {
   const data = await boxFetch<Box>(`logistics/boxes/${boxId}/`);
   if (!data) {

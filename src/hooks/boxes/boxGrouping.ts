@@ -211,19 +211,33 @@ export function boxMatchesLane(box: Box, destinationId: number, eventLocationId 
   return destinationId === VIA_AMBA_DESTINATION_ID ? hasVia : !hasVia;
 }
 
+/** Location ids whose boxes leave the hub on their own, even if they ship as
+ *  another city (directory `separate_from_hub`: the Santa Fe group). Empty with
+ *  an older backend, which keeps the send_as grouping. */
+export type SeparateFromHub = ReadonlySet<number>;
+const NONE_SEPARATE: SeparateFromHub = new Set();
+
+/** From the hub, a city of a `separateFromHub` group is its own destination. */
+function leavesHubAlone(item: Item, origin: number | null | undefined, separateFromHub: SeparateFromHub, eventLocationId: number): boolean {
+  return origin === eventLocationId && item.location != null && separateFromHub.has(item.location);
+}
+
 /** The destination lane a copy is packed into from `origin`: from a city (not
  *  the event), `via_meeting` copies to other cities go to VIA_AMBA_DESTINATION_ID
  *  (`-1`), separate from direct AMBA (`1`); at the event they go to their final city.
- *  Localities that have a `send_as` cluster under that destination lane. */
+ *  Localities that have a `send_as` cluster under that destination lane, except
+ *  from the hub for the cities in `separateFromHub` (their own lane). */
 export function packingDestinationId(
   item: Item,
   origin?: number | null,
+  separateFromHub: SeparateFromHub = NONE_SEPARATE,
   eventLocationId = EVENT_LOCATION_ID,
 ): number | undefined {
   if (!item.location) return undefined;
   if (origin != null && origin !== eventLocationId && isViaAmbaItem(item, eventLocationId)) {
     return VIA_AMBA_DESTINATION_ID;
   }
+  if (leavesHubAlone(item, origin, separateFromHub, eventLocationId)) return item.location;
   if (item.send_to && item.send_to !== origin) {
     return item.send_to;
   }
@@ -236,11 +250,13 @@ export function packingDestinationId(
 export function packingItemSubtitle(
   item: Item,
   origin?: number | null,
+  separateFromHub: SeparateFromHub = NONE_SEPARATE,
   eventLocationId = EVENT_LOCATION_ID,
 ): string | undefined {
   const receptor = receptorName(item);
   const viaHop = goesViaHub(origin, item.location, item.via_meeting, eventLocationId);
-  const clusterHop = !viaHop && item.send_to && item.location && item.send_to !== item.location;
+  const clusterHop = !viaHop && item.send_to && item.location && item.send_to !== item.location &&
+    !leavesHubAlone(item, origin, separateFromHub, eventLocationId);
   const parts = [
     viaHop && item.location_name ? `Sigue a ${item.location_name}` : null,
     clusterHop && item.location_name ? item.location_name : null,
@@ -259,7 +275,7 @@ export type LaneLabel = 'AMBA' | 'Vía reunión' | 'Directo';
  *  (the id the packing screen groups by) so the screen and the Excel cannot
  *  drift: `-1` is via the event, the hub id is AMBA, anything else is direct. */
 export function laneLabel(item: Item, origin: number, eventLocationId = EVENT_LOCATION_ID): LaneLabel {
-  const lane = packingDestinationId(item, origin, eventLocationId);
+  const lane = packingDestinationId(item, origin, NONE_SEPARATE, eventLocationId);
   if (lane === VIA_AMBA_DESTINATION_ID) return 'Vía reunión';
   if (lane === eventLocationId) return 'AMBA';
   return 'Directo';
@@ -342,6 +358,8 @@ export function groupPackingDestinations(
   /** Where the boxes leave from; from a city, `via_meeting` copies to other
    *  cities group under VIA_AMBA_DESTINATION_ID (-1), apart from direct AMBA (1). */
   origin?: number,
+  /** From the hub, these cities are packed apart from their send_as city. */
+  separateFromHub: SeparateFromHub = NONE_SEPARATE,
 ): DestinationGroup[] {
   const boxed = boxedTradeIds(boxes);
   const openBoxed = boxedTradeIds(boxes.filter(isBoxOpen));
@@ -365,7 +383,7 @@ export function groupPackingDestinations(
   const map = new Map<number, DestinationGroup>();
 
   items.forEach((item) => {
-    const destId = packingDestinationId(item, origin);
+    const destId = packingDestinationId(item, origin, separateFromHub);
     if (!destId) return;
     const destName = destId === VIA_AMBA_DESTINATION_ID
       ? VIA_AMBA_DESTINATION_LABEL

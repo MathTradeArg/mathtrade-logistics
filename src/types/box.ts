@@ -11,7 +11,7 @@ export interface Box {
   destination_code?: string | null;
   tracking?: string | null;
   destiny: number;
-  /** Effective destination computed by the API (the destination's send_as or itself); absent in older responses. */
+  /** Effective destination computed by the API (the destination's send_as or itself; from the hub, a Santa Fe group city is itself); absent in older responses. */
   lane_destination?: number;
   origin: number;
   math_items: Item[];

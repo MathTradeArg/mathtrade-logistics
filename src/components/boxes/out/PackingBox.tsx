@@ -8,8 +8,8 @@ import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { resolveCodeToAdd, summarizeAdd, type AddSummary } from '@/hooks/boxes/addByCode';
-import { addItem as addItemApi, getBox, listBoxes, listItems, type CityViewParams } from '@/hooks/boxes/boxApi';
-import { apiDestinationId, boxDestinationLabel, boxLabel, boxedTradeIds, boxContentsSummary, boxLaneDestination, boxMatchesLane, isBoxOpen, isPackable, matchesSearch, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, receptorName, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL } from '@/hooks/boxes/boxGrouping';
+import { addItem as addItemApi, getBox, listBoxes, listItems, listSeparateFromHub, type CityViewParams } from '@/hooks/boxes/boxApi';
+import { apiDestinationId, boxDestinationLabel, boxLabel, boxedTradeIds, boxContentsSummary, boxLaneDestination, boxMatchesLane, isBoxOpen, isPackable, matchesSearch, openBoxTitle, packerName, packingDestinationId, packingItemSubtitle, receptorName, VIA_AMBA_DESTINATION_ID, VIA_AMBA_DESTINATION_LABEL, type SeparateFromHub } from '@/hooks/boxes/boxGrouping';
 import { boxErrorMessage, useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
 import { useAuth } from '@/hooks/useAuth';
 import type { Box, Item } from '@/types';
@@ -18,6 +18,8 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 type Mode = 'view' | 'add' | 'move';
+
+const NO_SEPARATE: SeparateFromHub = new Set();
 
 export type PackingBoxProps = {
   /** Where the box leaves from: the hub at the event, the city elsewhere. */
@@ -54,6 +56,7 @@ export default function PackingBox({
   const [otherBoxes, setOtherBoxes] = useState<Box[]>([]);
   const openBoxes = useMemo(() => otherBoxes.filter(isBoxOpen), [otherBoxes]);
   const [items, setItems] = useState<Item[]>([]);
+  const [separateFromHub, setSeparateFromHub] = useState<SeparateFromHub>(NO_SEPARATE);
   const [mode, setMode] = useState<Mode>('view');
   const [addQuery, setAddQuery] = useState('');
   const [selectedAdds, setSelectedAdds] = useState<Set<number>>(new Set());
@@ -88,11 +91,13 @@ export default function PackingBox({
     setIsLoading(true);
     setError(null);
     try {
-      const [nextBox, nextBoxes, nextItems] = await Promise.all([
+      const [nextBox, nextBoxes, nextItems, nextSeparate] = await Promise.all([
         getBox(boxId),
         listBoxes({ destination: physicalDestId, origin, as_location: asLocation, mathtrade }),
         listItems({ destination: physicalDestId, origin: itemsOrigin, includeSendAs, excludeDelivered: true, as_location: asLocation, mathtrade }),
+        origin === EVENT_LOCATION_ID ? listSeparateFromHub() : NO_SEPARATE,
       ]);
+      setSeparateFromHub(nextSeparate ?? NO_SEPARATE);
       setBox(nextBox);
       setOtherBoxes(
         nextBoxes.filter(
@@ -132,10 +137,10 @@ export default function PackingBox({
     return items.filter(
       (item) =>
         isPackable(item, phaseGated) &&
-        packingDestinationId(item, origin) === effectiveLaneId &&
+        packingDestinationId(item, origin, separateFromHub) === effectiveLaneId &&
         !boxed.has(item.id),
     );
-  }, [box, items, otherBoxes, phaseGated, origin, effectiveLaneId]);
+  }, [box, items, otherBoxes, phaseGated, origin, effectiveLaneId, separateFromHub]);
 
   const filteredAvailableItems = useMemo(() => {
     if (!addQuery.trim()) return availableItems;
@@ -328,7 +333,7 @@ export default function PackingBox({
                 <li key={item.id} className="staff-card flex flex-col gap-3 p-4">
                   <div className="min-w-0">
                     <p className="font-semibold leading-tight">{`${formatTradeCode(item.assigned_trade_code)} · ${item.title}`}</p>
-                    {packingItemSubtitle(item, origin) && <p className="mt-0.5 text-body text-gray-500">{packingItemSubtitle(item, origin)}</p>}
+                    {packingItemSubtitle(item, origin, separateFromHub) && <p className="mt-0.5 text-body text-gray-500">{packingItemSubtitle(item, origin, separateFromHub)}</p>}
                   </div>
                   {canMutate && (
                     <div className="flex flex-col gap-3">
@@ -417,7 +422,7 @@ export default function PackingBox({
             <ul className="flex flex-col gap-3">
               {filteredAvailableItems.map((item) => {
                 const checked = selectedAdds.has(item.id);
-                const subtitle = packingItemSubtitle(item, origin);
+                const subtitle = packingItemSubtitle(item, origin, separateFromHub);
                 return (
                   <li key={item.id}>
                     <GameRow

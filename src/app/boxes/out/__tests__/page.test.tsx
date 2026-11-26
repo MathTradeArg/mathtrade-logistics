@@ -91,6 +91,49 @@ describe('BoxesOutPage', () => {
   });
 });
 
+describe('Santa Fe group from AMBA', () => {
+  const mockListSeparateFromHub = boxApi.listSeparateFromHub as jest.Mock;
+  const city = (id: number, title: string, location: number, name: string) => ({
+    id, title, assigned_trade_code: id, status: 5, location, location_name: name,
+    ...(location === 33 ? {} : { send_to: 33, send_to_name: 'Santa Fe' }),
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockListBoxes.mockResolvedValue([]);
+    mockListItems.mockResolvedValue([
+      city(1, 'Catan', 33, 'Santa Fe'),
+      city(2, 'Azul', 17, 'Esperanza'),
+      city(3, 'Root', 13, 'Paraná'),
+      city(4, 'Brass', 9, 'Rafaela'),
+    ]);
+  });
+
+  it('lists Santa Fe, Esperanza, Paraná and Rafaela as four destinations of their own', async () => {
+    mockListSeparateFromHub.mockResolvedValue(new Set([33, 17, 13, 9]));
+    render(<BoxesOutPage />, { wrapper });
+
+    expect(await screen.findByRole('link', { name: /Esperanza/ })).toHaveAttribute('href', '/boxes/out/17');
+    expect(screen.getByRole('link', { name: /Paraná/ })).toHaveAttribute('href', '/boxes/out/13');
+    expect(screen.getByRole('link', { name: /Rafaela/ })).toHaveAttribute('href', '/boxes/out/9');
+    expect(screen.getByRole('link', { name: /Santa Fe/ })).toHaveAttribute('href', '/boxes/out/33');
+    expect(screen.getAllByRole('link')).toHaveLength(4);
+    expect(screen.getAllByText(/1 listos · 0 en cajas abiertas · 0 cerradas/)).toHaveLength(4);
+    expect(screen.queryByText(/vía/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps them under Santa Fe with an older backend (no separate_from_hub)', async () => {
+    mockListSeparateFromHub.mockResolvedValue(new Set());
+    render(<BoxesOutPage />, { wrapper });
+
+    expect(await screen.findByRole('link', { name: /Santa Fe/ })).toHaveAttribute('href', '/boxes/out/33');
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    expect(screen.getByText(/4 listos/)).toBeInTheDocument();
+  });
+});
+
 describe('a screen whose event phase failed to load does not show an endless spinner', () => {
   beforeEach(() => {
     jest.clearAllMocks();
