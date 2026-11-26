@@ -143,21 +143,79 @@ describe('PrintPage', () => {
       chosenCities.forEach((city) => fireEvent.click(screen.getByRole('checkbox', { name: new RegExp(city) })));
     };
 
-    it('prints one sign per mode listing the other chosen cities that ship through it', async () => {
-      await openSectors(['Esperanza', 'Paraná', 'Rafaela']);
+    it('prints one sign per mode listing the cities that ship through it', async () => {
+      await openSectors(['Santa Fe']);
       expect(screen.getAllByRole('heading', { name: 'Santa Fe' })).toHaveLength(2);
       expect(screen.getAllByText('Incluye: Esperanza, Paraná, Rafaela')).toHaveLength(2);
-    });
-
-    it('shows the shipping city and only the chosen one when a single city is picked', async () => {
-      await openSectors(['Esperanza']);
-      expect(screen.getAllByRole('heading', { name: 'Santa Fe' })).toHaveLength(2);
-      expect(screen.getAllByText('Incluye: Esperanza')).toHaveLength(2);
     });
 
     it('omits the line for a city that nobody ships through', async () => {
       await openSectors(['Ciudad Prueba']);
       expect(screen.getAllByRole('heading', { name: 'Ciudad Prueba' })).toHaveLength(2);
+      expect(screen.queryByText(/Incluye:/)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('sector list grouped by shipping city', () => {
+    const GROUPED_DIRECTORY = [
+      ...DIRECTORY,
+      { location_id: 50, city: 'Santa Fe', code: 'SFE', address: 'X 1', pay_on_delivery: false, referrers: [] },
+      { location_id: 51, city: 'Rafaela', code: 'RAF', address: 'X 2', send_as: 50, pay_on_delivery: false, referrers: [] },
+      { location_id: 52, city: 'Esperanza', code: 'ESP', address: 'X 3', send_as: 50, pay_on_delivery: false, referrers: [] },
+      { location_id: 53, city: 'Paraná', code: 'PAR', address: 'X 4', send_as: 50, pay_on_delivery: false, referrers: [] },
+      { location_id: 54, city: 'Via Hub', code: 'VHB', address: 'X 5', send_as: 1, pay_on_delivery: false, referrers: [] },
+    ];
+
+    const openSectors = async () => {
+      mockBoxFetch.mockImplementation(async (path: string) =>
+        path === 'logistics/directory/' ? GROUPED_DIRECTORY : [],
+      );
+      render(<PrintPage />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Sectores (Localidades)' }));
+      await screen.findByRole('checkbox', { name: /Santa Fe/ });
+    };
+
+    it('lists shipping cities only, keeping those that send as the hub', async () => {
+      await openSectors();
+      expect(screen.getByRole('checkbox', { name: /Santa Fe/ })).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: /Via Hub/ })).toBeInTheDocument();
+      ['Esperanza', 'Paraná', 'Rafaela'].forEach((city) =>
+        expect(screen.queryByRole('checkbox', { name: new RegExp(city) })).not.toBeInTheDocument(),
+      );
+    });
+
+    it('counts only visible cities and preselects them', async () => {
+      await openSectors();
+      // Ciudad Prueba, Santa Fe, Via Hub
+      expect(screen.getByText('Localidades (3 seleccionadas)')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Ninguna' }));
+      expect(screen.getByText('Localidades (0 seleccionadas)')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Todas' }));
+      expect(screen.getByText('Localidades (3 seleccionadas)')).toBeInTheDocument();
+    });
+
+    it('shows the shipping city when searching for a hidden one by name or code', async () => {
+      await openSectors();
+      const search = screen.getByPlaceholderText('Buscar localidad');
+      fireEvent.change(search, { target: { value: 'Esperanza' } });
+      expect(screen.getByRole('checkbox', { name: /Santa Fe/ })).toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', { name: /Ciudad Prueba/ })).not.toBeInTheDocument();
+      fireEvent.change(search, { target: { value: 'ESP' } });
+      expect(screen.getByRole('checkbox', { name: /Santa Fe/ })).toBeInTheDocument();
+    });
+
+    it('"Incluye" lists every city shipping through it, chosen or not', async () => {
+      await openSectors();
+      fireEvent.click(screen.getByRole('button', { name: 'Ninguna' }));
+      fireEvent.click(screen.getByRole('checkbox', { name: /Santa Fe/ }));
+      expect(screen.getAllByText('Incluye: Esperanza, Paraná, Rafaela')).toHaveLength(2);
+    });
+
+    it('ignores persisted ids of hidden cities', async () => {
+      sessionStorage.setItem('printForm:v1:selectedSectorLocs', JSON.stringify([51, 52]));
+      await openSectors();
+      expect(screen.getByText('Localidades (0 seleccionadas)')).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Santa Fe' })).not.toBeInTheDocument();
       expect(screen.queryByText(/Incluye:/)).not.toBeInTheDocument();
     });
   });
