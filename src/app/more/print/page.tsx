@@ -74,6 +74,12 @@ function BoxCircleSymbol({ fill }: { fill: CircleFill }) {
   );
 }
 
+// Table 0 is a valid table; empty or non-numeric input falls back to 0 instead of 1.
+const parseTableNumber = (raw: string): number => {
+  const n = Number(raw);
+  return Number.isFinite(n) ? Math.max(0, Math.min(200, n)) : 0;
+};
+
 export default function PrintPage() {
   return (
     <Suspense
@@ -338,7 +344,7 @@ function PrintPageContent() {
   }, [sectorKind, selectedSectorLocs, interiorDirectory, directory]);
 
   const tableNumbers = useMemo(() => {
-    const start = Math.max(1, Math.min(tableStart, tableEnd));
+    const start = Math.max(0, Math.min(tableStart, tableEnd));
     const end = Math.min(200, Math.max(tableStart, tableEnd));
     const list: number[] = [];
     for (let n = start; n <= end; n += 1) {
@@ -752,10 +758,10 @@ function PrintPageContent() {
                 </label>
                 <input
                   type="number"
-                  min={1}
+                  min={0}
                   max={200}
                   value={tableStart}
-                  onChange={(e) => setTableStart(Number(e.target.value) || 1)}
+                  onChange={(e) => setTableStart(parseTableNumber(e.target.value))}
                   className="min-h-10 w-full rounded border border-gray-300 px-3 text-body"
                 />
               </div>
@@ -765,10 +771,10 @@ function PrintPageContent() {
                 </label>
                 <input
                   type="number"
-                  min={1}
+                  min={0}
                   max={200}
                   value={tableEnd}
-                  onChange={(e) => setTableEnd(Number(e.target.value) || 1)}
+                  onChange={(e) => setTableEnd(parseTableNumber(e.target.value))}
                   className="min-h-10 w-full rounded border border-gray-300 px-3 text-body"
                 />
               </div>

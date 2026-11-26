@@ -124,6 +124,37 @@ describe('PrintPage', () => {
     expect(screen.queryByText(/MESA DE JUEGOS/i)).not.toBeInTheDocument();
   });
 
+  describe('table 0', () => {
+    const openTables = async () => {
+      render(<PrintPage />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Mesas' }));
+      const [from, to] = screen.getAllByRole('spinbutton') as HTMLInputElement[];
+      return { from, to };
+    };
+
+    it('prints a "Mesa 0" sheet when "Desde" is 0 and counts it', async () => {
+      const { from, to } = await openTables();
+      fireEvent.change(to, { target: { value: '2' } });
+      fireEvent.change(from, { target: { value: '0' } });
+      expect(from.value).toBe('0');
+      expect(screen.getByRole('heading', { name: 'Mesa 0' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Mesa 2' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Imprimir \(3 mesas\)/ })).toBeInTheDocument();
+      expect(from).toHaveAttribute('min', '0');
+      expect(to).toHaveAttribute('min', '0');
+    });
+
+    it('does not turn 0 into 1 in "Hasta" and survives an empty value', async () => {
+      const { from, to } = await openTables();
+      fireEvent.change(from, { target: { value: '0' } });
+      fireEvent.change(to, { target: { value: '0' } });
+      expect(to.value).toBe('0');
+      expect(screen.getByRole('button', { name: /Imprimir \(1 mesas\)/ })).toBeInTheDocument();
+      fireEvent.change(to, { target: { value: '' } });
+      expect(screen.getByRole('heading', { name: 'Mesa 0' })).toBeInTheDocument();
+    });
+  });
+
   describe('landscape event signs', () => {
     const landscapeStyle = (container: HTMLElement) =>
       Array.from(container.querySelectorAll('style')).find((el) =>
