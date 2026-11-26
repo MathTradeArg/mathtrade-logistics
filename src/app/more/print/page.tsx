@@ -44,6 +44,11 @@ type WindowConfigItem = {
 /** Giant visual circle symbol for boxes travelling to CABA:
  *  - Filled circle (●) when CABA is the final destination
  *  - Empty circle (○) when CABA is an intermediate stop (Leg 1 = CABA) */
+/** True unless the city ships as another city of the interior directory (that one gets the sign). */
+function isShippingCity(interior: LocationReferrerInfo[], loc: LocationReferrerInfo): boolean {
+  return !loc.sendAs || !interior.some((other) => other.locationId === loc.sendAs);
+}
+
 function BoxCircleSymbol({ fill }: { fill: CircleFill }) {
   const isFilled = fill === 'filled';
   return (
@@ -171,7 +176,9 @@ function PrintPageContent() {
           setSelectedLabelDests(new Set(next.interior.slice(0, 1).map((loc) => loc.locationId)));
         }
         if (!hasPersisted('selectedSectorLocs')) {
-          setSelectedSectorLocs(new Set(next.interior.map((loc) => loc.locationId)));
+          setSelectedSectorLocs(
+            new Set(next.interior.filter((loc) => isShippingCity(next.interior, loc)).map((loc) => loc.locationId)),
+          );
         }
       })
       .catch(() => {
@@ -261,12 +268,31 @@ function PrintPageContent() {
     [interiorDirectory, labelDestQuery],
   );
 
+  // Cities that ship as another interior city are covered by that city's sign, so they are not listed.
+  const sectorLocations = useMemo(
+    () => interiorDirectory.filter((loc) => isShippingCity(interiorDirectory, loc)),
+    [interiorDirectory],
+  );
+  const selectedSectorCount = useMemo(
+    () => sectorLocations.filter((loc) => selectedSectorLocs.has(loc.locationId)).length,
+    [sectorLocations, selectedSectorLocs],
+  );
+
   const filteredSectorLocations = useMemo(
     () =>
-      interiorDirectory.filter((loc) =>
-        matchesSearch([loc.city, loc.code].join(' '), sectorQuery),
+      sectorLocations.filter((loc) =>
+        matchesSearch(
+          [
+            loc.city,
+            loc.code,
+            ...interiorDirectory
+              .filter((other) => other.sendAs === loc.locationId)
+              .flatMap((other) => [other.city, other.code]),
+          ].join(' '),
+          sectorQuery,
+        ),
       ),
-    [interiorDirectory, sectorQuery],
+    [sectorLocations, interiorDirectory, sectorQuery],
   );
 
   const toggleSetItem = (
@@ -325,9 +351,7 @@ function PrintPageContent() {
   }, [routeKind, copiesPerDest, selectedLabelDests, customAddresses, ambaInfo, interiorDirectory, directory]);
 
   const sectorSigns = useMemo(() => {
-    const chosen = interiorDirectory.filter((loc) =>
-      selectedSectorLocs.has(loc.locationId),
-    );
+    const chosen = sectorLocations.filter((loc) => selectedSectorLocs.has(loc.locationId));
     const seen = new Set<number>();
     const signs: {
       key: string;
@@ -339,10 +363,10 @@ function PrintPageContent() {
       const shippingLoc = loc.sendAs ? (findReferrerInfo(directory, loc.sendAs) ?? loc) : loc;
       if (seen.has(shippingLoc.locationId)) return;
       seen.add(shippingLoc.locationId);
-      // Other chosen cities that ship through this one, so the sign says who it covers.
+      // Every city that ships through this one, chosen or not, so the sign says who it covers.
       const includes = Array.from(
         new Set(
-          chosen
+          interiorDirectory
             .filter(
               (other) =>
                 other.sendAs === shippingLoc.locationId &&
@@ -359,7 +383,7 @@ function PrintPageContent() {
       }
     });
     return signs;
-  }, [sectorKind, selectedSectorLocs, interiorDirectory, directory]);
+  }, [sectorKind, selectedSectorLocs, sectorLocations, interiorDirectory, directory]);
 
   const tableNumbers = useMemo(() => {
     const start = Math.max(0, Math.min(tableStart, tableEnd));
@@ -499,7 +523,7 @@ function PrintPageContent() {
                       type="button"
                       onClick={() =>
                         setSelectedLabelDests(
-                          new Set(interiorDirectory.map((l) => l.locationId)),
+                          new Set(sectorLocations.map((l) => l.locationId)),
                         )
                       }
                       className="rounded border border-gray-300 px-2 py-1 text-caption font-semibold text-gray-700"
@@ -677,7 +701,7 @@ function PrintPageContent() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-body font-semibold text-gray-700">
-                Localidades ({selectedSectorLocs.size} seleccionadas)
+                Localidades ({selectedSectorCount} seleccionadas)
               </span>
               <div className="flex gap-2">
                 <button
