@@ -407,20 +407,21 @@ export default function VolunteersPage() {
                       </button>
                     </div>
                   }
-                />
-                <HistorySection<ActivityRow>
-                  title="Actividad"
-                  key={volunteer.id}
-                  load={() => fetchActivity(undefined, `volunteers/${volunteer.user.id}/activity/`)}
-                  getKey={activityKey}
-                  notice="Solo lo que el sistema registró. Los cambios de asistencia no se guardan, así que no aparecen. Puede faltar algún evento de cajas viejas o borradas."
-                  emptyText="El sistema no registró acciones de este voluntario."
-                  renderRow={(row) => (
-                    <>
-                      <p className="font-semibold leading-tight">{activityTitle(row)}</p>
-                      <p className="mt-0.5 text-body text-gray-500">{formatHistoryDate(row.at)}</p>
-                    </>
-                  )}
+                  footer={
+                    <HistorySection<ActivityRow>
+                      title="Actividad"
+                      load={() => fetchActivity(undefined, `volunteers/${volunteer.user.id}/activity/`)}
+                      getKey={activityKey}
+                      notice="Solo lo que el sistema registró. Los cambios de asistencia no se guardan, así que no aparecen. Puede faltar algún evento de cajas viejas o borradas."
+                      emptyText="El sistema no registró acciones de este voluntario."
+                      renderRow={(row) => (
+                        <>
+                          <p className="font-semibold leading-tight">{activityTitle(row)}</p>
+                          <p className="mt-0.5 text-body text-gray-500">{formatHistoryDate(row.at)}</p>
+                        </>
+                      )}
+                    />
+                  }
                 />
               </li>
             ))}

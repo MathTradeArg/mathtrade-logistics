@@ -245,6 +245,23 @@ describe('VolunteersPage', () => {
       expect(screen.getByRole('button', { name: 'Quitar a Ana Gomez' })).toBeInTheDocument();
     });
 
+    it('puts each volunteer\'s activity button inside the same card as their name', async () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+      listExecute.mockResolvedValue([ana, local]);
+      renderPage();
+      const card = (name: string) => screen.getByText(name).closest('li') as HTMLElement;
+      await screen.findByText('Ana Gomez');
+
+      for (const name of ['Ana Gomez', 'Lucia Local']) {
+        const row = screen.getByText(name).closest('.staff-card') as HTMLElement;
+        expect(row).not.toBeNull();
+        expect(within(row).getAllByRole('button', { name: 'Ver actividad' })).toHaveLength(1);
+        expect(within(card(name)).getAllByRole('button', { name: 'Ver actividad' })).toHaveLength(1);
+      }
+      expect(within(screen.getByText('Ana Gomez').closest('.staff-card') as HTMLElement)
+        .getByRole('button', { name: 'Quitar a Ana Gomez' })).toBeInTheDocument();
+    });
+
     it('also shows the block for a local volunteer', async () => {
       mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
       listExecute.mockResolvedValue([ana, local]);
