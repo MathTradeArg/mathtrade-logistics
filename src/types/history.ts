@@ -14,3 +14,18 @@ export interface TradeHistoryRow {
   actor: ActorRef | null;
   at: string; // ISO
 }
+
+export type BoxAction = 'create' | 'add' | 'remove' | 'move_in' | 'move_out' | 'close' | 'reopen' | 'delete';
+
+/** One box action (BoxEvent). trade_* and game_title are null when the action
+ *  has no game or the game was deleted. */
+export interface BoxEventRow {
+  id: number;
+  action: BoxAction;
+  box_id: number;
+  trade_id: number | null;
+  trade_code: number | null;
+  game_title: string | null;
+  actor: ActorRef | null;
+  at: string; // ISO
+}

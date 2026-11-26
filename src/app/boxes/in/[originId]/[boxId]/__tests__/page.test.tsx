@@ -1,11 +1,13 @@
 import { ActionStatusProvider } from '@/contexts/ActionStatusContext';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import * as boxApi from '@/hooks/boxes/boxApi';
+import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import IncomingBoxPage from '../page';
 
 jest.mock('@/hooks/useAuth');
+jest.mock('@/hooks/useApi');
 jest.mock('@/contexts/EventPhaseContext');
 jest.mock('@/hooks/boxes/boxApi');
 jest.mock('@/components/staff/StaffTitleContext', () => ({
@@ -27,6 +29,14 @@ const mockGetBox = boxApi.getBox as jest.Mock;
 const mockListBoxes = boxApi.listBoxes as jest.Mock;
 const mockListItems = boxApi.listItems as jest.Mock;
 const mockReopenBox = boxApi.reopenBox as jest.Mock;
+const mockUseApi = useApi as jest.Mock;
+let historyExecute: jest.Mock;
+
+// Every describe below renders the page, which asks useApi for the box history.
+beforeEach(() => {
+  historyExecute = jest.fn().mockResolvedValue({ results: [], truncated: false });
+  mockUseApi.mockReturnValue({ execute: historyExecute });
+});
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <ActionStatusProvider>{children}</ActionStatusProvider>
@@ -588,5 +598,157 @@ describe('a network error in a list can be retried without leaving the screen', 
 
     expect(await screen.findByRole('alert')).toHaveTextContent(offline);
     expect(screen.queryByRole('button', { name: 'Reintentar' })).toBeNull();
+  });
+});
+
+// Rule: only admins see the history of a box (who created, filled, closed and
+// reopened it); it loads when opened and a backend without it is a notice.
+describe('IncomingBoxPage: box history (admin)', () => {
+  const asAdmin = () =>
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, userId: '1', isAdmin: true });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, userId: '1' });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockGetBox.mockResolvedValue(ambaBox);
+  });
+
+  it('loads the history when opened and shows action, game, actor and date', async () => {
+    asAdmin();
+    historyExecute.mockResolvedValue({
+      results: [
+        { id: 3, action: 'add', box_id: 392, trade_id: 7, trade_code: 501, game_title: 'Catan', actor: { id: 2, name: 'Luis Diaz' }, at: '2026-11-26T14:00:00Z' },
+        { id: 1, action: 'create', box_id: 392, trade_id: null, trade_code: null, game_title: null, actor: { id: 1, name: 'Ana Gomez' }, at: '2026-11-26T13:00:00Z' },
+      ],
+      truncated: false,
+    });
+    render(<IncomingBoxPage />, { wrapper });
+
+    const button = await screen.findByRole('button', { name: 'Ver historial' });
+    expect(historyExecute).not.toHaveBeenCalled();
+    fireEvent.click(button);
+    expect(historyExecute).toHaveBeenCalledWith(undefined, '392/history/');
+
+    expect(await screen.findByText('Creó la caja')).toBeInTheDocument();
+    expect(screen.getByText('Agregó un juego')).toBeInTheDocument();
+    expect(screen.getByText('Catan (00501)')).toBeInTheDocument();
+    expect(screen.getByText(/^Luis Diaz · /)).toBeInTheDocument();
+    expect(screen.getByText(/^Ana Gomez · /)).toBeInTheDocument();
+  });
+
+  it('says "Juego no disponible" when a game row lost its game', async () => {
+    asAdmin();
+    historyExecute.mockResolvedValue({
+      results: [
+        { id: 4, action: 'add', box_id: 392, trade_id: null, trade_code: null, game_title: null, actor: null, at: '2026-11-26T14:00:00Z' },
+      ],
+      truncated: false,
+    });
+    render(<IncomingBoxPage />, { wrapper });
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver historial' }));
+
+    expect(await screen.findByText('Juego no disponible')).toBeInTheDocument();
+    expect(screen.getByText(/^Alguien \(sin nombre\) · /)).toBeInTheDocument();
+  });
+
+  it('does not show the history to a non admin', async () => {
+    render(<IncomingBoxPage />, { wrapper });
+    expect(await screen.findByRole('checkbox', { name: /Catan/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ver historial' })).not.toBeInTheDocument();
+  });
+
+  it('shows a notice on a 404 and keeps the games of the box', async () => {
+    asAdmin();
+    historyExecute.mockRejectedValue(Object.assign(new Error('Not found'), { status: 404 }));
+    render(<IncomingBoxPage />, { wrapper });
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver historial' }));
+
+    expect(await screen.findByText(/El historial todavía no está disponible/)).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Catan/ })).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: /Earth/ })).toBeInTheDocument();
+  });
+});
+
+// Rule: the rebuild screen of a reopened transit box also shows its history to
+// admins, under "Agregar juegos" (only in the box view, not while adding).
+describe('IncomingBoxPage rebuilt box: history (admin)', () => {
+  const reopenedTransit = {
+    id: 401,
+    number: 17,
+    origin: 8,
+    origin_name: 'Salta',
+    destiny: 3,
+    destination_name: 'Córdoba',
+    lane_destination: 3,
+    closed_at: null,
+    tracking: 'VC-10',
+    math_items: [
+      { id: 9, item_id: 90, title: 'Wingspan', assigned_trade_code: 20040, status: 4, via_meeting: true, location: 3, lane_destination: 3, origin_location: 8 },
+    ],
+  };
+  const heat = {
+    id: 12, item_id: 93, title: 'Heat', assigned_trade_code: 20043, status: 4,
+    via_meeting: true, location: 3, lane_destination: 3, origin_location: 8,
+  };
+  const asAdmin = () =>
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, userId: '1', isAdmin: true });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false, userId: '1' });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockGetBox.mockResolvedValue(reopenedTransit);
+    mockListBoxes.mockResolvedValue([reopenedTransit]);
+    mockListItems.mockResolvedValue([heat]);
+  });
+
+  it('shows the history under Agregar juegos and loads it when opened', async () => {
+    asAdmin();
+    historyExecute.mockResolvedValue({
+      results: [
+        { id: 3, action: 'reopen', box_id: 401, trade_id: null, trade_code: null, game_title: null, actor: { id: 1, name: 'Ana Gomez' }, at: '2026-11-26T15:00:00Z' },
+        { id: 2, action: 'close', box_id: 401, trade_id: null, trade_code: null, game_title: null, actor: { id: 2, name: 'Luis Diaz' }, at: '2026-11-25T10:00:00Z' },
+      ],
+      truncated: false,
+    });
+    render(<IncomingBoxPage />, { wrapper });
+
+    await screen.findByRole('button', { name: 'Cerrar de nuevo' });
+    const button = screen.getByRole('button', { name: 'Ver historial' });
+    expect(historyExecute).not.toHaveBeenCalled();
+    fireEvent.click(button);
+    expect(historyExecute).toHaveBeenCalledWith(undefined, '401/history/');
+
+    expect(await screen.findByText('Reabrió la caja')).toBeInTheDocument();
+    expect(screen.getByText('Cerró la caja')).toBeInTheDocument();
+  });
+
+  it('does not show the history while adding games', async () => {
+    asAdmin();
+    render(<IncomingBoxPage />, { wrapper });
+
+    await screen.findByRole('button', { name: 'Ver historial' });
+    const add = screen.getByRole('button', { name: 'Agregar juegos' });
+    await waitFor(() => expect(add).toBeEnabled());
+    fireEvent.click(add);
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Agregar juegos' })).not.toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Ver historial' })).not.toBeInTheDocument();
+  });
+
+  it('does not show the history to a non admin', async () => {
+    render(<IncomingBoxPage />, { wrapper });
+    await screen.findByRole('button', { name: 'Cerrar de nuevo' });
+    expect(screen.queryByRole('button', { name: 'Ver historial' })).not.toBeInTheDocument();
+  });
+
+  it('shows a notice on a 404 and keeps the games of the box', async () => {
+    asAdmin();
+    historyExecute.mockRejectedValue(Object.assign(new Error('Not found'), { status: 404 }));
+    render(<IncomingBoxPage />, { wrapper });
+    fireEvent.click(await screen.findByRole('button', { name: 'Ver historial' }));
+
+    expect(await screen.findByText(/El historial todavía no está disponible/)).toBeInTheDocument();
+    expect(screen.getByText(/Wingspan/)).toBeInTheDocument();
   });
 });

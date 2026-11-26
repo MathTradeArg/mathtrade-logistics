@@ -1,4 +1,5 @@
-import { getGameStatusText, type GameStatusCode } from '@/types';
+import { getGameStatusText, type BoxAction, type BoxEventRow, type GameStatusCode } from '@/types';
+import { formatTradeCode } from '@/utils/tradeCode';
 
 export function formatHistoryDate(iso: string): string {
   const date = new Date(iso);
@@ -27,4 +28,26 @@ export function statusChangeText(status: GameStatusCode, previous: GameStatusCod
   return previous === null
     ? getGameStatusText(status)
     : `${getGameStatusText(previous)} → ${getGameStatusText(status)}`;
+}
+
+export const BOX_ACTION_LABEL: Record<BoxAction, string> = {
+  create: 'Creó la caja',
+  add: 'Agregó un juego',
+  remove: 'Sacó un juego',
+  move_in: 'Movió un juego a esta caja',
+  move_out: 'Movió un juego a otra caja',
+  close: 'Cerró la caja',
+  reopen: 'Reabrió la caja',
+  delete: 'Borró la caja',
+};
+
+const BOX_ACTIONS_WITHOUT_GAME: ReadonlySet<BoxAction> = new Set(['create', 'close', 'reopen', 'delete']);
+
+/** "Catan (00101)", or "Juego no disponible" when a game action has no game
+ *  (deleted). null for box actions that are not about a game. */
+export function boxEventGameText(row: Pick<BoxEventRow, 'trade_code' | 'game_title' | 'action'>): string | null {
+  if (row.trade_code === null) {
+    return BOX_ACTIONS_WITHOUT_GAME.has(row.action) ? null : 'Juego no disponible';
+  }
+  return `${row.game_title ?? 'Sin título'} (${formatTradeCode(row.trade_code)})`;
 }

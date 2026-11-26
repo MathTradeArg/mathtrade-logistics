@@ -1,5 +1,5 @@
 import type { GameStatusCode } from '@/types';
-import { actorName, formatHistoryDate, previousStatuses, statusChangeText } from '../history';
+import { actorName, BOX_ACTION_LABEL, boxEventGameText, formatHistoryDate, previousStatuses, statusChangeText } from '../history';
 
 type Row = { game: number; status: GameStatusCode };
 
@@ -61,5 +61,35 @@ describe('formatHistoryDate', () => {
     const text = formatHistoryDate('2026-11-26T15:04:00Z');
     expect(text).toMatch(/\d{2}\/\d{2}/);
     expect(text).toMatch(/\d{2}:\d{2}/);
+  });
+});
+
+describe('boxEventGameText', () => {
+  it('shows the game with its padded label', () => {
+    expect(boxEventGameText({ action: 'add', trade_code: 501, game_title: 'Catan' })).toBe('Catan (00501)');
+  });
+
+  it('falls back to "Sin título" when the game has a code but no title', () => {
+    expect(boxEventGameText({ action: 'remove', trade_code: 12345, game_title: null })).toBe('Sin título (12345)');
+  });
+
+  it('returns null for box actions that are not about a game', () => {
+    for (const action of ['create', 'close', 'reopen', 'delete'] as const) {
+      expect(boxEventGameText({ action, trade_code: null, game_title: null })).toBeNull();
+    }
+  });
+
+  it('says "Juego no disponible" when a game action lost its game', () => {
+    for (const action of ['add', 'remove', 'move_in', 'move_out'] as const) {
+      expect(boxEventGameText({ action, trade_code: null, game_title: null })).toBe('Juego no disponible');
+    }
+  });
+});
+
+describe('BOX_ACTION_LABEL', () => {
+  it('has a label for every action', () => {
+    expect(BOX_ACTION_LABEL.create).toBe('Creó la caja');
+    expect(BOX_ACTION_LABEL.reopen).toBe('Reabrió la caja');
+    expect(Object.keys(BOX_ACTION_LABEL)).toHaveLength(8);
   });
 });
