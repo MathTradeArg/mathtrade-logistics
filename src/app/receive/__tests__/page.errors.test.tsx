@@ -189,7 +189,7 @@ describe('ReceivePage: a network or server error must not lock the screen', () =
     await waitFor(() => expect(screen.getByTestId('qr-scanner')).toBeInTheDocument());
   });
 
-  it('receive shows backend detail message', async () => {
+  it('receive shows backend detail message and keeps it until the user acts', async () => {
     jest.useFakeTimers();
     routeApi({ scan: { status: 404, body: { detail: 'Usuario no encontrado' } } });
     renderPage();
@@ -197,9 +197,9 @@ describe('ReceivePage: a network or server error must not lock the screen', () =
     fireEvent.click(screen.getByRole('button', { name: 'Simulate Scan' }));
     await waitFor(() => expect(screen.getByText('Usuario no encontrado')).toBeInTheDocument());
 
-    act(() => { jest.advanceTimersByTime(3000); });
-    await waitFor(() => expect(screen.getByTestId('qr-scanner')).toBeInTheDocument());
-    expect(screen.queryByText('Usuario no encontrado')).not.toBeInTheDocument();
+    act(() => { jest.advanceTimersByTime(60_000); });
+    expect(screen.getByText('Usuario no encontrado')).toBeInTheDocument();
+    expect(screen.queryByTestId('qr-scanner')).not.toBeInTheDocument();
   });
 });
 

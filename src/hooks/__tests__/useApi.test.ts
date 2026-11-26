@@ -2,6 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { useApi } from '../useApi';
 
 const NETWORK_MESSAGE = 'No hay conexión o el servidor tardó demasiado. Probá de nuevo.';
+const WRITE_MESSAGE = 'No sabemos si se guardó. Consultá el estado antes de repetir.';
 
 const hangUntilAborted = (_url: string, init?: RequestInit) =>
   new Promise((_resolve, reject) => {
@@ -32,7 +33,7 @@ describe('useApi network layer', () => {
       result.current.execute({}).catch(() => undefined);
       await jest.advanceTimersByTimeAsync(15_000);
     });
-    expect(result.current.error).toBe(NETWORK_MESSAGE);
+    expect(result.current.error).toBe(WRITE_MESSAGE);
     expect(result.current.isLoading).toBe(false);
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
@@ -120,7 +121,7 @@ describe('useApi network layer', () => {
     await act(async () => {
       await result.current.execute({}).catch(() => undefined);
     });
-    expect(result.current.error).toBe(NETWORK_MESSAGE);
+    expect(result.current.error).toBe(WRITE_MESSAGE);
   });
 
   it('the backend detail is shown over the generic message', async () => {

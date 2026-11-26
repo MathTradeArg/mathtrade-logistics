@@ -1,12 +1,21 @@
 export const NETWORK_ERROR_MESSAGE =
   'No hay conexión o el servidor tardó demasiado. Probá de nuevo.';
 
+/** A write that failed with no response: the server may or may not have applied it. */
+export const WRITE_NETWORK_ERROR_MESSAGE =
+  'No sabemos si se guardó. Consultá el estado antes de repetir.';
+
+const isWrite = (init: RequestInit) => {
+  const method = (init.method ?? 'GET').toUpperCase();
+  return method !== 'GET' && method !== 'HEAD';
+};
+
 export class NetworkError extends Error {
   status = 0;
   body: unknown = null;
 
-  constructor() {
-    super(NETWORK_ERROR_MESSAGE);
+  constructor(write = false) {
+    super(write ? WRITE_NETWORK_ERROR_MESSAGE : NETWORK_ERROR_MESSAGE);
     this.name = 'NetworkError';
   }
 }
@@ -36,7 +45,7 @@ export async function fetchWithTimeout(
         await sleep(retryDelayMs * (attempt + 1));
         continue;
       }
-      throw new NetworkError();
+      throw new NetworkError(isWrite(init));
     } finally {
       clearTimeout(timer);
     }

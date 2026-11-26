@@ -1,7 +1,7 @@
 "use client";
 
 import { Clock, RefreshCw, UserX, Users } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApi } from '@/hooks/useApi';
 import type { ProcessedUserWithWindow, UserWithWindow, WindowConfig, WindowDisplay } from '@/types/window';
 import { getGlobalPollingInterval, getMaxUsersForWindow } from '@/utils/windowStorage';
@@ -46,6 +46,8 @@ export default function DisplayReadyToPickupPage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pollingInterval, setPollingInterval] = useState(10);
+  // True while a poll is running: a slow network must not stack requests.
+  const inFlight = useRef(false);
 
   const { execute: fetchReadyUsers } = useApi<UserWithWindow[]>('logistics/users/ready-to-pickup/', { method: 'GET' });
   const { execute: fetchWindowConfig } = useApi<WindowConfig[]>('logistics/windows/config/', { method: 'GET' });
@@ -116,6 +118,8 @@ export default function DisplayReadyToPickupPage() {
   }, []);
 
   const fetchData = useCallback(async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     try {
       setIsRefreshing(true);
 
@@ -136,12 +140,11 @@ export default function DisplayReadyToPickupPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al obtener datos.');
     } finally {
+      inFlight.current = false;
       setIsRefreshing(false);
-      if (isLoadingData) {
-        setIsLoadingData(false);
-      }
+      setIsLoadingData(false);
     }
-  }, [fetchReadyUsers, fetchWindowConfig, organizeUsersByWindows, isLoadingData]);
+  }, [fetchReadyUsers, fetchWindowConfig, organizeUsersByWindows]);
 
   useEffect(() => {
     const currentInterval = getGlobalPollingInterval();

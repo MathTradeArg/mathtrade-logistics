@@ -74,6 +74,12 @@ function BoxCircleSymbol({ fill }: { fill: CircleFill }) {
   );
 }
 
+// Table 0 is a valid table; empty or non-numeric input falls back to 0 instead of 1.
+const parseTableNumber = (raw: string): number => {
+  const n = Number(raw);
+  return Number.isFinite(n) ? Math.max(0, Math.min(200, n)) : 0;
+};
+
 export default function PrintPage() {
   return (
     <Suspense
@@ -149,6 +155,7 @@ function PrintPageContent() {
   const [windowCountInput, setWindowCountInput] = useState<number>(3);
   const [tableStart, setTableStart] = useState<number>(1);
   const [tableEnd, setTableEnd] = useState<number>(15);
+  const [includeLpl, setIncludeLpl] = usePersistedState<boolean>('includeLpl', true);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -338,7 +345,7 @@ function PrintPageContent() {
   }, [sectorKind, selectedSectorLocs, interiorDirectory, directory]);
 
   const tableNumbers = useMemo(() => {
-    const start = Math.max(1, Math.min(tableStart, tableEnd));
+    const start = Math.max(0, Math.min(tableStart, tableEnd));
     const end = Math.min(200, Math.max(tableStart, tableEnd));
     const list: number[] = [];
     for (let n = start; n <= end; n += 1) {
@@ -752,10 +759,10 @@ function PrintPageContent() {
                 </label>
                 <input
                   type="number"
-                  min={1}
+                  min={0}
                   max={200}
                   value={tableStart}
-                  onChange={(e) => setTableStart(Number(e.target.value) || 1)}
+                  onChange={(e) => setTableStart(parseTableNumber(e.target.value))}
                   className="min-h-10 w-full rounded border border-gray-300 px-3 text-body"
                 />
               </div>
@@ -765,14 +772,23 @@ function PrintPageContent() {
                 </label>
                 <input
                   type="number"
-                  min={1}
+                  min={0}
                   max={200}
                   value={tableEnd}
-                  onChange={(e) => setTableEnd(Number(e.target.value) || 1)}
+                  onChange={(e) => setTableEnd(parseTableNumber(e.target.value))}
                   className="min-h-10 w-full rounded border border-gray-300 px-3 text-body"
                 />
               </div>
             </div>
+            <label className="flex items-center gap-2 text-body font-medium text-gray-700">
+              <input
+                type="checkbox"
+                checked={includeLpl}
+                onChange={(e) => setIncludeLpl(e.target.checked)}
+                className="h-5 w-5"
+              />
+              Incluir mesa LPL (La Plata)
+            </label>
           </div>
         )}
 
@@ -787,7 +803,7 @@ function PrintPageContent() {
               ? `${sectorSigns.length} carteles`
               : tab === 'windows'
                 ? `${windows.length} ventanillas`
-                : `${tableNumbers.length} mesas`})
+                : `${tableNumbers.length + (includeLpl ? 1 : 0)} mesas`})
         </button>
       </div>
 
@@ -1042,6 +1058,18 @@ function PrintPageContent() {
               </h2>
             </section>
           ))}
+
+        {tab === 'tables' && includeLpl && (
+          <section className="print-sheet-a4 flex min-h-[85vh] print:min-h-0 print:h-[184mm] flex-col items-center justify-center rounded-xl border-4 border-black bg-white p-10 print:p-8 text-center text-black">
+            <h2 aria-label="Mesa LPL" className="flex flex-col items-center">
+              <span className="block text-5xl print:text-[8rem] font-bold leading-none">Mesa</span>
+              {/* Letters are wider than digits: 22rem keeps "LPL" inside the A4 landscape width (30rem is for numbers). */}
+              <span className="block text-[8rem] print:text-[22rem] font-black leading-none whitespace-nowrap">
+                LPL
+              </span>
+            </h2>
+          </section>
+        )}
       </div>
       {/* Outside the sheets container so the last sheet stays :last-child (no blank trailing page). */}
       {tab !== 'labels' && <style>{'@page { size: A4 landscape; margin: 10mm; }'}</style>}

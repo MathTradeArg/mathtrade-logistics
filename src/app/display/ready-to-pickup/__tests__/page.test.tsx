@@ -1,7 +1,7 @@
 import { useApi } from '@/hooks/useApi';
 import type { UserWithWindow, WindowConfig } from '@/types/window';
 import '@testing-library/jest-dom';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import DisplayReadyToPickupPage from '../page';
 
 jest.mock('@/hooks/useApi');
@@ -126,5 +126,62 @@ describe('DisplayReadyToPickupPage (TV)', () => {
       expect(args.filter((a: unknown) => typeof a === 'string' && a.includes('include'))).toHaveLength(0);
       expect(args[1]).toBeUndefined();
     });
+  });
+});
+
+describe('DisplayReadyToPickupPage polling', () => {
+  let fetchUsers: jest.Mock;
+  let fetchConfig: jest.Mock;
+  let resolvers: Array<(value: unknown[]) => void>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    resolvers = [];
+    // Slow network: the users request stays pending until the test resolves it.
+    fetchUsers = jest.fn(() => new Promise((resolve) => { resolvers.push(resolve as (v: unknown[]) => void); }));
+    fetchConfig = jest.fn().mockResolvedValue([]);
+    mockUseApi.mockImplementation((endpoint: string) => ({
+      execute: endpoint === 'logistics/users/ready-to-pickup/' ? fetchUsers : fetchConfig,
+    }));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('skips a tick while a request is still in flight', async () => {
+    render(<DisplayReadyToPickupPage />);
+    await act(async () => { await jest.advanceTimersByTimeAsync(0); });
+    expect(fetchUsers).toHaveBeenCalledTimes(1);
+
+    await act(async () => { await jest.advanceTimersByTimeAsync(30_000); });
+    expect(fetchUsers).toHaveBeenCalledTimes(1);
+    expect(fetchConfig).toHaveBeenCalledTimes(1);
+  });
+
+  it('polls again once the previous request settled, and does not rebuild the interval when loading ends', async () => {
+    render(<DisplayReadyToPickupPage />);
+    await act(async () => { await jest.advanceTimersByTimeAsync(0); });
+    await act(async () => { resolvers[0]([]); await jest.advanceTimersByTimeAsync(0); });
+    expect(screen.queryByText('Cargando información...')).not.toBeInTheDocument();
+
+    // Initial fetch finished at t=0 and the interval was created at t=0: the
+    // next tick is at 10 s. If isLoadingData rebuilt it, it would still fire at
+    // 10 s from the rebuild, so check no extra fetch happens before that.
+    await act(async () => { await jest.advanceTimersByTimeAsync(9_999); });
+    expect(fetchUsers).toHaveBeenCalledTimes(1);
+    await act(async () => { await jest.advanceTimersByTimeAsync(1); });
+    expect(fetchUsers).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps one interval across re-renders (fetchData identity is stable)', async () => {
+    const setSpy = jest.spyOn(global, 'setInterval');
+    render(<DisplayReadyToPickupPage />);
+    await act(async () => { await jest.advanceTimersByTimeAsync(0); });
+    await act(async () => { resolvers[0]([]); await jest.advanceTimersByTimeAsync(0); });
+    const pollers = setSpy.mock.calls.filter(([, ms]) => ms === 10_000);
+    expect(pollers).toHaveLength(1);
+    setSpy.mockRestore();
   });
 });

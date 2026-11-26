@@ -52,7 +52,7 @@ function DeliverPageContent() {
   const [user, setUser] = useState<User | null>(null);
   const [games, setGames] = useState<Trade[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  // scanError replaces the screen and resets to the scanner after 3 s;
+  // scanError replaces the screen until retried or dismissed;
   // updateError is a banner over the list that stays until retried.
   const [scanError, setScanError] = useState<string>('');
   const [updateError, setUpdateError] = useState<string>('');
@@ -108,11 +108,9 @@ function DeliverPageContent() {
         } else {
           setScanError('Ups, algo falló al obtener los juegos a retirar.');
         }
-        setTimeout(() => {
-          setQrData(null);
-          setGames(null);
-          setScanError('');
-        }, 3000);
+        // The error stays until the user retries or goes back to the scanner;
+        // qrData is kept so "Reintentar" can read the same QR again.
+        setGames(null);
       } finally {
         setIsLoading(false);
       }
@@ -226,7 +224,16 @@ function DeliverPageContent() {
     <StaffPage className="flex flex-col items-center py-4!">
       <section className="w-full">
         {isLoading && <LoadingSpinner message="Buscando información..." />}
-        {scanError && <p className="my-4 rounded-lg border border-danger/30 bg-danger/10 p-4 text-center text-danger">{scanError}</p>}
+        {scanError && (
+          <>
+            <StaffBanner onRetry={qrData ? () => handleScan(qrData) : undefined} retrying={isLoading}>
+              {scanError}
+            </StaffBanner>
+            <button type="button" className="staff-btn staff-btn-outline w-full" onClick={resetToScanner}>
+              Escanear otro QR
+            </button>
+          </>
+        )}
 
         {!isLoading && !scanError && isAuthenticated && (
           <>
