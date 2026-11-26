@@ -34,3 +34,11 @@ export interface BoxEventRow {
 export type ActivityRow =
   | (TradeHistoryRow & { kind: 'trade'; trade_id: number; trade_code: number; game_title: string | null })
   | (BoxEventRow & { kind: 'box' });
+
+/** One status change of a game a participant gives or receives. */
+export interface UserHistoryRow extends TradeHistoryRow {
+  trade_id: number;
+  trade_code: number;
+  game_title: string | null;
+  role: 'gives' | 'receives';
+}

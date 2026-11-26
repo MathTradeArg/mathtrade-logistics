@@ -1,4 +1,4 @@
-import type { ActivityRow, GameStatusCode } from '@/types';
+import type { ActivityRow, GameStatusCode, UserHistoryRow } from '@/types';
 import {
   activityKey, activityTitle, actorName, BOX_ACTION_LABEL, boxEventGameText, formatHistoryDate, previousStatuses,
   statusChangeText,
@@ -126,5 +126,18 @@ describe('activityTitle / activityKey', () => {
   it('keys rows by kind so ids of both tables do not collide', () => {
     expect(activityKey(tradeRow)).toBe('trade-3');
     expect(activityKey(boxRow)).toBe('box-3');
+  });
+});
+
+describe('previousStatuses on a participant history', () => {
+  it('pairs rows by game (trade_id), whatever the role', () => {
+    const base = { status_display: '', actor: null, at: '2026-11-26T15:00:00Z', game_title: 'Catan' };
+    const rows: UserHistoryRow[] = [
+      { ...base, id: 4, trade_id: 20, trade_code: 202, role: 'receives', status: 6 },
+      { ...base, id: 3, trade_id: 10, trade_code: 101, role: 'gives', status: 5 },
+      { ...base, id: 2, trade_id: 20, trade_code: 202, role: 'receives', status: 5 },
+      { ...base, id: 1, trade_id: 10, trade_code: 101, role: 'gives', status: 2 },
+    ];
+    expect(previousStatuses(rows, (r) => r.trade_id)).toEqual([5, 2, null, null]);
   });
 });

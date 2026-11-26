@@ -20,6 +20,7 @@ import {
   type TradeHistoryRow,
   type TradeResponse,
   type User,
+  type UserHistoryRow,
 } from '@/types';
 import { useSearchParams } from 'next/navigation';
 import { actorName, formatHistoryDate, previousStatuses, statusChangeText } from '@/utils/history';
@@ -147,6 +148,7 @@ function LookupPageContent() {
   const { execute: searchGames } = useApi<GameSearchResult[]>('logistics/game/');
   // Admin only. Its own endpoint (full path in pathParams) so tests can mock it apart.
   const { execute: fetchGameHistory } = useApi<HistoryResponse<TradeHistoryRow>>('logistics/');
+  const { execute: fetchUserHistory } = useApi<HistoryResponse<UserHistoryRow>>('logistics/');
 
   const preset = presetMode(searchParams.get('mode'));
   const [mode, setMode] = useState<LookupMode>(preset ?? 'member');
@@ -156,6 +158,7 @@ function LookupPageContent() {
   const [brings, setBrings] = useState<ReceiveTrade[]>([]);
   const [receives, setReceives] = useState<DeliverTrade[]>([]);
   const [memberError, setMemberError] = useState<string | null>(null);
+  const [memberUuid, setMemberUuid] = useState<string | null>(null);
   const [isLoadingMember, setIsLoadingMember] = useState(false);
   const memberRequest = useRef(0);
   const initialQrHandled = useRef(false);
@@ -174,6 +177,7 @@ function LookupPageContent() {
     setIsLoadingMember(true);
     setMemberError(null);
     setMember(null);
+    setMemberUuid(null);
     setBrings([]);
     setReceives([]);
     try {
@@ -185,6 +189,7 @@ function LookupPageContent() {
       setMember(receiveData?.user ?? deliverData?.user ?? null);
       setBrings(receiveData?.games ?? []);
       setReceives(deliverData?.games ?? []);
+      setMemberUuid(uuid);
     } catch (err) {
       if (request !== memberRequest.current) return;
       setMemberError(err instanceof Error ? err.message : 'No se pudo buscar el participante.');
@@ -337,6 +342,28 @@ function LookupPageContent() {
                     </li>
                   ))}
                 </ul>
+              )}
+
+              {isAdmin && memberUuid && (
+                <div className="mt-6">
+                  <HistorySection<UserHistoryRow>
+                    key={memberUuid}
+                    load={() => fetchUserHistory(undefined, `user/${memberUuid}/history/`)}
+                    getKey={(row) => row.id}
+                    notice="Acá se ve lo que pasó con sus juegos. Los cambios de asistencia (presente, retirando, completó, no vino) no se registran."
+                    emptyText="No hay movimientos registrados de sus juegos."
+                    renderRow={(row, i, all) => {
+                      const previous = previousStatuses(all, (r) => r.trade_id)[i];
+                      return (
+                        <>
+                          <p className="font-semibold leading-tight">{row.game_title ?? 'Sin título'} ({formatTradeCode(row.trade_code)})</p>
+                          <p className="mt-0.5 text-body text-gray-900">{row.role === 'gives' ? 'Entrega' : 'Recibe'}: {statusChangeText(row.status, previous)}</p>
+                          <p className="mt-0.5 text-body text-gray-500">{actorName(row.actor)} · {formatHistoryDate(row.at)}</p>
+                        </>
+                      );
+                    }}
+                  />
+                </div>
               )}
             </div>
           )}
