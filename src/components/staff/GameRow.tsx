@@ -10,6 +10,8 @@ interface GameRowProps {
   title: string;
   subtitle?: string;
   trailing?: ReactNode;
+  /** Extra block inside the same card, under the row (plain rows only). */
+  footer?: ReactNode;
   onClick?: () => void;
   href?: string;
   disabled?: boolean;
@@ -21,6 +23,7 @@ export default function GameRow({
   title,
   subtitle,
   trailing,
+  footer,
   onClick,
   href,
   disabled = false,
@@ -86,6 +89,15 @@ export default function GameRow({
       >
         {content}
       </button>
+    );
+  }
+
+  if (footer) {
+    return (
+      <div className={clsx(cardClass({ tone: cardTone }), 'w-full text-gray-900')}>
+        <div className="flex min-h-14 items-center gap-3 px-4 py-3 text-left">{content}</div>
+        <div className="border-t border-line px-4 pb-3">{footer}</div>
+      </div>
     );
   }
 
