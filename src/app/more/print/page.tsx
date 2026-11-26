@@ -329,16 +329,33 @@ function PrintPageContent() {
       selectedSectorLocs.has(loc.locationId),
     );
     const seen = new Set<number>();
-    const signs: { key: string; mode: 'unpack' | 'pack'; loc: LocationReferrerInfo }[] = [];
+    const signs: {
+      key: string;
+      mode: 'unpack' | 'pack';
+      loc: LocationReferrerInfo;
+      includes: string[];
+    }[] = [];
     chosen.forEach((loc) => {
       const shippingLoc = loc.sendAs ? (findReferrerInfo(directory, loc.sendAs) ?? loc) : loc;
       if (seen.has(shippingLoc.locationId)) return;
       seen.add(shippingLoc.locationId);
+      // Other chosen cities that ship through this one, so the sign says who it covers.
+      const includes = Array.from(
+        new Set(
+          chosen
+            .filter(
+              (other) =>
+                other.sendAs === shippingLoc.locationId &&
+                other.locationId !== shippingLoc.locationId,
+            )
+            .map((other) => other.city),
+        ),
+      ).sort((a, b) => a.localeCompare(b, 'es'));
       if (sectorKind === 'both' || sectorKind === 'unpack') {
-        signs.push({ key: `unpack-${shippingLoc.locationId}`, mode: 'unpack', loc: shippingLoc });
+        signs.push({ key: `unpack-${shippingLoc.locationId}`, mode: 'unpack', loc: shippingLoc, includes });
       }
       if (sectorKind === 'both' || sectorKind === 'pack') {
-        signs.push({ key: `pack-${shippingLoc.locationId}`, mode: 'pack', loc: shippingLoc });
+        signs.push({ key: `pack-${shippingLoc.locationId}`, mode: 'pack', loc: shippingLoc, includes });
       }
     });
     return signs;
@@ -1013,6 +1030,11 @@ function PrintPageContent() {
                 <h2 className="mt-6 print:mt-4 text-7xl print:text-8xl font-black uppercase leading-tight break-words">
                   {sign.loc.city}
                 </h2>
+                {sign.includes.length > 0 && (
+                  <p className="mt-4 print:mt-3 max-w-full break-words text-3xl print:text-4xl font-bold leading-snug">
+                    Incluye: {sign.includes.join(', ')}
+                  </p>
+                )}
               </div>
             </section>
           ))}
