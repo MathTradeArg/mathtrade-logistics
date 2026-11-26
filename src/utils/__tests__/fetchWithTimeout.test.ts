@@ -3,6 +3,7 @@ import {
   fetchWithTimeout,
   NETWORK_ERROR_MESSAGE,
   NetworkError,
+  WRITE_NETWORK_ERROR_MESSAGE,
 } from '../fetchWithTimeout';
 
 const hangUntilAborted = (_url: unknown, init?: RequestInit) =>
@@ -106,6 +107,25 @@ describe('fetchWithTimeout', () => {
       'x/',
       expect.objectContaining({ method: 'PATCH', headers: { A: 'b' }, body: '{}' }),
     );
+  });
+});
+
+describe('fetchWithTimeout: a failed write has an uncertain outcome', () => {
+  const fetchMock = global.fetch as jest.Mock;
+  beforeEach(() => fetchMock.mockReset());
+
+  it.each(['POST', 'PATCH', 'PUT', 'DELETE', 'patch'])('a network failure on %s says we do not know if it was saved', async (method) => {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    const err = await fetchWithTimeout('x/', { method }).catch((e) => e);
+    expect(err).toBeInstanceOf(NetworkError);
+    expect(err.message).toBe(WRITE_NETWORK_ERROR_MESSAGE);
+    expect(WRITE_NETWORK_ERROR_MESSAGE).toBe('No sabemos si se guardó. Consultá el estado antes de repetir.');
+  });
+
+  it.each([undefined, 'GET', 'HEAD'])('a network failure on %s keeps the generic message', async (method) => {
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+    const err = await fetchWithTimeout('x/', { method }).catch((e) => e);
+    expect(err.message).toBe(NETWORK_ERROR_MESSAGE);
   });
 });
 

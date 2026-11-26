@@ -249,7 +249,7 @@ describe('useBoxLifecycle.addItems: a batch adds what it can and reports each ga
       box: boxWith([1]),
       added: [1],
       failed: [
-        { tradeId: 2, reason: 'No hay conexión o el servidor tardó demasiado. Probá de nuevo.' },
+        { tradeId: 2, reason: 'No sabemos si se guardó. Consultá el estado antes de repetir.' },
         { tradeId: 3, reason: 'No se intentó: sin conexión.' },
       ],
     });

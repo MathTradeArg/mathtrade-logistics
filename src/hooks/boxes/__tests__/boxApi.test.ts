@@ -1,6 +1,7 @@
 import { BoxApiError, boxFetch, listItems } from '../boxApi';
 
 const NETWORK_MESSAGE = 'No hay conexión o el servidor tardó demasiado. Probá de nuevo.';
+const WRITE_MESSAGE = 'No sabemos si se guardó. Consultá el estado antes de repetir.';
 
 describe('listItems', () => {
   const fetchMock = global.fetch as jest.Mock;
@@ -52,7 +53,7 @@ describe('boxFetch', () => {
     fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
     const err = await settle(boxFetch('logistics/boxes/1/close/', { method: 'POST', body: {} }));
     expect(err).toBeInstanceOf(BoxApiError);
-    expect((err as BoxApiError).message).toBe(NETWORK_MESSAGE);
+    expect((err as BoxApiError).message).toBe(WRITE_MESSAGE);
     expect((err as BoxApiError).status).toBe(0);
     expect((err as BoxApiError).body).toBeNull();
     expect(fetchMock).toHaveBeenCalledTimes(1);

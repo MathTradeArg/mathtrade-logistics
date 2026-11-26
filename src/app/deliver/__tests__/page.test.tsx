@@ -162,24 +162,39 @@ describe('DeliverPage', () => {
     expect(mockFetchGames).toHaveBeenCalledWith(undefined, 'member-uuid-1/games/deliver/');
   });
 
-  it('shows an error message on failed fetch and resets after timeout', async () => {
+  it('keeps the read error visible (no auto-dismiss) and clears it when a retry succeeds', async () => {
     jest.useFakeTimers();
-    mockFetchGames.mockRejectedValue(new Error('User not found'));
+    mockFetchGames.mockRejectedValueOnce(new Error('User not found'));
     render(<DeliverPage />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Simulate Scan' }));
-
     await waitFor(() => {
       expect(screen.getByText('User not found')).toBeInTheDocument();
     });
 
-    act(() => { jest.runAllTimers(); });
+    act(() => { jest.advanceTimersByTime(60_000); });
+    expect(screen.getByText('User not found')).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
     await waitFor(() => {
-      expect(screen.queryByText('User not found')).not.toBeInTheDocument();
+      expect(screen.getByTestId('game-list')).toBeInTheDocument();
     });
-    expect(screen.getByTestId('qr-scanner')).toBeInTheDocument();
+    expect(screen.queryByText('User not found')).not.toBeInTheDocument();
+    expect(mockFetchGames).toHaveBeenCalledTimes(2);
     jest.useRealTimers();
+  });
+
+  it('lets the user dismiss the read error and go back to the scanner', async () => {
+    mockFetchGames.mockRejectedValueOnce(new Error('User not found'));
+    render(<DeliverPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Simulate Scan' }));
+    await waitFor(() => {
+      expect(screen.getByText('User not found')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Escanear otro QR' }));
+    expect(screen.queryByText('User not found')).not.toBeInTheDocument();
+    expect(screen.getByTestId('qr-scanner')).toBeInTheDocument();
   });
 
   it('triggers scan automatically if qr parameter is in URL', async () => {

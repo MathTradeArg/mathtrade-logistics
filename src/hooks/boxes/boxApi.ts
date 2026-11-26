@@ -2,7 +2,6 @@ import type { Box, Item } from '@/types';
 import {
   apiErrorMessage,
   fetchWithTimeout,
-  NETWORK_ERROR_MESSAGE,
   NetworkError,
 } from '@/utils/fetchWithTimeout';
 
@@ -65,7 +64,7 @@ export async function boxFetch<T>(
       { retries: method === 'GET' ? 2 : 0 },
     );
   } catch (err) {
-    if (err instanceof NetworkError) throw new BoxApiError(NETWORK_ERROR_MESSAGE, 0, null);
+    if (err instanceof NetworkError) throw new BoxApiError(err.message, 0, null);
     throw err;
   }
 
