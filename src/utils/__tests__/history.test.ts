@@ -1,5 +1,8 @@
-import type { GameStatusCode } from '@/types';
-import { actorName, BOX_ACTION_LABEL, boxEventGameText, formatHistoryDate, previousStatuses, statusChangeText } from '../history';
+import type { ActivityRow, GameStatusCode } from '@/types';
+import {
+  activityKey, activityTitle, actorName, BOX_ACTION_LABEL, boxEventGameText, formatHistoryDate, previousStatuses,
+  statusChangeText,
+} from '../history';
 
 type Row = { game: number; status: GameStatusCode };
 
@@ -91,5 +94,37 @@ describe('BOX_ACTION_LABEL', () => {
     expect(BOX_ACTION_LABEL.create).toBe('Creó la caja');
     expect(BOX_ACTION_LABEL.reopen).toBe('Reabrió la caja');
     expect(Object.keys(BOX_ACTION_LABEL)).toHaveLength(8);
+  });
+});
+
+describe('activityTitle / activityKey', () => {
+  const actor = { id: 70, name: 'Ana Gomez' };
+  const tradeRow: ActivityRow = {
+    kind: 'trade', id: 3, status: 5, status_display: 'In Event', actor, at: '2026-11-26T15:00:00Z',
+    trade_id: 11, trade_code: 101, game_title: 'Catan',
+  };
+  const boxRow: ActivityRow = {
+    kind: 'box', id: 3, action: 'close', box_id: 392, trade_id: null, trade_code: null, game_title: null,
+    actor, at: '2026-11-26T14:00:00Z',
+  };
+
+  it('shows the game, its label and the new status for a game row', () => {
+    expect(activityTitle(tradeRow)).toBe('Catan (00101): En evento');
+    expect(activityTitle({ ...tradeRow, game_title: null })).toBe('Sin título (00101): En evento');
+  });
+
+  it('shows the action and the box for a box row without a game', () => {
+    expect(activityTitle(boxRow)).toBe('Cerró la caja (caja 392)');
+  });
+
+  it('adds the game to a box row about a game', () => {
+    expect(activityTitle({ ...boxRow, action: 'add', trade_id: 11, trade_code: 101, game_title: 'Catan' }))
+      .toBe('Agregó un juego (caja 392) · Catan (00101)');
+    expect(activityTitle({ ...boxRow, action: 'remove' })).toBe('Sacó un juego (caja 392) · Juego no disponible');
+  });
+
+  it('keys rows by kind so ids of both tables do not collide', () => {
+    expect(activityKey(tradeRow)).toBe('trade-3');
+    expect(activityKey(boxRow)).toBe('box-3');
   });
 });

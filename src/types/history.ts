@@ -29,3 +29,8 @@ export interface BoxEventRow {
   actor: ActorRef | null;
   at: string; // ISO
 }
+
+/** One row of a volunteer's activity: a game status change or a box action. */
+export type ActivityRow =
+  | (TradeHistoryRow & { kind: 'trade'; trade_id: number; trade_code: number; game_title: string | null })
+  | (BoxEventRow & { kind: 'box' });

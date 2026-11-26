@@ -1,4 +1,4 @@
-import { getGameStatusText, type BoxAction, type BoxEventRow, type GameStatusCode } from '@/types';
+import { getGameStatusText, type ActivityRow, type BoxAction, type BoxEventRow, type GameStatusCode } from '@/types';
 import { formatTradeCode } from '@/utils/tradeCode';
 
 export function formatHistoryDate(iso: string): string {
@@ -50,4 +50,17 @@ export function boxEventGameText(row: Pick<BoxEventRow, 'trade_code' | 'game_tit
     return BOX_ACTIONS_WITHOUT_GAME.has(row.action) ? null : 'Juego no disponible';
   }
   return `${row.game_title ?? 'Sin título'} (${formatTradeCode(row.trade_code)})`;
+}
+
+/** Trade and box rows come from different tables: their ids can repeat. */
+export const activityKey = (row: ActivityRow) => `${row.kind}-${row.id}`;
+
+/** "Catan (00101): En evento" or "Agregó un juego (caja 392) · Catan (00101)". */
+export function activityTitle(row: ActivityRow): string {
+  if (row.kind === 'trade') {
+    return `${row.game_title ?? 'Sin título'} (${formatTradeCode(row.trade_code)}): ${getGameStatusText(row.status)}`;
+  }
+  const game = boxEventGameText(row);
+  const text = `${BOX_ACTION_LABEL[row.action]} (caja ${row.box_id})`;
+  return game ? `${text} · ${game}` : text;
 }

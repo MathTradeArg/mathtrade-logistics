@@ -40,6 +40,7 @@ let createExecute: jest.Mock;
 let deleteExecute: jest.Mock;
 let patchExecute: jest.Mock;
 let locationsExecute: jest.Mock;
+let activityExecute: jest.Mock;
 
 const local: EventVolunteer = {
   id: 9,
@@ -68,8 +69,10 @@ describe('VolunteersPage', () => {
       { id: 5, name: 'Mendoza', referral: { id: 50 } },
       { id: 6, name: 'Sin referente', referral: null },
     ]);
+    activityExecute = jest.fn().mockResolvedValue({ results: [], truncated: false });
     mockUseApi.mockImplementation((endpoint: string, options?: { method?: string }) => {
       const method = options?.method ?? 'GET';
+      if (endpoint === 'logistics/') return { execute: activityExecute };
       if (endpoint === 'locations/') return { execute: locationsExecute };
       if (endpoint === 'logistics/volunteers/candidates/') return { execute: candidatesExecute };
       if (method === 'POST') return { execute: createExecute };
@@ -192,5 +195,66 @@ describe('VolunteersPage', () => {
     });
     fireEvent.click(await screen.findByRole('button', { name: 'Agregar a Juan Perez' }));
     await waitFor(() => expect(createExecute).toHaveBeenCalledWith({ user_id: 80, added_by_id: 50 }));
+  });
+
+  describe('Actividad', () => {
+    const actor = { id: 70, name: 'Ana Gomez' };
+
+    it('loads the activity by user id and shows game and box rows with the notices', async () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+      activityExecute.mockResolvedValue({
+        truncated: false,
+        results: [
+          { kind: 'trade', id: 1, status: 5, status_display: 'In Event', actor, at: '2026-11-26T15:00:00Z',
+            trade_id: 11, trade_code: 101, game_title: 'Catan' },
+          { kind: 'box', id: 1, action: 'close', box_id: 392, trade_id: null, trade_code: null, game_title: null,
+            actor, at: '2026-11-26T14:00:00Z' },
+        ],
+      });
+      renderPage();
+      await screen.findByText('Ana Gomez');
+      expect(activityExecute).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Ver actividad' }));
+      await waitFor(() => expect(activityExecute).toHaveBeenCalledWith(undefined, 'volunteers/70/activity/'));
+      expect(await screen.findByText('Catan (00101): En evento')).toBeInTheDocument();
+      expect(screen.getByText('Cerró la caja (caja 392)')).toBeInTheDocument();
+      expect(screen.getByText(/Los cambios de asistencia no se guardan/)).toBeInTheDocument();
+      expect(screen.getByText(/Puede faltar algún evento de cajas viejas o borradas/)).toBeInTheDocument();
+    });
+
+    it('shows the empty text when nothing was recorded', async () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+      renderPage();
+      await screen.findByText('Ana Gomez');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Ver actividad' }));
+      expect(await screen.findByText('El sistema no registró acciones de este voluntario.')).toBeInTheDocument();
+    });
+
+    it('shows a notice on a 404 and keeps the volunteer list', async () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+      activityExecute.mockRejectedValue(Object.assign(new Error('Not found'), { status: 404 }));
+      renderPage();
+      await screen.findByText('Ana Gomez');
+
+      fireEvent.click(screen.getByRole('button', { name: 'Ver actividad' }));
+      expect(await screen.findByText(/El historial todavía no está disponible/)).toBeInTheDocument();
+      expect(screen.getByText('Ana Gomez')).toBeInTheDocument();
+      expect(screen.getByLabelText('Rol de Ana Gomez')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Quitar a Ana Gomez' })).toBeInTheDocument();
+    });
+
+    it('also shows the block for a local volunteer', async () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+      listExecute.mockResolvedValue([ana, local]);
+      renderPage();
+      await screen.findByText('Lucia Local');
+
+      const buttons = screen.getAllByRole('button', { name: 'Ver actividad' });
+      expect(buttons).toHaveLength(2);
+      fireEvent.click(buttons[1]);
+      await waitFor(() => expect(activityExecute).toHaveBeenCalledWith(undefined, 'volunteers/90/activity/'));
+    });
   });
 });
