@@ -66,6 +66,7 @@ const game: GameDetail = {
 
 let memberExecute: jest.Mock;
 let gameExecute: jest.Mock;
+let historyExecute: jest.Mock;
 let fetchSpy: jest.Mock;
 
 describe('LookupPage', () => {
@@ -78,7 +79,9 @@ describe('LookupPage', () => {
     memberExecute = jest.fn((_body: unknown, path: string) =>
       Promise.resolve(path.endsWith('/games/receive/') ? receiveResponse : deliverResponse));
     gameExecute = jest.fn().mockResolvedValue(game);
+    historyExecute = jest.fn().mockResolvedValue({ results: [], truncated: false });
     mockUseApi.mockImplementation((endpoint: string) => {
+      if (endpoint === 'logistics/') return { execute: historyExecute };
       if (endpoint === 'logistics/game/') return { execute: gameExecute };
       return { execute: memberExecute };
     });
@@ -379,6 +382,166 @@ describe('LookupPage', () => {
 
     it('hints that a game can be found by title or label code', () => {
       expect(PROBLEMS.find((p) => p.id === 'where-is-game')?.hint).toBe('Buscalo por el título o por el código de la etiqueta');
+    });
+  });
+  describe('Juego: historial (admin)', () => {
+    const searchCode = () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Juego' }));
+      fireEvent.change(screen.getByLabelText('Buscar juego por título o código'), { target: { value: '303' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Buscar' }));
+    };
+
+    it('loads the history only when opened and shows "previous → current" with actor and date', async () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+      historyExecute.mockResolvedValue({
+        results: [
+          { id: 3, status: 6, status_display: 'Delivered', actor: { id: 1, name: 'Ana Gomez' }, at: '2026-11-26T15:30:00Z' },
+          { id: 2, status: 5, status_display: 'In Event', actor: { id: 2, name: 'Luis Diaz' }, at: '2026-11-26T14:00:00Z' },
+          { id: 1, status: 2, status_display: 'Transit to Event', actor: null, at: '2026-11-25T10:00:00Z' },
+        ],
+        truncated: false,
+      });
+      render(<LookupPage />);
+      searchCode();
+
+      const button = await screen.findByRole('button', { name: 'Ver historial' });
+      expect(historyExecute).not.toHaveBeenCalled();
+      fireEvent.click(button);
+      expect(historyExecute).toHaveBeenCalledWith(undefined, 'game/303/history/');
+
+      expect(await screen.findByText('En evento → Entregado a Usuario')).toBeInTheDocument();
+      expect(screen.getByText('En viaje al evento → En evento')).toBeInTheDocument();
+      expect(screen.getByText('En viaje al evento')).toBeInTheDocument();
+      expect(screen.getByText(/^Ana Gomez · /)).toBeInTheDocument();
+      expect(screen.getByText(/^Luis Diaz · /)).toBeInTheDocument();
+      expect(screen.getByText(/^Alguien \(sin nombre\) · /)).toBeInTheDocument();
+    });
+
+    it('does not show the history to a non admin', async () => {
+      render(<LookupPage />);
+      searchCode();
+      expect(await screen.findByText('Azul')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Ver historial' })).not.toBeInTheDocument();
+    });
+
+    it('shows a notice on a 404 and keeps the game card', async () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+      historyExecute.mockRejectedValue(Object.assign(new Error('Not found'), { status: 404 }));
+      render(<LookupPage />);
+      searchCode();
+      fireEvent.click(await screen.findByRole('button', { name: 'Ver historial' }));
+
+      expect(await screen.findByText(/El historial todavía no está disponible/)).toBeInTheDocument();
+      expect(screen.getByText('Azul')).toBeInTheDocument();
+      expect(screen.getByText('00303 · Mesa 7 · En evento')).toBeInTheDocument();
+    });
+
+    it('says there are more rows when the response is truncated', async () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+      historyExecute.mockResolvedValue({
+        results: [{ id: 1, status: 5, status_display: 'In Event', actor: { id: 1, name: 'Ana Gomez' }, at: '2026-11-26T15:30:00Z' }],
+        truncated: true,
+      });
+      render(<LookupPage />);
+      searchCode();
+      fireEvent.click(await screen.findByRole('button', { name: 'Ver historial' }));
+      expect(await screen.findByText(/Hay más movimientos/)).toBeInTheDocument();
+    });
+  });
+
+  describe('Participante: historial (admin)', () => {
+    const asAdmin = () => mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+    const rows = {
+      results: [
+        { id: 4, status: 6, status_display: 'Delivered', actor: { id: 1, name: 'Luis Diaz' }, at: '2026-11-26T16:00:00Z',
+          trade_id: 20, trade_code: 202, game_title: 'Carcassonne', role: 'receives' },
+        { id: 3, status: 5, status_display: 'In Event', actor: { id: 2, name: 'Eva Ruiz' }, at: '2026-11-26T15:00:00Z',
+          trade_id: 10, trade_code: 101, game_title: 'Catan', role: 'gives' },
+        { id: 2, status: 5, status_display: 'In Event', actor: null, at: '2026-11-26T14:00:00Z',
+          trade_id: 20, trade_code: 202, game_title: 'Carcassonne', role: 'receives' },
+        { id: 1, status: 2, status_display: 'Transit to Event', actor: null, at: '2026-11-25T10:00:00Z',
+          trade_id: 10, trade_code: 101, game_title: null, role: 'gives' },
+      ],
+      truncated: false,
+    };
+
+    it('loads the history of the selected participant only when opened, with role and previous status per game', async () => {
+      asAdmin();
+      historyExecute.mockResolvedValue(rows);
+      render(<LookupPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'Elegir Ana' }));
+
+      const button = await screen.findByRole('button', { name: 'Ver historial' });
+      expect(historyExecute).not.toHaveBeenCalled();
+      fireEvent.click(button);
+      expect(historyExecute).toHaveBeenCalledWith(undefined, 'user/uuid-ana/history/');
+
+      expect(await screen.findByText('Recibe: En evento → Entregado a Usuario')).toBeInTheDocument();
+      expect(screen.getByText('Entrega: En viaje al evento → En evento')).toBeInTheDocument();
+      expect(screen.getByText('Recibe: En evento')).toBeInTheDocument();
+      expect(screen.getByText('Entrega: En viaje al evento')).toBeInTheDocument();
+      expect(screen.getAllByText('Carcassonne (00202)')).toHaveLength(2);
+      expect(screen.getByText('Catan (00101)')).toBeInTheDocument();
+      expect(screen.getByText('Sin título (00101)')).toBeInTheDocument();
+      expect(screen.getByText(/^Luis Diaz · /)).toBeInTheDocument();
+      expect(screen.getByText(/Los cambios de asistencia .* no se registran/)).toBeInTheDocument();
+    });
+
+    it('shows its own empty text', async () => {
+      asAdmin();
+      render(<LookupPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'Elegir Ana' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Ver historial' }));
+      expect(await screen.findByText('No hay movimientos registrados de sus juegos.')).toBeInTheDocument();
+    });
+
+    it('does not show the history to a non admin', async () => {
+      render(<LookupPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'Elegir Ana' }));
+      expect(await screen.findByText('Ana Gomez')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Ver historial' })).not.toBeInTheDocument();
+    });
+
+    it('works for a participant opened with ?qr=', async () => {
+      asAdmin();
+      mockUseSearchParams.mockReturnValue(new URLSearchParams('qr=uuid-url'));
+      render(<LookupPage />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Ver historial' }));
+      expect(historyExecute).toHaveBeenCalledWith(undefined, 'user/uuid-url/history/');
+      expect(await screen.findByText('No hay movimientos registrados de sus juegos.')).toBeInTheDocument();
+    });
+
+    it('shows a notice on a 404 and keeps both lists', async () => {
+      asAdmin();
+      historyExecute.mockRejectedValue(Object.assign(new Error('Not found'), { status: 404 }));
+      render(<LookupPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'Elegir Ana' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Ver historial' }));
+
+      expect(await screen.findByText(/El historial todavía no está disponible/)).toBeInTheDocument();
+      expect(screen.getByText('Trae / entrega (1)')).toBeInTheDocument();
+      expect(screen.getByText('Recibe (1)')).toBeInTheDocument();
+      expect(screen.getByText('Catan')).toBeInTheDocument();
+      expect(screen.getByText('Carcassonne')).toBeInTheDocument();
+    });
+
+    it('closes the block when another participant is loaded', async () => {
+      asAdmin();
+      historyExecute.mockResolvedValue(rows);
+      render(<LookupPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'Elegir Ana' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Ver historial' }));
+      expect(await screen.findByText('Catan (00101)')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Escanear QR' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Simular escaneo' }));
+
+      await waitFor(() => expect(memberExecute).toHaveBeenCalledWith(undefined, 'uuid-qr/games/receive/'));
+      expect(await screen.findByRole('button', { name: 'Ver historial' })).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByText('Catan (00101)')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Ver historial' }));
+      expect(historyExecute).toHaveBeenLastCalledWith(undefined, 'user/uuid-qr/history/');
+      expect(await screen.findAllByText('Catan (00101)')).not.toHaveLength(0);
     });
   });
 });

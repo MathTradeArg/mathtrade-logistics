@@ -2,11 +2,13 @@
 
 import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, StaffDialog, StaffEmpty, StaffPage, StaffSearch } from '@/components/staff';
+import { HistorySection } from '@/components/staff/HistoryList';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
 import { ROLE_ORDER, ROLES } from '@/config/roles';
-import type { EventVolunteer, VolunteerCandidate, VolunteerRole, VolunteerUser } from '@/types';
+import type { ActivityRow, EventVolunteer, HistoryResponse, VolunteerCandidate, VolunteerRole, VolunteerUser } from '@/types';
+import { activityKey, activityTitle, formatHistoryDate } from '@/utils/history';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -64,6 +66,8 @@ export default function VolunteersPage() {
   const { execute: patchVolunteer } = useApi<EventVolunteer>('logistics/volunteers/', { method: 'PATCH' });
   const { execute: fetchLocations } = useApi<LocationRow[] | { results: LocationRow[] }>('locations/');
   const { execute: fetchEventTables } = useApi<{ all_tables?: string[] }>('logistics/tables/');
+  // Own endpoint: not 'logistics/volunteers/', whose GET is the list.
+  const { execute: fetchActivity } = useApi<HistoryResponse<ActivityRow>>('logistics/');
 
   useEffect(() => {
     if (!authIsLoading && (isAuthenticated === false || isAdmin === false)) {
@@ -403,6 +407,20 @@ export default function VolunteersPage() {
                       </button>
                     </div>
                   }
+                />
+                <HistorySection<ActivityRow>
+                  title="Actividad"
+                  key={volunteer.id}
+                  load={() => fetchActivity(undefined, `volunteers/${volunteer.user.id}/activity/`)}
+                  getKey={activityKey}
+                  notice="Solo lo que el sistema registró. Los cambios de asistencia no se guardan, así que no aparecen. Puede faltar algún evento de cajas viejas o borradas."
+                  emptyText="El sistema no registró acciones de este voluntario."
+                  renderRow={(row) => (
+                    <>
+                      <p className="font-semibold leading-tight">{activityTitle(row)}</p>
+                      <p className="mt-0.5 text-body text-gray-500">{formatHistoryDate(row.at)}</p>
+                    </>
+                  )}
                 />
               </li>
             ))}

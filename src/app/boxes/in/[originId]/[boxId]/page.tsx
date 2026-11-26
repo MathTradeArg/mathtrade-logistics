@@ -1,16 +1,18 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { GameRow, PhaseBlocked, StaffBanner, StaffDialog, StaffEmpty, StaffPage, ThumbCta } from '@/components/staff';
+import { GameRow, HistorySection, PhaseBlocked, StaffBanner, StaffDialog, StaffEmpty, StaffPage, ThumbCta } from '@/components/staff';
 import { useStaffTitle } from '@/components/staff/StaffTitleContext';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { getBox, markItemsReceived } from '@/hooks/boxes/boxApi';
 import { boxOnwardDestinations, hasMixedDestinations, isBoxOpen, isTransitBox, receptorName } from '@/hooks/boxes/boxGrouping';
 import { useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
+import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
-import type { Box } from '@/types';
+import type { Box, BoxEventRow, HistoryResponse } from '@/types';
 import { missingReportHref } from '@/app/more/report/missingReport';
+import { actorName, BOX_ACTION_LABEL, boxEventGameText, formatHistoryDate } from '@/utils/history';
 import { formatTradeCode } from '@/utils/tradeCode';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -28,7 +30,7 @@ function canBeRebuilt(box: Box): boolean {
 export default function IncomingBoxPage() {
   const params = useParams<{ originId: string; boxId: string }>();
   const boxId = Number(params.boxId);
-  const { isAuthenticated, isLoading: authIsLoading, userId } = useAuth();
+  const { isAuthenticated, isLoading: authIsLoading, userId, isAdmin } = useAuth();
   const { eventPhase, isLoadingEventPhase } = useEventPhase();
   const [box, setBox] = useState<Box | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -40,6 +42,8 @@ export default function IncomingBoxPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showRebuild, setShowRebuild] = useState(false);
   const { inFlight, reopenBox } = useBoxLifecycle();
+  // Admin only; loaded when the history block is opened.
+  const { execute: fetchBoxHistory } = useApi<HistoryResponse<BoxEventRow>>('logistics/boxes/');
 
   const title = box?.number != null ? `#${box.number}` : 'Caja';
   useStaffTitle(box ? `${title}` : 'Caja');
@@ -125,7 +129,7 @@ export default function IncomingBoxPage() {
 
   if (box && canBeRebuilt(box) && isBoxOpen(box)) {
     return (
-      <TransitBoxView box={box} onReload={load} reloadError={error} reloading={isLoading} userId={userId} />
+      <TransitBoxView box={box} onReload={load} reloadError={error} reloading={isLoading} userId={userId} isAdmin={isAdmin} />
     );
   }
 
@@ -228,6 +232,26 @@ export default function IncomingBoxPage() {
             >
               Rearmar caja
             </button>
+          )}
+
+          {isAdmin && (
+            <div className="mt-6">
+              <HistorySection<BoxEventRow>
+                key={box.id}
+                load={() => fetchBoxHistory(undefined, `${box.id}/history/`)}
+                getKey={(row) => row.id}
+                renderRow={(row) => {
+                  const game = boxEventGameText(row);
+                  return (
+                    <>
+                      <p className="font-semibold leading-tight">{BOX_ACTION_LABEL[row.action]}</p>
+                      {game && <p className="mt-0.5 text-body text-gray-900">{game}</p>}
+                      <p className="mt-0.5 text-body text-gray-500">{actorName(row.actor)} · {formatHistoryDate(row.at)}</p>
+                    </>
+                  );
+                }}
+              />
+            </div>
           )}
         </>
       )}

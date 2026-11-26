@@ -2,14 +2,16 @@
 
 import AddByCodeField, { type AddByCodeResult } from '@/components/boxes/AddByCodeField';
 import AddResultDialog from '@/components/boxes/AddResultDialog';
-import { GameRow, StaffBanner, StaffDialog, StaffEmpty, StaffPage, ThumbCta } from '@/components/staff';
+import { GameRow, HistorySection, StaffBanner, StaffDialog, StaffEmpty, StaffPage, ThumbCta } from '@/components/staff';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { resolveCodeToAdd, summarizeAdd, type AddSummary } from '@/hooks/boxes/addByCode';
 import { addItem as addItemApi, listBoxes, listItems, markItemsReceived } from '@/hooks/boxes/boxApi';
 import { boxLaneDestination, findBoxForTrade, isBoxOpen, receptorName } from '@/hooks/boxes/boxGrouping';
 import { boxErrorMessage, useBoxLifecycle } from '@/hooks/boxes/useBoxLifecycle';
-import type { Box, Item } from '@/types';
+import { useApi } from '@/hooks/useApi';
+import type { Box, BoxEventRow, HistoryResponse, Item } from '@/types';
+import { actorName, BOX_ACTION_LABEL, boxEventGameText, formatHistoryDate } from '@/utils/history';
 import { formatTradeCode } from '@/utils/tradeCode';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -36,6 +38,7 @@ export default function TransitBoxView({
   reloadError = null,
   reloading = false,
   userId,
+  isAdmin = false,
 }: {
   box: Box;
   /** The parent's reload: resolves with the box, or null when it failed
@@ -46,8 +49,11 @@ export default function TransitBoxView({
   reloadError?: string | null;
   reloading?: boolean;
   userId: string | number | null;
+  /** Shows the box history (admin only). */
+  isAdmin?: boolean;
 }) {
   const { inFlight, addItems, removeItem, moveItem, closeBox } = useBoxLifecycle();
+  const { execute: fetchBoxHistory } = useApi<HistoryResponse<BoxEventRow>>('logistics/boxes/');
   const { setError } = useActionStatus();
   const [receivingCode, setReceivingCode] = useState<number | null>(null);
   const [mode, setMode] = useState<Mode>('view');
@@ -306,6 +312,26 @@ export default function TransitBoxView({
             >
               Agregar juegos
             </button>
+          )}
+
+          {isAdmin && (
+            <div className="mt-6">
+              <HistorySection<BoxEventRow>
+                key={box.id}
+                load={() => fetchBoxHistory(undefined, `${box.id}/history/`)}
+                getKey={(row) => row.id}
+                renderRow={(row) => {
+                  const game = boxEventGameText(row);
+                  return (
+                    <>
+                      <p className="font-semibold leading-tight">{BOX_ACTION_LABEL[row.action]}</p>
+                      {game && <p className="mt-0.5 text-body text-gray-900">{game}</p>}
+                      <p className="mt-0.5 text-body text-gray-500">{actorName(row.actor)} · {formatHistoryDate(row.at)}</p>
+                    </>
+                  );
+                }}
+              />
+            </div>
           )}
         </>
       )}

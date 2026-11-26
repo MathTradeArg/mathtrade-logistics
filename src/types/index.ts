@@ -6,3 +6,4 @@ export * from './report';
 export * from './trade';
 export * from './user';
 export * from './volunteer';
+export * from './history';

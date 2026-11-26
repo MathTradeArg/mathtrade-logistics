@@ -1,5 +1,6 @@
 export { default as BottomNav } from './BottomNav';
 export { default as GameRow } from './GameRow';
+export { HistoryList, HistorySection } from './HistoryList';
 export { default as HoldToConfirm } from './HoldToConfirm';
 export { default as MemberNameSearch } from './MemberNameSearch';
 export { default as ProblemHeader } from './ProblemHeader';
