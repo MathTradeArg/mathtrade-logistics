@@ -124,6 +124,44 @@ describe('PrintPage', () => {
     expect(screen.queryByText(/MESA DE JUEGOS/i)).not.toBeInTheDocument();
   });
 
+  describe('sector signs "Incluye"', () => {
+    const SFE_DIRECTORY = [
+      ...DIRECTORY,
+      { location_id: 50, city: 'Santa Fe', code: 'SFE', address: 'X 1', pay_on_delivery: false, referrers: [] },
+      { location_id: 51, city: 'Rafaela', code: 'RAF', address: 'X 2', send_as: 50, pay_on_delivery: false, referrers: [] },
+      { location_id: 52, city: 'Esperanza', code: 'ESP', address: 'X 3', send_as: 50, pay_on_delivery: false, referrers: [] },
+      { location_id: 53, city: 'Paraná', code: 'PAR', address: 'X 4', send_as: 50, pay_on_delivery: false, referrers: [] },
+    ];
+
+    const openSectors = async (chosenCities: string[]) => {
+      mockBoxFetch.mockImplementation(async (path: string) =>
+        path === 'logistics/directory/' ? SFE_DIRECTORY : [],
+      );
+      render(<PrintPage />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Sectores (Localidades)' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Ninguna' }));
+      chosenCities.forEach((city) => fireEvent.click(screen.getByRole('checkbox', { name: new RegExp(city) })));
+    };
+
+    it('prints one sign per mode listing the other chosen cities that ship through it', async () => {
+      await openSectors(['Esperanza', 'Paraná', 'Rafaela']);
+      expect(screen.getAllByRole('heading', { name: 'Santa Fe' })).toHaveLength(2);
+      expect(screen.getAllByText('Incluye: Esperanza, Paraná, Rafaela')).toHaveLength(2);
+    });
+
+    it('shows the shipping city and only the chosen one when a single city is picked', async () => {
+      await openSectors(['Esperanza']);
+      expect(screen.getAllByRole('heading', { name: 'Santa Fe' })).toHaveLength(2);
+      expect(screen.getAllByText('Incluye: Esperanza')).toHaveLength(2);
+    });
+
+    it('omits the line for a city that nobody ships through', async () => {
+      await openSectors(['Ciudad Prueba']);
+      expect(screen.getAllByRole('heading', { name: 'Ciudad Prueba' })).toHaveLength(2);
+      expect(screen.queryByText(/Incluye:/)).not.toBeInTheDocument();
+    });
+  });
+
   describe('table 0', () => {
     const openTables = async () => {
       render(<PrintPage />);
