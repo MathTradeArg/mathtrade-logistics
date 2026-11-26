@@ -17,6 +17,9 @@ export type LocationReferrerInfo = {
   address: string;
   /** Location this one ships through (its send_as); absent when it ships by itself. */
   sendAs?: number;
+  /** Boxes leaving AMBA for it carry only its own games, even if it ships as
+   *  another city (the Santa Fe group). Absent with an older backend. */
+  separateFromHub?: boolean;
   payOnDelivery?: boolean;
   referrers: ReferrerContact[];
 };
@@ -27,6 +30,7 @@ export type DirectoryRow = {
   code: string;
   address: string;
   send_as?: number | null;
+  separate_from_hub?: boolean;
   pay_on_delivery: boolean;
   referrers: ReferrerContact[];
 };
@@ -53,6 +57,7 @@ export function buildReferrerDirectory(rows: DirectoryRow[]): ReferrerDirectory 
     code: row.code,
     address: row.address || '',
     sendAs: row.send_as || undefined,
+    separateFromHub: row.separate_from_hub === true,
     payOnDelivery: row.pay_on_delivery,
     referrers: row.referrers || [],
   }));

@@ -4,7 +4,7 @@ import { LoadingSpinner } from '@/components/common/ui';
 import { GameRow, PhaseBlocked, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
-import { listBoxes, type CityViewParams } from '@/hooks/boxes/boxApi';
+import { listBoxes, listSeparateFromHub, type CityViewParams } from '@/hooks/boxes/boxApi';
 import {
   boxDestinationLabel,
   destinationLabel,
@@ -17,6 +17,7 @@ import {
   packingDestinationId,
   receptorName,
   splitByRoute,
+  type SeparateFromHub,
   boxLabel,
 } from '@/hooks/boxes/boxGrouping';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,6 +48,8 @@ export type PackingDestinationsProps = {
   intraExportFileName?: string;
 };
 
+const NO_SEPARATE: SeparateFromHub = new Set();
+
 /** Destinations to pack for, from `origin`. */
 export default function PackingDestinations({
   origin, basePath, phaseGated, loadItems, excludeDestination, viewParams, exportFileName, intraExportFileName,
@@ -58,6 +61,7 @@ export default function PackingDestinations({
   const [items, setItems] = useState<Item[]>([]);
   const [allItems, setAllItems] = useState<Item[]>([]);
   const [boxes, setBoxes] = useState<Box[]>([]);
+  const [separateFromHub, setSeparateFromHub] = useState<SeparateFromHub>(NO_SEPARATE);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // The caller passes a new function each render; only the latest is used.
@@ -73,10 +77,12 @@ export default function PackingDestinations({
     setIsLoading(true);
     setError(null);
     try {
-      const [nextItems, nextBoxes] = await Promise.all([
+      const [nextItems, nextBoxes, nextSeparate] = await Promise.all([
         loadItemsRef.current(),
         listBoxes({ origin, as_location: asLocation, mathtrade }),
+        origin === EVENT_LOCATION_ID ? listSeparateFromHub() : NO_SEPARATE,
       ]);
+      setSeparateFromHub(nextSeparate ?? NO_SEPARATE);
       setAllItems(nextItems);
       setItems(nextItems.filter((item) => item.location !== excludeDestination));
       setBoxes(nextBoxes);
@@ -93,10 +99,10 @@ export default function PackingDestinations({
   }, [isAuthenticated, blocked, load]);
 
   const destinations = useMemo(
-    () => groupPackingDestinations(items, boxes, requirePackableStatus, origin)
+    () => groupPackingDestinations(items, boxes, requirePackableStatus, origin, separateFromHub)
       .filter((dest) => dest.destinationId !== excludeDestination)
       .map((dest) => ({ ...dest, label: destinationLabel(dest.destinationName, dest.viaHub) })),
-    [items, boxes, requirePackableStatus, excludeDestination, origin],
+    [items, boxes, requirePackableStatus, excludeDestination, origin, separateFromHub],
   );
 
   const exportItems = useMemo(
@@ -121,14 +127,14 @@ export default function PackingDestinations({
     return destinations.filter((dest) => {
       if (matchesSearch(dest.label, query)) return true;
       return items.some((item) => {
-        if (packingDestinationId(item, origin) !== dest.destinationId) return false;
+        if (packingDestinationId(item, origin, separateFromHub) !== dest.destinationId) return false;
         return matchesSearch(
           [item.title, tradeCodeSearchText(item.assigned_trade_code), receptorName(item), item.location_name ?? ''].join(' '),
           query,
         );
       });
     });
-  }, [destinations, items, query, origin]);
+  }, [destinations, items, query, origin, separateFromHub]);
 
   // From a city, the boxes to AMBA (staying there or travelling on) are listed
   // apart from the ones that go straight to another city.
@@ -152,7 +158,7 @@ export default function PackingDestinations({
   const handleItemHit = (item: Item) => {
     const box = findBoxForTrade(boxes, item.id);
     if (box && isBoxOpen(box)) {
-      const destId = packingDestinationId(item, origin) ?? box.destiny;
+      const destId = packingDestinationId(item, origin, separateFromHub) ?? box.destiny;
       router.push(`${basePath}/${destId}/${box.id}`);
       return;
     }
@@ -160,7 +166,7 @@ export default function PackingDestinations({
       setError(`Ese juego ya está en la caja ${boxLabel(box)} (cerrada).`);
       return;
     }
-    const destId = packingDestinationId(item, origin);
+    const destId = packingDestinationId(item, origin, separateFromHub);
     if (destId) {
       router.push(`${basePath}/${destId}`);
     }

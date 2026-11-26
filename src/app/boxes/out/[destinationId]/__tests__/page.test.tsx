@@ -12,8 +12,9 @@ jest.mock('@/components/staff/StaffTitleContext', () => ({
   useStaffTitle: jest.fn(),
 }));
 const mockPush = jest.fn();
+let mockDestinationId = '8';
 jest.mock('next/navigation', () => ({
-  useParams: () => ({ destinationId: '8' }),
+  useParams: () => ({ destinationId: mockDestinationId }),
   useRouter: jest.fn(() => ({ push: mockPush, replace: jest.fn(), back: jest.fn() })),
 }));
 jest.mock('@/components/common/ui', () => ({
@@ -80,6 +81,7 @@ const createdBox = {
 describe('BoxesOutDestinationPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockDestinationId = '8';
     mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
     mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
     mockListItems.mockResolvedValue([]);
@@ -170,5 +172,28 @@ describe('BoxesOutDestinationPage', () => {
       expect(mockOpenBox).toHaveBeenCalledWith(8, 1, expect.any(String));
     });
     expect(mockPush).toHaveBeenCalledWith('/boxes/out/8/410');
+  });
+});
+
+describe('Santa Fe from AMBA', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockDestinationId = '33';
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false });
+    mockListItems.mockResolvedValue([]);
+  });
+
+  it('lists only the Santa Fe boxes, not the ones the API files under it for Esperanza', async () => {
+    // destination=33 also returns boxes to cities that ship as Santa Fe; from
+    // the hub the API gives those their own lane_destination.
+    mockListBoxes.mockResolvedValue([
+      { ...anaBox, destiny: 33, lane_destination: 33, destination_name: 'Santa Fe' },
+      { ...luisBox, destiny: 17, lane_destination: 17, destination_name: 'Esperanza' },
+    ]);
+    render(<BoxesOutDestinationPage />, { wrapper });
+
+    expect(await screen.findByRole('link', { name: /Caja de Ana Palermo/ })).toHaveAttribute('href', '/boxes/out/33/396');
+    expect(screen.queryByRole('link', { name: /Caja de Luis Ramos/ })).not.toBeInTheDocument();
   });
 });

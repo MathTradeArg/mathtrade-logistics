@@ -14,7 +14,8 @@ import {
 } from '@/config/referrers';
 import { canPrintEventSheets } from '@/config/roles';
 import { boxFetch } from '@/hooks/boxes/boxApi';
-import { matchesSearch } from '@/hooks/boxes/boxGrouping';
+import { EVENT_LOCATION_ID } from '@/constants/event';
+import { matchesSearch, normalizeText } from '@/hooks/boxes/boxGrouping';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPersisted, numberSetCodec, usePersistedState } from '@/hooks/usePersistedState';
 import { useSearchParams } from 'next/navigation';
@@ -47,6 +48,12 @@ type WindowConfigItem = {
 /** True unless the city ships as another city of the interior directory (that one gets the sign). */
 function isShippingCity(interior: LocationReferrerInfo[], loc: LocationReferrerInfo): boolean {
   return !loc.sendAs || !interior.some((other) => other.locationId === loc.sendAs);
+}
+
+/** Listed in the sector picker: shipping cities, plus (except for "Llegan")
+ *  the cities whose boxes leave AMBA on their own, which get their own SALEN sign. */
+function isSectorCity(interior: LocationReferrerInfo[], loc: LocationReferrerInfo, kind: SectorKind): boolean {
+  return isShippingCity(interior, loc) || (kind !== 'unpack' && Boolean(loc.separateFromHub));
 }
 
 function BoxCircleSymbol({ fill }: { fill: CircleFill }) {
@@ -177,7 +184,8 @@ function PrintPageContent() {
         }
         if (!hasPersisted('selectedSectorLocs')) {
           setSelectedSectorLocs(
-            new Set(next.interior.filter((loc) => isShippingCity(next.interior, loc)).map((loc) => loc.locationId)),
+            // Every city any mode lists; the "Llegan" list ignores the ones it hides.
+            new Set(next.interior.filter((loc) => isSectorCity(next.interior, loc, 'pack')).map((loc) => loc.locationId)),
           );
         }
       })
@@ -257,6 +265,14 @@ function PrintPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [directoryLoaded, cityAccess?.city.id]);
 
+  // Interior labels leave AMBA when the sender is CABA/AMBA, or, with no
+  // sender, when the user has no interior city of their own (the event staff).
+  // Only then do the Santa Fe group cities get their own label.
+  const labelsFromHub = senderCity.trim()
+    ? ['caba', 'amba', normalizeText(ambaInfo.city)].includes(normalizeText(senderCity.trim()))
+    : (cityAccess?.city.id ?? EVENT_LOCATION_ID) === EVENT_LOCATION_ID;
+  const ownLabel = (loc: LocationReferrerInfo): boolean => labelsFromHub && Boolean(loc.separateFromHub);
+
   const filteredLabelLocations = useMemo(
     () =>
       interiorDirectory.filter((loc) =>
@@ -268,10 +284,11 @@ function PrintPageContent() {
     [interiorDirectory, labelDestQuery],
   );
 
-  // Cities that ship as another interior city are covered by that city's sign, so they are not listed.
+  // Cities that ship as another interior city are covered by that city's sign, so they are not listed
+  // (except the Santa Fe group for the SALEN signs: see isSectorCity).
   const sectorLocations = useMemo(
-    () => interiorDirectory.filter((loc) => isShippingCity(interiorDirectory, loc)),
-    [interiorDirectory],
+    () => interiorDirectory.filter((loc) => isSectorCity(interiorDirectory, loc, sectorKind)),
+    [interiorDirectory, sectorKind],
   );
   const selectedSectorCount = useMemo(
     () => sectorLocations.filter((loc) => selectedSectorLocs.has(loc.locationId)).length,
@@ -285,8 +302,9 @@ function PrintPageContent() {
           [
             loc.city,
             loc.code,
+            // Hidden cities are found through the city they ship as.
             ...interiorDirectory
-              .filter((other) => other.sendAs === loc.locationId)
+              .filter((other) => other.sendAs === loc.locationId && !sectorLocations.includes(other))
               .flatMap((other) => [other.city, other.code]),
           ].join(' '),
           sectorQuery,
@@ -334,25 +352,29 @@ function PrintPageContent() {
     );
     const list: LabelItem[] = [];
     chosen.forEach((loc) => {
-      const shippingLoc = loc.sendAs ? (findReferrerInfo(directory, loc.sendAs) ?? loc) : loc;
+      const own = labelsFromHub && Boolean(loc.separateFromHub);
+      const shippingLoc = loc.sendAs && !own ? (findReferrerInfo(directory, loc.sendAs) ?? loc) : loc;
       for (let idx = 0; idx < count; idx += 1) {
         list.push({
           key: `interior-${loc.locationId}-${idx}`,
           circleFill: null,
           destInfo: shippingLoc,
-          clusterCity: loc.sendAs ? loc.city : undefined,
-          addressOverride: customAddresses[loc.locationId] || customAddresses[shippingLoc.locationId],
+          clusterCity: shippingLoc !== loc ? loc.city : undefined,
+          addressOverride: own
+            ? customAddresses[loc.locationId]
+            : customAddresses[loc.locationId] || customAddresses[shippingLoc.locationId],
           payOnDelivery: true,
           isViaCabaOnward: false,
         });
       }
     });
     return list;
-  }, [routeKind, copiesPerDest, selectedLabelDests, customAddresses, ambaInfo, interiorDirectory, directory]);
+  }, [routeKind, copiesPerDest, selectedLabelDests, customAddresses, ambaInfo, interiorDirectory, directory, labelsFromHub]);
 
   const sectorSigns = useMemo(() => {
     const chosen = sectorLocations.filter((loc) => selectedSectorLocs.has(loc.locationId));
-    const seen = new Set<number>();
+    const seenUnpack = new Set<number>();
+    const seenPack = new Set<number>();
     const signs: {
       key: string;
       mode: 'unpack' | 'pack';
@@ -361,8 +383,6 @@ function PrintPageContent() {
     }[] = [];
     chosen.forEach((loc) => {
       const shippingLoc = loc.sendAs ? (findReferrerInfo(directory, loc.sendAs) ?? loc) : loc;
-      if (seen.has(shippingLoc.locationId)) return;
-      seen.add(shippingLoc.locationId);
       // Every city that ships through this one, chosen or not, so the sign says who it covers.
       const includes = Array.from(
         new Set(
@@ -375,11 +395,20 @@ function PrintPageContent() {
             .map((other) => other.city),
         ),
       ).sort((a, b) => a.localeCompare(b, 'es'));
-      if (sectorKind === 'both' || sectorKind === 'unpack') {
+      if ((sectorKind === 'both' || sectorKind === 'unpack') && !seenUnpack.has(shippingLoc.locationId)) {
+        seenUnpack.add(shippingLoc.locationId);
         signs.push({ key: `unpack-${shippingLoc.locationId}`, mode: 'unpack', loc: shippingLoc, includes });
       }
-      if (sectorKind === 'both' || sectorKind === 'pack') {
-        signs.push({ key: `pack-${shippingLoc.locationId}`, mode: 'pack', loc: shippingLoc, includes });
+      // The Santa Fe group leaves AMBA city by city: one SALEN sign each, nothing included.
+      const packLoc = loc.separateFromHub ? loc : shippingLoc;
+      if ((sectorKind === 'both' || sectorKind === 'pack') && !seenPack.has(packLoc.locationId)) {
+        seenPack.add(packLoc.locationId);
+        signs.push({
+          key: `pack-${packLoc.locationId}`,
+          mode: 'pack',
+          loc: packLoc,
+          includes: loc.separateFromHub ? [] : includes,
+        });
       }
     });
     return signs;
@@ -523,7 +552,11 @@ function PrintPageContent() {
                       type="button"
                       onClick={() =>
                         setSelectedLabelDests(
-                          new Set(sectorLocations.map((l) => l.locationId)),
+                          new Set(
+                            interiorDirectory
+                              .filter((l) => isShippingCity(interiorDirectory, l) || ownLabel(l))
+                              .map((l) => l.locationId),
+                          ),
                         )
                       }
                       className="rounded border border-gray-300 px-2 py-1 text-caption font-semibold text-gray-700"
@@ -560,7 +593,7 @@ function PrintPageContent() {
                           />
                           <span className="flex-1">
                             <span className="font-semibold">{loc.city}</span> ({loc.code})
-                            {loc.sendAs ? (
+                            {loc.sendAs && !ownLabel(loc) ? (
                               <span className="ml-1 text-caption font-normal text-gray-900 bg-warning/20 rounded px-1">
                                 (vía {findReferrerInfo(directory, loc.sendAs)?.city ?? 'otro'})
                               </span>

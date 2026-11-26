@@ -78,10 +78,9 @@ export default function PackingDestination({
       listBoxes({ destination: physicalDestId, origin, as_location: asLocation, mathtrade }),
       listItems({ destination: physicalDestId, origin: itemsOrigin, includeSendAs, excludeDelivered: true, as_location: asLocation, mathtrade }),
     ]);
-    const laneBoxes =
-      origin !== EVENT_LOCATION_ID
-        ? nextBoxes.filter((box) => boxMatchesLane(box, destinationId))
-        : nextBoxes;
+    // From the hub too: `destination` also returns the boxes to cities that
+    // ship as this one, and the Santa Fe group's have their own lane there.
+    const laneBoxes = nextBoxes.filter((box) => boxMatchesLane(box, destinationId));
     setBoxes(laneBoxes);
     setItems(nextItems);
     return laneBoxes;

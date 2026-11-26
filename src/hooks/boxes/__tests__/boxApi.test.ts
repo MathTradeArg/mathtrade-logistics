@@ -1,4 +1,4 @@
-import { BoxApiError, boxFetch, listItems } from '../boxApi';
+import { BoxApiError, boxFetch, listItems, listSeparateFromHub } from '../boxApi';
 
 const NETWORK_MESSAGE = 'No hay conexión o el servidor tardó demasiado. Probá de nuevo.';
 const WRITE_MESSAGE = 'No sabemos si se guardó. Consultá el estado antes de repetir.';
@@ -22,6 +22,42 @@ describe('listItems', () => {
     fetchMock.mockClear();
     await listItems({ origin: 7, includeSendAs: false });
     expect(urlOf()).not.toContain('include_send_as');
+  });
+});
+
+describe('listSeparateFromHub', () => {
+  const fetchMock = global.fetch as jest.Mock;
+  beforeEach(() => {
+    fetchMock.mockReset();
+  });
+  const reply = (rows: unknown) =>
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => rows });
+
+  it('reads the ids flagged separate_from_hub from the directory', async () => {
+    reply([
+      { location_id: 33, separate_from_hub: true },
+      { location_id: 17, separate_from_hub: true },
+      { location_id: 21, separate_from_hub: false },
+    ]);
+    const ids = await listSeparateFromHub({ fresh: true });
+    expect(fetchMock.mock.calls[0][0]).toContain('logistics/directory/');
+    expect(Array.from(ids).sort()).toEqual([17, 33]);
+  });
+
+  it('is empty with an older backend (no field) or when the directory fails', async () => {
+    reply([{ location_id: 33 }, { location_id: 17 }]);
+    expect((await listSeparateFromHub({ fresh: true })).size).toBe(0);
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue({ ok: false, status: 403, statusText: 'Forbidden', json: async () => ({}) });
+    expect((await listSeparateFromHub({ fresh: true })).size).toBe(0);
+  });
+
+  it('asks the directory once and reuses the answer', async () => {
+    reply([{ location_id: 33, separate_from_hub: true }]);
+    await listSeparateFromHub({ fresh: true });
+    const again = await listSeparateFromHub();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(again.has(33)).toBe(true);
   });
 });
 
