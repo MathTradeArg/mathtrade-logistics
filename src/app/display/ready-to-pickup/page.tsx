@@ -3,6 +3,8 @@
 import { Clock, RefreshCw, UserX, Users } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import CallQueue, { displayName } from '@/components/display/CallQueue';
+import ReceptionMessage from '@/components/display/ReceptionMessage';
+import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useApi } from '@/hooks/useApi';
 import type { ProcessedUserWithWindow, UserWithWindow, WindowConfig, WindowDisplay } from '@/types/window';
 import { callQueue } from '@/utils/callQueue';
@@ -40,6 +42,9 @@ export default function DisplayReadyToPickupPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pollingInterval, setPollingInterval] = useState(10);
   const [queueMode] = useState(() => getQueueMode());
+  const { eventPhase, isLoadingEventPhase } = useEventPhase();
+  const showReception = queueMode && eventPhase === 1;
+  const pollingPaused = showReception || (queueMode && eventPhase === null && isLoadingEventPhase);
   const [callSlots] = useState(() => getCallSlots());
   const [queue, setQueue] = useState<{ calling: UserWithWindow[]; waiting: number }>({ calling: [], waiting: 0 });
   // True while a poll is running: a slow network must not stack requests.
@@ -114,7 +119,7 @@ export default function DisplayReadyToPickupPage() {
   }, []);
 
   const fetchData = useCallback(async () => {
-    if (inFlight.current) return;
+    if (pollingPaused || inFlight.current) return;
     inFlight.current = true;
     try {
       setIsRefreshing(true);
@@ -148,7 +153,7 @@ export default function DisplayReadyToPickupPage() {
       setIsRefreshing(false);
       setIsLoadingData(false);
     }
-  }, [fetchReadyUsers, fetchWindowConfig, organizeUsersByWindows, queueMode, callSlots]);
+  }, [fetchReadyUsers, fetchWindowConfig, organizeUsersByWindows, queueMode, callSlots, pollingPaused]);
 
   useEffect(() => {
     const currentInterval = getGlobalPollingInterval();
@@ -197,7 +202,7 @@ export default function DisplayReadyToPickupPage() {
       <div className="mb-8 text-center">
         <h1 className="mb-4 flex items-center justify-center text-4xl font-bold md:text-5xl lg:text-6xl">
           <Users size={48} className="mr-4 text-primary" />
-          Listos para retirar
+          {showReception ? 'Estamos recibiendo juegos' : 'Listos para retirar'}
         </h1>
         <div className="flex items-center justify-center gap-2 text-body text-gray-600">
           <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
@@ -215,7 +220,7 @@ export default function DisplayReadyToPickupPage() {
       </div>
 
       <div className="flex flex-1 flex-col">
-        {isLoadingData && (queueMode ? queue.calling.length === 0 : windowsData.length === 0) && (
+        {!showReception && isLoadingData && (queueMode ? queue.calling.length === 0 : windowsData.length === 0) && (
           <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
             <p className="text-2xl text-primary md:text-3xl">Cargando información...</p>
           </div>
@@ -227,7 +232,9 @@ export default function DisplayReadyToPickupPage() {
           </div>
         )}
 
-        {queueMode && !isLoadingData && !error && (
+        {showReception && <ReceptionMessage />}
+
+        {queueMode && !showReception && !isLoadingData && !error && (
           <CallQueue calling={queue.calling} waiting={queue.waiting} />
         )}
 
@@ -293,18 +300,20 @@ export default function DisplayReadyToPickupPage() {
         )}
       </div>
 
-      <footer className="mt-8 space-y-2 rounded-lg border border-gray-200 bg-white p-4 text-center">
-        <p className="text-heading text-gray-600">
-          Esta pantalla se actualiza automáticamente cada {pollingInterval} segundos
-        </p>
-        {!queueMode && (
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-6 text-body">
-            <StatDot color="bg-want" label="Listos" value={totalStats.ready} />
-            <StatDot color="bg-primary" label="En mesa" value={totalStats.attended} />
-            <StatDot color="bg-danger" label="No show" value={totalStats.no_show} />
-          </div>
-        )}
-      </footer>
+      {!showReception && (
+        <footer className="mt-8 space-y-2 rounded-lg border border-gray-200 bg-white p-4 text-center">
+          <p className="text-heading text-gray-600">
+            Esta pantalla se actualiza automáticamente cada {pollingInterval} segundos
+          </p>
+          {!queueMode && (
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-6 text-body">
+              <StatDot color="bg-want" label="Listos" value={totalStats.ready} />
+              <StatDot color="bg-primary" label="En mesa" value={totalStats.attended} />
+              <StatDot color="bg-danger" label="No show" value={totalStats.no_show} />
+            </div>
+          )}
+        </footer>
+      )}
     </main>
   );
 }

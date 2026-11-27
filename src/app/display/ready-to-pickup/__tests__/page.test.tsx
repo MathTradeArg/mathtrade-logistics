@@ -7,6 +7,12 @@ import DisplayReadyToPickupPage from '../page';
 jest.mock('@/hooks/useApi');
 let mockQueueMode = false;
 let mockCallSlots = 4;
+let mockEventPhase: number | null = 2;
+let mockIsLoadingEventPhase = false;
+
+jest.mock('@/contexts/EventPhaseContext', () => ({
+  useEventPhase: () => ({ eventPhase: mockEventPhase, isLoadingEventPhase: mockIsLoadingEventPhase }),
+}));
 
 jest.mock('@/utils/windowStorage', () => ({
   getGlobalPollingInterval: () => 10,
@@ -38,6 +44,8 @@ const card = (title: string) => screen.getByRole('heading', { level: 2, name: ti
 describe('DisplayReadyToPickupPage (TV)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockEventPhase = 2;
+    mockIsLoadingEventPhase = false;
     mockQueueMode = false;
     mockCallSlots = 4;
     usersExecute = jest.fn();
@@ -316,6 +324,8 @@ describe('DisplayReadyToPickupPage cola activa con polling', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
+    mockEventPhase = 2;
+    mockIsLoadingEventPhase = false;
     mockQueueMode = true;
     mockCallSlots = 4;
     reload = jest.fn();
@@ -376,5 +386,138 @@ describe('DisplayReadyToPickupPage cola activa con polling', () => {
     mockQueueMode = false;
     await act(async () => { await jest.advanceTimersByTimeAsync(5_000); });
     expect(reload).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('DisplayReadyToPickupPage segun la fase del evento', () => {
+  const RECEPTION = 'Acercate a entregar tus juegos con tu QR en mano';
+  const QUEUE_MESSAGE = 'Tené a mano tu QR y acercate a la boca cuando veas tu nombre';
+  let fetchUsers: jest.Mock;
+  let fetchConfig: jest.Mock;
+
+  const users = [1, 2, 3, 4, 5, 6].map((id) => ({
+    id,
+    first_name: `Nombre${id}`,
+    last_name: 'Apellido',
+    username: `user${id}`,
+    roles: [],
+    status: 'present',
+  }));
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    mockQueueMode = true;
+    mockCallSlots = 4;
+    mockEventPhase = 2;
+    mockIsLoadingEventPhase = false;
+    fetchUsers = jest.fn().mockResolvedValue(users);
+    fetchConfig = jest.fn().mockResolvedValue([]);
+    mockUseApi.mockImplementation((endpoint: string) => ({
+      execute: endpoint === 'logistics/users/ready-to-pickup/' ? fetchUsers : fetchConfig,
+    }));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  const renderAndSettle = async () => {
+    render(<DisplayReadyToPickupPage />);
+    await act(async () => { await jest.advanceTimersByTimeAsync(0); });
+  };
+
+  it('en fase 1 con cola activa muestra solo el mensaje de recepcion', async () => {
+    mockEventPhase = 1;
+    await renderAndSettle();
+
+    expect(screen.getByText(RECEPTION)).toBeInTheDocument();
+    expect(screen.queryByText('Nombre1 Apellido')).not.toBeInTheDocument();
+    expect(screen.queryByText(/En espera/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Pasan ahora')).not.toBeInTheDocument();
+    expect(screen.queryByText(QUEUE_MESSAGE)).not.toBeInTheDocument();
+  });
+
+  it('en fase 1 el titulo es "Estamos recibiendo juegos" y no "Listos para retirar"', async () => {
+    mockEventPhase = 1;
+    await renderAndSettle();
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Estamos recibiendo juegos' })).toBeInTheDocument();
+    expect(screen.queryByText('Listos para retirar')).not.toBeInTheDocument();
+  });
+
+  it('en fase 0, 2, fase no cargada y cola apagada el titulo sigue siendo "Listos para retirar"', async () => {
+    for (const [phase, queue] of [[2, true], [0, true], [null, true], [1, false]] as const) {
+      mockEventPhase = phase;
+      mockQueueMode = queue;
+      const { unmount } = render(<DisplayReadyToPickupPage />);
+      await act(async () => { await jest.advanceTimersByTimeAsync(0); });
+      expect(screen.getByRole('heading', { level: 1, name: 'Listos para retirar' })).toBeInTheDocument();
+      expect(screen.queryByText('Estamos recibiendo juegos')).not.toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it('en fase 1 no pide ready-to-pickup ni windows/config, ni siquiera con el polling', async () => {
+    mockEventPhase = 1;
+    await renderAndSettle();
+    await act(async () => { await jest.advanceTimersByTimeAsync(30_000); });
+
+    expect(fetchUsers).not.toHaveBeenCalled();
+    expect(fetchConfig).not.toHaveBeenCalled();
+  });
+
+  it('en fase 2 muestra la cola como siempre', async () => {
+    await renderAndSettle();
+
+    expect(screen.getByText(QUEUE_MESSAGE)).toBeInTheDocument();
+    expect(screen.getByText('Nombre1 Apellido')).toBeInTheDocument();
+    expect(screen.getByText('En espera: 2')).toBeInTheDocument();
+    expect(screen.queryByText(RECEPTION)).not.toBeInTheDocument();
+    expect(fetchUsers).toHaveBeenCalled();
+  });
+
+  it('en fase 0 muestra la cola como siempre', async () => {
+    mockEventPhase = 0;
+    await renderAndSettle();
+
+    expect(screen.getByText(QUEUE_MESSAGE)).toBeInTheDocument();
+    expect(screen.getByText('Nombre1 Apellido')).toBeInTheDocument();
+    expect(screen.queryByText(RECEPTION)).not.toBeInTheDocument();
+  });
+
+  it('si la fase no cargo (null sin cargando) muestra la cola como siempre', async () => {
+    mockEventPhase = null;
+    await renderAndSettle();
+
+    expect(screen.getByText(QUEUE_MESSAGE)).toBeInTheDocument();
+    expect(screen.getByText('Nombre1 Apellido')).toBeInTheDocument();
+    expect(screen.queryByText(RECEPTION)).not.toBeInTheDocument();
+  });
+
+  it('mientras la fase carga muestra "Cargando" y no pide datos', async () => {
+    mockEventPhase = null;
+    mockIsLoadingEventPhase = true;
+    await renderAndSettle();
+    await act(async () => { await jest.advanceTimersByTimeAsync(30_000); });
+
+    expect(screen.getByText('Cargando información...')).toBeInTheDocument();
+    expect(screen.queryByText(RECEPTION)).not.toBeInTheDocument();
+    expect(screen.queryByText('Nombre1 Apellido')).not.toBeInTheDocument();
+    expect(fetchUsers).not.toHaveBeenCalled();
+    expect(fetchConfig).not.toHaveBeenCalled();
+  });
+
+  it('con la cola apagada en fase 1 muestra la pantalla de ventanillas de siempre', async () => {
+    mockQueueMode = false;
+    mockEventPhase = 1;
+    fetchConfig.mockResolvedValue([{ id: 1, name: 'Ventanilla 1', tables: ['1'] }]);
+    fetchUsers.mockResolvedValue([{ ...users[0], table_number: '1', window_id: 1, window_name: 'Ventanilla 1' }]);
+    await renderAndSettle();
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Ventanilla 1' })).toBeInTheDocument();
+    expect(screen.getByText('Nombre1 Apellido')).toBeInTheDocument();
+    expect(screen.queryByText(RECEPTION)).not.toBeInTheDocument();
+    expect(fetchConfig).toHaveBeenCalled();
   });
 });
