@@ -161,20 +161,12 @@ function DeliverPageContent() {
         user_uuid: qrData,
       });
 
-      const remainingUndelivered = games.filter(
-        (game) =>
-          !itemIds.includes(game.result.assigned_trade_code) &&
-          game.result.status_display !== 'Delivered',
-      );
-
-      if (remainingUndelivered.length === 0) {
-        updateUserStatus({
-          user_id: user?.id,
-          status: 'completed'
-        }).catch(err => {
-          console.error('Failed to update user status to completed:', err);
-        });
-      }
+      updateUserStatus({
+        user_id: user?.id,
+        status: 'completed'
+      }).catch(err => {
+        console.error('Failed to update user status to completed:', err);
+      });
 
       handleDeliverySuccess(itemIds);
       lastUpdate.current = null;
