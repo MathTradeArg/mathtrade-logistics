@@ -84,6 +84,12 @@ describe('CallQueue', () => {
     expect(screen.getByText(TIME_NOTICE)).toBeInTheDocument();
   });
 
+  it('gives the Pasan ahora heading a large bold section title style', () => {
+    render(<CallQueue calling={[person(1, 'lucia', 'perez')]} waiting={0} />);
+    const heading = screen.getByRole('heading', { level: 2, name: 'Pasan ahora' });
+    expect(heading).toHaveClass('text-3xl', 'md:text-4xl', 'font-bold', 'text-ink', 'text-center', 'mt-2');
+  });
+
   it('shows the number waiting', () => {
     render(<CallQueue calling={[person(1, 'Ana', 'Gomez')]} waiting={5} />);
     expect(screen.getByText('En espera: 5')).toBeInTheDocument();

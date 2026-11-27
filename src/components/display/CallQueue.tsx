@@ -28,7 +28,7 @@ export default function CallQueue({ calling, waiting }: { calling: UserWithWindo
         </div>
       ) : (
         <>
-          <h2 className="text-center text-heading font-bold text-primary md:text-2xl">Pasan ahora</h2>
+          <h2 className="mt-2 text-center text-3xl font-bold text-ink md:text-4xl">Pasan ahora</h2>
           <ul className="flex flex-col gap-4">
             {calling.map((user) => {
               const receiving = user.status === 'receiving';
