@@ -1,3 +1,4 @@
+import { RefreshCw } from 'lucide-react';
 import type { UserWithWindow } from '@/types/window';
 
 export function displayName(user: Pick<UserWithWindow, 'first_name' | 'last_name'>): string {
@@ -23,13 +24,22 @@ export default function CallQueue({ calling, waiting }: { calling: UserWithWindo
         <>
           <h2 className="text-center text-heading font-bold text-primary md:text-2xl">Pasan ahora</h2>
           <ul className="flex flex-col gap-4">
-            {calling.map((user) => (
-              <li key={user.id} className="rounded-lg border-l-[6px] border-want bg-want/10 p-4">
-                <p className="break-words text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
-                  {displayName(user)}
-                </p>
-              </li>
-            ))}
+            {calling.map((user) => {
+              const receiving = user.status === 'receiving';
+              return (
+                <li
+                  key={user.id}
+                  className={`rounded-lg border-l-[6px] p-4 text-center ${
+                    receiving ? 'border-primary bg-primary/10' : 'border-want bg-want/10'
+                  }`}
+                >
+                  <p className="flex items-center justify-center gap-4 break-words text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
+                    {receiving && <RefreshCw className="shrink-0 text-primary" size={48} aria-hidden="true" />}
+                    <span>{displayName(user)}</span>
+                  </p>
+                </li>
+              );
+            })}
           </ul>
           {waiting > 0 && <p className="text-center text-heading text-gray-600">En espera: {waiting}</p>}
         </>

@@ -30,6 +30,25 @@ describe('CallQueue', () => {
     expect(screen.queryByText(/Mesa/)).not.toBeInTheDocument();
   });
 
+  it('centers each called name', () => {
+    render(<CallQueue calling={[person(1, 'lucia', 'perez'), person(2, 'Ana', 'Gomez')]} waiting={0} />);
+    expect(screen.getByText('Lucia Perez').closest('li')).toHaveClass('text-center');
+    expect(screen.getByText('Ana Gomez').closest('li')).toHaveClass('text-center');
+  });
+
+  it('shows receiving users in blue with the receiving icon and the others in green', () => {
+    const receiving = { ...person(1, 'lucia', 'perez'), status: 'receiving' as const };
+    const present = person(2, 'Ana', 'Gomez');
+    render(<CallQueue calling={[receiving, present]} waiting={0} />);
+    const blue = screen.getByText('Lucia Perez').closest('li');
+    const green = screen.getByText('Ana Gomez').closest('li');
+    expect(blue).toHaveClass('border-primary', 'bg-primary/10', 'text-center');
+    expect(blue).not.toHaveClass('border-want');
+    expect(blue?.querySelector('svg.lucide-refresh-cw')).toBeInTheDocument();
+    expect(green).toHaveClass('border-want', 'bg-want/10');
+    expect(green?.querySelector('svg')).not.toBeInTheDocument();
+  });
+
   it('shows the number waiting', () => {
     render(<CallQueue calling={[person(1, 'Ana', 'Gomez')]} waiting={5} />);
     expect(screen.getByText('En espera: 5')).toBeInTheDocument();
