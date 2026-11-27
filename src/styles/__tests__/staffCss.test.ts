@@ -51,3 +51,12 @@ describe('staff.css A4 print sheets', () => {
     expect(b).not.toContain('265mm');
   });
 });
+
+describe('staff.css A5 print sheets', () => {
+  it('sizes .print-sheet-a5 for an A5 landscape page', () => {
+    const b = block('.print-sheet-a5');
+    expect(b).toContain('height: 134mm');
+    expect(b).toContain('break-after: page');
+    expect(b).toContain('break-inside: avoid');
+  });
+});

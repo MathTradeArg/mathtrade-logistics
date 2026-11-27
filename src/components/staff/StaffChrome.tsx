@@ -60,13 +60,13 @@ function EventPhaseWarning() {
   if (!errorEventPhase) return null;
   if (eventPhase === null) {
     return (
-      <div className="mx-auto w-full max-w-lg px-4">
+      <div className="no-print mx-auto w-full max-w-lg px-4">
         <StaffBanner onRetry={refetchEventPhase}>No se pudo cargar la fase del evento.</StaffBanner>
       </div>
     );
   }
   return (
-    <p role="status" className="mx-auto mt-2 w-full max-w-lg px-4 text-caption text-orange-800">
+    <p role="status" className="no-print mx-auto mt-2 w-full max-w-lg px-4 text-caption text-orange-800">
       No se pudo actualizar la fase del evento. Se muestra la última conocida.
     </p>
   );
@@ -86,12 +86,12 @@ function StaffChromeInner({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-dvh bg-page text-gray-900">
+    <div className="min-h-dvh print:min-h-0 bg-page text-gray-900">
       <AppHeader
         pageTitle={pageTitle}
         showBackButton={shouldShowBack(pathname ?? '')}
       />
-      <div className="pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
+      <div className="pb-[calc(3.5rem+env(safe-area-inset-bottom))] print:pb-0">
         <EventPhaseWarning />
         {children}
       </div>

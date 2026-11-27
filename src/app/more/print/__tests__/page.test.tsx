@@ -288,10 +288,22 @@ describe('PrintPage', () => {
         (el.textContent ?? '').includes('A4 landscape'),
       );
 
-    it('prints labels in portrait (no landscape @page)', async () => {
+    it('prints labels in A5 landscape, not A4', async () => {
       const { container } = render(<PrintPage />);
       await screen.findByRole('img', { name: /Círculo lleno/i });
       expect(landscapeStyle(container)).toBeUndefined();
+      const a5 = Array.from(container.querySelectorAll('style')).find((el) =>
+        (el.textContent ?? '').includes('A5 landscape'),
+      );
+      expect(a5).toBeDefined();
+    });
+
+    it('gives each label a full A5 sheet', async () => {
+      const { container } = render(<PrintPage />);
+      await screen.findByRole('img', { name: /Círculo lleno/i });
+      const sheets = container.querySelectorAll('.print-sheet-a5');
+      expect(sheets.length).toBeGreaterThan(0);
+      expect(container.querySelectorAll('.print-sheet').length).toBe(0);
     });
 
     it.each(['Sectores (Localidades)', 'Ventanillas', 'Mesas'])(

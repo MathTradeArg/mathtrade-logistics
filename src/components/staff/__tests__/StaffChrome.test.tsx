@@ -168,6 +168,28 @@ describe('StaffChrome event phase warnings (a network drop never leaves a false 
     expect(screen.getByText('page')).toBeInTheDocument();
   });
 
+  it('keeps the phase warnings out of the printed page', () => {
+    mockUseEventPhase.mockReturnValue({
+      eventPhase: 1, isLoadingEventPhase: false, errorEventPhase: 'sin red', refetchEventPhase: jest.fn(),
+    });
+    const { unmount } = render(<StaffChrome><p>page</p></StaffChrome>);
+    expect(screen.getByText('No se pudo actualizar la fase del evento. Se muestra la última conocida.')).toHaveClass('no-print');
+    unmount();
+    mockUseEventPhase.mockReturnValue({
+      eventPhase: null, isLoadingEventPhase: false, errorEventPhase: 'sin red', refetchEventPhase: jest.fn(),
+    });
+    render(<StaffChrome><p>page</p></StaffChrome>);
+    expect(screen.getByRole('alert').parentElement).toHaveClass('no-print');
+  });
+
+  it('adds no minimum height or bottom padding when printing, so no blank page follows', () => {
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1, isLoadingEventPhase: false, errorEventPhase: null });
+    const { container } = render(<StaffChrome><p>page</p></StaffChrome>);
+    const root = container.firstElementChild as HTMLElement;
+    expect(root).toHaveClass('print:min-h-0');
+    expect(screen.getByText('page').parentElement).toHaveClass('print:pb-0');
+  });
+
   it('offers Reintentar when the phase never loaded', () => {
     const refetchEventPhase = jest.fn();
     mockUseEventPhase.mockReturnValue({
