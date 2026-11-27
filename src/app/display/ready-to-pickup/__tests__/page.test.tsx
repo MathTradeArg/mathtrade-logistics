@@ -436,6 +436,7 @@ describe('DisplayReadyToPickupPage segun la fase del evento', () => {
     expect(screen.queryByText(/En espera/)).not.toBeInTheDocument();
     expect(screen.queryByText('Pasan ahora')).not.toBeInTheDocument();
     expect(screen.queryByText(QUEUE_MESSAGE)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Tenés 5 minutos/)).not.toBeInTheDocument();
   });
 
   it('en fase 1 el titulo es "Estamos recibiendo juegos" y no "Listos para retirar"', async () => {

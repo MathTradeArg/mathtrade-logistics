@@ -15,6 +15,8 @@ const person = (id: number, first: string, last: string): UserWithWindow => ({
 
 const FIXED_MESSAGE = 'Tené a mano tu QR y acercate a retirar tus juegos cuando veas tu nombre';
 
+const TIME_NOTICE = 'Tenés 5 minutos para acercarte. Si no llegás a tiempo, pasás al final de la fila.';
+
 describe('CallQueue', () => {
   it('shows the fixed message', () => {
     render(<CallQueue calling={[person(1, 'lucia', 'perez')]} waiting={0} />);
@@ -62,6 +64,24 @@ describe('CallQueue', () => {
     expect(warned).toHaveClass('border-want', 'bg-want/10', 'text-center');
     expect(warned?.querySelector('svg.lucide-refresh-cw')).not.toBeInTheDocument();
     expect(plain?.querySelector('svg')).not.toBeInTheDocument();
+  });
+
+  it('shows the 5 minutes notice between the fixed message and the called list, highlighted and in bold', () => {
+    render(<CallQueue calling={[person(1, 'lucia', 'perez')]} waiting={0} />);
+    const notice = screen.getByText(TIME_NOTICE);
+    expect(notice).toHaveClass('font-bold', 'text-ink', 'text-center', 'text-3xl');
+    const box = notice.closest('div');
+    expect(box).toHaveClass('border-sun', 'bg-sun/20');
+    expect(box?.querySelector('svg.lucide-triangle-alert')).toHaveClass('fill-sun', 'text-ink');
+    const fixed = screen.getByText(FIXED_MESSAGE);
+    const heading = screen.getByRole('heading', { level: 2, name: 'Pasan ahora' });
+    expect(fixed.compareDocumentPosition(notice) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(notice.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('shows the 5 minutes notice even when the queue is empty', () => {
+    render(<CallQueue calling={[]} waiting={0} />);
+    expect(screen.getByText(TIME_NOTICE)).toBeInTheDocument();
   });
 
   it('shows the number waiting', () => {
