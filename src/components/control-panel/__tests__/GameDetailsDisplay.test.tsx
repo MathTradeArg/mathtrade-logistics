@@ -40,7 +40,7 @@ describe('GameDetailsDisplay', () => {
     expect(screen.getByText('De:')).toBeInTheDocument();
     expect(screen.getByText('Juan Perez')).toBeInTheDocument();
     expect(screen.getByText('Estado:')).toBeInTheDocument();
-    expect(screen.getByText('Pendiente')).toBeInTheDocument();
+    expect(screen.getByText('En viaje directo')).toBeInTheDocument();
     expect(screen.getByText('Destino:')).toBeInTheDocument();
     expect(screen.getByText('Mesa 5')).toBeInTheDocument();
     expect(screen.getByText('Último cambio por:')).toBeInTheDocument();

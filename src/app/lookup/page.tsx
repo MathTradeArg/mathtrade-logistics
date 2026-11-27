@@ -2,7 +2,7 @@
 
 import { Chip, LoadingSpinner, type ChipTone } from '@/components/common/ui';
 import QrScanner from '@/components/qr/QrScanner';
-import { GameRow, ProblemHeader, StaffEmpty, StaffError, StaffPage, StaffSearch, StaffSegmented } from '@/components/staff';
+import { CurrentBoxLine, GameRow, ProblemHeader, StaffEmpty, StaffError, StaffPage, StaffSearch, StaffSegmented } from '@/components/staff';
 import { EVENT_LOCATION_ID } from '@/constants/event';
 import MemberNameSearch from '@/components/staff/MemberNameSearch';
 import { HistorySection } from '@/components/staff/HistoryList';
@@ -13,6 +13,7 @@ import {
   getGameStatusText,
   type DeliverTrade,
   type GameBoxInfo,
+  type GameCurrentBox,
   type GameDetail,
   type GameSearchResult,
   type HistoryResponse,
@@ -113,6 +114,7 @@ function TradeCard({
   status,
   personLabel,
   personName,
+  box,
 }: {
   title: string;
   code: number;
@@ -120,12 +122,14 @@ function TradeCard({
   status: string;
   personLabel: string;
   personName: string;
+  box?: GameCurrentBox | null;
 }) {
   return (
     <div className="staff-card px-4 py-3 text-gray-900">
       <p className="font-semibold leading-tight">{title || `Código ${formatTradeCode(code)}`}</p>
       <p className="mt-0.5 text-body text-gray-500">{formatTradeCode(code)} · {tableText(table)} · {status}</p>
       <p className="mt-0.5 text-body text-gray-500">{personLabel}: {personName}</p>
+      <CurrentBoxLine box={box} />
     </div>
   );
 }
@@ -318,6 +322,7 @@ function LookupPageContent() {
                         status={statusText(trade.result.status_display)}
                         personLabel="Para"
                         personName={fullName(trade.to_member)}
+                        box={trade.box}
                       />
                     </li>
                   ))}
@@ -338,6 +343,7 @@ function LookupPageContent() {
                         status={statusText(trade.result.status_display)}
                         personLabel="De"
                         personName={fullName(trade.from_member)}
+                        box={trade.box}
                       />
                     </li>
                   ))}
@@ -396,6 +402,8 @@ function LookupPageContent() {
                       trailing={<span className="shrink-0 text-body text-gray-500">{statusText(match.status_display)}</span>}
                       onClick={() => loadGame(String(match.assigned_trade_code))}
                     />
+                    {/* Outside the row: it is a button. The detail has the link. */}
+                    <CurrentBoxLine box={match.box} linked={false} className="mt-1 px-4" />
                   </li>
                 ))}
               </ul>
@@ -418,6 +426,7 @@ function LookupPageContent() {
               </p>
               <p className="mt-0.5 text-body text-gray-500">Entrega: {fullName(game.membership)}</p>
               <p className="mt-0.5 text-body text-gray-500">Recibe: {fullName(game.member_to)}</p>
+              <CurrentBoxLine box={game.box} />
               <WhereIsBlock game={game} />
               {isAdmin && (
                 <div className="mt-3 border-t border-stroke pt-3">

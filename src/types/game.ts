@@ -15,6 +15,20 @@ export interface GameDetail {
   giver_attends_event?: boolean,
   giver_location_name?: string | null,
   boxes?: GameBoxInfo[],
+  /** The box the game is in now (its latest); null = in no box, missing on an older backend. */
+  box?: GameCurrentBox | null,
+}
+
+/** The box a game is in now, as the lookups send it (`box`). */
+export interface GameCurrentBox {
+  id: number,
+  number: number | null,
+  origin_id: number,
+  origin_name: string,
+  destination_id: number,
+  destination_name: string,
+  destination_code: string | null,
+  closed: boolean,
 }
 
 /** A box the copy travels in, as the game detail sends it. */
@@ -43,6 +57,7 @@ export interface GameSearchResult {
   receiver_last_name: string,
   status: GameStatusCode,
   status_display: string,
+  box?: GameCurrentBox | null,
 }
 
 export type GameStatusCode = 1 | 2 | 3 | 4 | 5 | 6;
@@ -51,7 +66,7 @@ export const GameStatusMap: Record<GameStatusCode, string> = {
   1: "Creado",
   2: "En viaje al evento",
   3: "En viaje de vuelta",
-  4: "Pendiente",
+  4: "En viaje directo",
   5: "En evento",
   6: "Entregado a Usuario",
 };
@@ -59,7 +74,7 @@ export const GameStatusDisplayMap: Record<string, string> = {
   "Created": "Creado",
   "Transit to Event": "En viaje al evento",
   "Transit Back": "En viaje de vuelta",
-  "Transit Direct": "Pendiente",
+  "Transit Direct": "En viaje directo",
   "In Event": "En evento",
   "Delivered": "Entregado a Usuario",
 };
