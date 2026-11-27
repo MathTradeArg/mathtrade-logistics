@@ -5,9 +5,14 @@ import { act, render, screen, within } from '@testing-library/react';
 import DisplayReadyToPickupPage from '../page';
 
 jest.mock('@/hooks/useApi');
+let mockQueueMode = false;
+let mockCallSlots = 4;
+
 jest.mock('@/utils/windowStorage', () => ({
   getGlobalPollingInterval: () => 10,
   getMaxUsersForWindow: () => 10,
+  getQueueMode: () => mockQueueMode,
+  getCallSlots: () => mockCallSlots,
 }));
 
 const mockUseApi = useApi as jest.Mock;
@@ -33,6 +38,8 @@ const card = (title: string) => screen.getByRole('heading', { level: 2, name: ti
 describe('DisplayReadyToPickupPage (TV)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockQueueMode = false;
+    mockCallSlots = 4;
     usersExecute = jest.fn();
     configExecute = jest.fn();
     mockUseApi.mockImplementation((endpoint: string) => {
@@ -136,6 +143,8 @@ describe('DisplayReadyToPickupPage polling', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockQueueMode = false;
+    mockCallSlots = 4;
     jest.useFakeTimers();
     resolvers = [];
     // Slow network: the users request stays pending until the test resolves it.
@@ -183,5 +192,189 @@ describe('DisplayReadyToPickupPage polling', () => {
     const pollers = setSpy.mock.calls.filter(([, ms]) => ms === 10_000);
     expect(pollers).toHaveLength(1);
     setSpy.mockRestore();
+  });
+});
+
+describe('DisplayReadyToPickupPage con cola activa', () => {
+  const FIXED_MESSAGE = 'Tené a mano tu QR y acercate a la boca cuando veas tu nombre';
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockQueueMode = true;
+    mockCallSlots = 4;
+    usersExecute = jest.fn();
+    configExecute = jest.fn();
+    mockUseApi.mockImplementation((endpoint: string) => {
+      if (endpoint === 'logistics/users/ready-to-pickup/') return { execute: usersExecute };
+      return { execute: configExecute };
+    });
+  });
+
+  it('muestra el mensaje fijo, quienes pasan ahora y el total en espera', async () => {
+    serverHas([], [
+      { first_name: 'Ana' }, { first_name: 'Bruno' }, { first_name: 'Camila' },
+      { first_name: 'Dario' }, { first_name: 'Eva' }, { first_name: 'Fede' },
+    ]);
+    render(<DisplayReadyToPickupPage />);
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Pasan ahora' })).toBeInTheDocument();
+    expect(screen.getByText(FIXED_MESSAGE)).toBeInTheDocument();
+    ['Ana', 'Bruno', 'Camila', 'Dario'].forEach((name) => {
+      expect(screen.getByText(`${name} Apellido`)).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Eva Apellido')).not.toBeInTheDocument();
+    expect(screen.getByText('En espera: 2')).toBeInTheDocument();
+  });
+
+  it('no pide la config de ventanillas y si los listos', async () => {
+    serverHas([], [{ first_name: 'Ana' }]);
+    render(<DisplayReadyToPickupPage />);
+
+    await screen.findByText('Ana Apellido');
+    expect(configExecute).not.toHaveBeenCalled();
+    expect(usersExecute).toHaveBeenCalled();
+  });
+
+  it('con la fila vacia muestra que no hay nadie', async () => {
+    serverHas([], []);
+    render(<DisplayReadyToPickupPage />);
+
+    expect(await screen.findByText('No hay nadie en la fila en este momento.')).toBeInTheDocument();
+    expect(screen.queryByText('Pasan ahora')).not.toBeInTheDocument();
+    expect(screen.queryByText(/En espera/)).not.toBeInTheDocument();
+  });
+
+  it('respeta callSlots', async () => {
+    mockCallSlots = 2;
+    serverHas([], [
+      { first_name: 'Ana' }, { first_name: 'Bruno' }, { first_name: 'Camila' },
+      { first_name: 'Dario' }, { first_name: 'Eva' },
+    ]);
+    render(<DisplayReadyToPickupPage />);
+
+    await screen.findByText('Ana Apellido');
+    expect(screen.getByText('Bruno Apellido')).toBeInTheDocument();
+    expect(screen.queryByText('Camila Apellido')).not.toBeInTheDocument();
+    expect(screen.getByText('En espera: 3')).toBeInTheDocument();
+  });
+
+  it('respeta a los que estan en mesa aunque esten al final de la lista', async () => {
+    serverHas([], [
+      { first_name: 'Ana' }, { first_name: 'Bruno' }, { first_name: 'Camila' },
+      { first_name: 'Dario' }, { first_name: 'Mesa', status: 'receiving' },
+    ]);
+    render(<DisplayReadyToPickupPage />);
+
+    await screen.findByText('Mesa Apellido');
+    ['Ana', 'Bruno', 'Camila'].forEach((name) => {
+      expect(screen.getByText(`${name} Apellido`)).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Dario Apellido')).not.toBeInTheDocument();
+    expect(screen.getByText('En espera: 1')).toBeInTheDocument();
+  });
+
+  it('ignora staff y completed', async () => {
+    serverHas([], [
+      { first_name: 'Ana' },
+      { first_name: 'Vol', roles: ['volunteer'] },
+      { first_name: 'Adm', roles: ['admin'] },
+      { first_name: 'Camila', status: 'completed' },
+    ]);
+    render(<DisplayReadyToPickupPage />);
+
+    await screen.findByText('Ana Apellido');
+    expect(screen.queryByText('Vol Apellido')).not.toBeInTheDocument();
+    expect(screen.queryByText('Adm Apellido')).not.toBeInTheDocument();
+    expect(screen.queryByText('Camila Apellido')).not.toBeInTheDocument();
+    expect(screen.queryByText(/En espera/)).not.toBeInTheDocument();
+  });
+
+  it('no muestra la grilla de ventanillas ni los totales por estado', async () => {
+    serverHas([], [{ first_name: 'Ana' }]);
+    render(<DisplayReadyToPickupPage />);
+
+    await screen.findByText('Ana Apellido');
+    expect(screen.queryByText(/Listos: /)).not.toBeInTheDocument();
+    expect(screen.getByText(/Esta pantalla se actualiza automáticamente cada 10 segundos/)).toBeInTheDocument();
+  });
+});
+
+describe('DisplayReadyToPickupPage cola activa con polling', () => {
+  const originalLocation = window.location;
+  let reload: jest.Mock;
+  let fetchUsers: jest.Mock;
+
+  const row = (id: number, name: string, status = 'present') => ({
+    id,
+    first_name: name,
+    last_name: 'Apellido',
+    username: `user${id}`,
+    roles: [],
+    status,
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.useFakeTimers();
+    mockQueueMode = true;
+    mockCallSlots = 4;
+    reload = jest.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...originalLocation, reload },
+    });
+    fetchUsers = jest.fn();
+    const fetchConfig = jest.fn().mockResolvedValue([]);
+    mockUseApi.mockImplementation((endpoint: string) => ({
+      execute: endpoint === 'logistics/users/ready-to-pickup/' ? fetchUsers : fetchConfig,
+    }));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
+  });
+
+  it('se desliza en el siguiente polling cuando alguien sale de la fila', async () => {
+    fetchUsers
+      .mockResolvedValueOnce([
+        row(1, 'A', 'receiving'), row(2, 'B'), row(3, 'C'), row(4, 'D'), row(5, 'E'), row(6, 'F'),
+      ])
+      .mockResolvedValue([row(2, 'B'), row(3, 'C'), row(4, 'D'), row(5, 'E'), row(6, 'F'), row(1, 'A', 'completed')]);
+    render(<DisplayReadyToPickupPage />);
+    await act(async () => { await jest.advanceTimersByTimeAsync(0); });
+
+    expect(screen.getByText('A Apellido')).toBeInTheDocument();
+    expect(screen.queryByText('E Apellido')).not.toBeInTheDocument();
+    expect(screen.getByText('En espera: 2')).toBeInTheDocument();
+
+    await act(async () => { await jest.advanceTimersByTimeAsync(10_000); });
+
+    expect(screen.queryByText('A Apellido')).not.toBeInTheDocument();
+    ['B', 'C', 'D', 'E'].forEach((name) => {
+      expect(screen.getByText(`${name} Apellido`)).toBeInTheDocument();
+    });
+    expect(screen.getByText('En espera: 1')).toBeInTheDocument();
+  });
+
+  it('recarga cuando cambia queueMode o callSlots', async () => {
+    fetchUsers.mockResolvedValue([]);
+    render(<DisplayReadyToPickupPage />);
+    await act(async () => { await jest.advanceTimersByTimeAsync(5_000); });
+    expect(reload).not.toHaveBeenCalled();
+
+    mockCallSlots = 6;
+    await act(async () => { await jest.advanceTimersByTimeAsync(5_000); });
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('recarga cuando se apaga queueMode', async () => {
+    fetchUsers.mockResolvedValue([]);
+    render(<DisplayReadyToPickupPage />);
+    await act(async () => { await jest.advanceTimersByTimeAsync(5_000); });
+
+    mockQueueMode = false;
+    await act(async () => { await jest.advanceTimersByTimeAsync(5_000); });
+    expect(reload).toHaveBeenCalledTimes(1);
   });
 });

@@ -2,21 +2,14 @@
 
 import { Clock, RefreshCw, UserX, Users } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import CallQueue, { displayName } from '@/components/display/CallQueue';
 import { useApi } from '@/hooks/useApi';
 import type { ProcessedUserWithWindow, UserWithWindow, WindowConfig, WindowDisplay } from '@/types/window';
-import { getGlobalPollingInterval, getMaxUsersForWindow } from '@/utils/windowStorage';
+import { callQueue } from '@/utils/callQueue';
+import { getCallSlots, getGlobalPollingInterval, getMaxUsersForWindow, getQueueMode } from '@/utils/windowStorage';
 
 function isStaff(user: UserWithWindow): boolean {
   return Boolean(user.roles?.includes('volunteer') || user.roles?.includes('admin'));
-}
-
-function displayName(user: ProcessedUserWithWindow): string {
-  return `${user.first_name} ${user.last_name}`
-    .toLowerCase()
-    .split(' ')
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
 }
 
 function splitByStatus(users: ProcessedUserWithWindow[]) {
@@ -46,6 +39,9 @@ export default function DisplayReadyToPickupPage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pollingInterval, setPollingInterval] = useState(10);
+  const [queueMode] = useState(() => getQueueMode());
+  const [callSlots] = useState(() => getCallSlots());
+  const [queue, setQueue] = useState<{ calling: UserWithWindow[]; waiting: number }>({ calling: [], waiting: 0 });
   // True while a poll is running: a slow network must not stack requests.
   const inFlight = useRef(false);
 
@@ -123,8 +119,11 @@ export default function DisplayReadyToPickupPage() {
     try {
       setIsRefreshing(true);
 
-      const configData = await fetchWindowConfig();
-      const config = configData || [];
+      let config: WindowConfig[] = [];
+      if (!queueMode) {
+        const configData = await fetchWindowConfig();
+        config = configData || [];
+      }
 
       const usersData = await fetchReadyUsers();
       const users = (usersData || [])
@@ -134,7 +133,12 @@ export default function DisplayReadyToPickupPage() {
         }))
         .filter((user) => !isStaff(user));
 
-      setWindowsData(organizeUsersByWindows(users, config));
+      if (queueMode) {
+        const { calling, waiting } = callQueue(users, callSlots);
+        setQueue({ calling, waiting: waiting.length });
+      } else {
+        setWindowsData(organizeUsersByWindows(users, config));
+      }
       setLastUpdated(new Date());
       setError(null);
     } catch (err) {
@@ -144,7 +148,7 @@ export default function DisplayReadyToPickupPage() {
       setIsRefreshing(false);
       setIsLoadingData(false);
     }
-  }, [fetchReadyUsers, fetchWindowConfig, organizeUsersByWindows]);
+  }, [fetchReadyUsers, fetchWindowConfig, organizeUsersByWindows, queueMode, callSlots]);
 
   useEffect(() => {
     const currentInterval = getGlobalPollingInterval();
@@ -161,11 +165,13 @@ export default function DisplayReadyToPickupPage() {
       if (nextInterval !== pollingInterval) {
         setPollingInterval(nextInterval);
         window.location.reload();
+      } else if (getQueueMode() !== queueMode || getCallSlots() !== callSlots) {
+        window.location.reload();
       }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [pollingInterval]);
+  }, [pollingInterval, queueMode, callSlots]);
 
   const totalStats = windowsData
     .reduce(
@@ -209,7 +215,7 @@ export default function DisplayReadyToPickupPage() {
       </div>
 
       <div className="flex flex-1 flex-col">
-        {isLoadingData && windowsData.length === 0 && (
+        {isLoadingData && (queueMode ? queue.calling.length === 0 : windowsData.length === 0) && (
           <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
             <p className="text-2xl text-primary md:text-3xl">Cargando información...</p>
           </div>
@@ -221,7 +227,11 @@ export default function DisplayReadyToPickupPage() {
           </div>
         )}
 
-        {!isLoadingData && windowsData.length === 0 && !error && (
+        {queueMode && !isLoadingData && !error && (
+          <CallQueue calling={queue.calling} waiting={queue.waiting} />
+        )}
+
+        {!queueMode && !isLoadingData && windowsData.length === 0 && !error && (
           <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
             <p className="text-2xl text-gray-600 md:text-3xl">
               No hay usuarios listos para retirar en este momento.
@@ -229,7 +239,7 @@ export default function DisplayReadyToPickupPage() {
           </div>
         )}
 
-        {windowsData.length > 0 && (
+        {!queueMode && windowsData.length > 0 && (
           <div className={gridClass}>
             {windowsData.map((window) => {
               const { listos, enMesa, noShow } = splitByStatus(window.users);
@@ -287,11 +297,13 @@ export default function DisplayReadyToPickupPage() {
         <p className="text-heading text-gray-600">
           Esta pantalla se actualiza automáticamente cada {pollingInterval} segundos
         </p>
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-6 text-body">
-          <StatDot color="bg-want" label="Listos" value={totalStats.ready} />
-          <StatDot color="bg-primary" label="En mesa" value={totalStats.attended} />
-          <StatDot color="bg-danger" label="No show" value={totalStats.no_show} />
-        </div>
+        {!queueMode && (
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-6 text-body">
+            <StatDot color="bg-want" label="Listos" value={totalStats.ready} />
+            <StatDot color="bg-primary" label="En mesa" value={totalStats.attended} />
+            <StatDot color="bg-danger" label="No show" value={totalStats.no_show} />
+          </div>
+        )}
       </footer>
     </main>
   );
