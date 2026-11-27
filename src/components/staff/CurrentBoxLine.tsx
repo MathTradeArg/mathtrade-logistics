@@ -5,12 +5,17 @@ import { EVENT_LOCATION_ID } from '@/constants/event';
 import { boxLabel } from '@/hooks/boxes/boxGrouping';
 import type { GameCurrentBox } from '@/types';
 
-/** "En caja #12 · Santa Fe → AMBA · abierta". */
-export function currentBoxText(box: GameCurrentBox): string {
+/** "#12 · Santa Fe → AMBA · abierta", for a row already labeled "Caja". */
+export function currentBoxSummary(box: GameCurrentBox): string {
   const label = box.number == null
     ? 'en armado'
     : `#${boxLabel({ number: box.number, origin: box.origin_id, destination_code: box.destination_code })}`;
-  return `En caja ${label} · ${box.origin_name} → ${box.destination_name} · ${box.closed ? 'cerrada' : 'abierta'}`;
+  return `${label} · ${box.origin_name} → ${box.destination_name} · ${box.closed ? 'cerrada' : 'abierta'}`;
+}
+
+/** "En caja #12 · Santa Fe → AMBA · abierta". */
+export function currentBoxText(box: GameCurrentBox): string {
+  return `En caja ${currentBoxSummary(box)}`;
 }
 
 /** Read-only screen of the box at the event: boxes coming from a city

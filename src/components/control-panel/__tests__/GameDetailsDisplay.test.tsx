@@ -166,4 +166,41 @@ describe('GameDetailsDisplay', () => {
     });
   });
 
+  describe('current box', () => {
+    const box = {
+      id: 77,
+      number: 12,
+      origin_id: 5,
+      origin_name: 'Santa Fe',
+      destination_id: 1,
+      destination_name: 'AMBA',
+      destination_code: null,
+      closed: false,
+    };
+
+    it('shows the box the game is in, linked to its screen', () => {
+      const onNavigate = jest.fn();
+      render(<GameDetailsDisplay {...defaultProps} gameDetail={{ ...baseGameDetail, box }} onNavigate={onNavigate} />);
+      expect(screen.getByText('Caja:')).toBeInTheDocument();
+      const link = screen.getByRole('link', { name: /#12 · Santa Fe → AMBA · abierta/ });
+      expect(link).toHaveAttribute('href', '/boxes/in/5/77');
+      fireEvent.click(link);
+      expect(onNavigate).toHaveBeenCalled();
+    });
+
+    it('shows a box leaving the event as plain text (it has no screen)', () => {
+      render(<GameDetailsDisplay {...defaultProps} gameDetail={{ ...baseGameDetail, box: { ...box, origin_id: 1, origin_name: 'AMBA', destination_name: 'Córdoba', closed: true } }} />);
+      expect(screen.getByText('Caja:')).toBeInTheDocument();
+      expect(screen.getByText(/#.* · AMBA → Córdoba · cerrada/)).toBeInTheDocument();
+      expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    });
+
+    it('shows nothing when the game is in no box or the backend sends no box', () => {
+      const { rerender } = render(<GameDetailsDisplay {...defaultProps} gameDetail={{ ...baseGameDetail, box: null }} />);
+      expect(screen.queryByText('Caja:')).not.toBeInTheDocument();
+      rerender(<GameDetailsDisplay {...defaultProps} />);
+      expect(screen.queryByText('Caja:')).not.toBeInTheDocument();
+    });
+  });
+
 })

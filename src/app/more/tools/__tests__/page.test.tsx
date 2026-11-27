@@ -101,4 +101,31 @@ describe('ToolsPage', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Sí, forzar' }));
     await waitFor(() => expect(bulkUpdateTradeStatus).toHaveBeenCalledWith([game.assigned_trade_code], 1));
   });
+
+  it('shows the box the found game is in, and nothing when it is in no box', async () => {
+    const box = { id: 77, number: 12, origin_id: 5, origin_name: 'Santa Fe', destination_id: 1, destination_name: 'AMBA', destination_code: null, closed: false };
+    mockUseApi.mockReturnValue({ execute: jest.fn().mockResolvedValue({ ...game, box }) });
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false, userId: '1' });
+    const { unmount } = render(
+      <ActionStatusProvider>
+        <ToolsPage />
+      </ActionStatusProvider>,
+    );
+    fireEvent.change(screen.getByLabelText('Buscar juego por código'), { target: { value: '123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar código' }));
+    const link = await screen.findByRole('link', { name: /En caja #12 · Santa Fe → AMBA · abierta/ });
+    expect(link).toHaveAttribute('href', '/boxes/in/5/77');
+    unmount();
+
+    mockUseApi.mockReturnValue({ execute: jest.fn().mockResolvedValue({ ...game, box: null }) });
+    render(
+      <ActionStatusProvider>
+        <ToolsPage />
+      </ActionStatusProvider>,
+    );
+    fireEvent.change(screen.getByLabelText('Buscar juego por código'), { target: { value: '123' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar código' }));
+    await screen.findByText('Catan');
+    expect(screen.queryByText(/En caja/)).not.toBeInTheDocument();
+  });
 });

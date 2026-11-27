@@ -119,6 +119,7 @@ const ControlPanelModal: React.FC<ControlPanelModalProps> = ({ isOpen, onClose, 
                 gameActionSuccess={null}
                 gameActionError={gameActionError}
                 onGameAction={handleGameAction}
+                onNavigate={() => onClose(hasAnyActionSucceededThisSession)}
               />
             </>
           )}
