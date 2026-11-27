@@ -274,4 +274,64 @@ describe('WindowConfigPage', () => {
       expect(screen.queryByText(/sin ventanilla/)).not.toBeInTheDocument();
     });
   });
+
+  describe('Configuración Local del Display: cola de llamado', () => {
+    const openConfig = async () => {
+      fireEvent.click(await screen.findByRole('button', { name: /Configuración Local del Display/ }));
+    };
+    const storedConfig = () => JSON.parse(localStorage.getItem('globalDisplayConfig') as string);
+    const queueSwitch = () => screen.getByRole('switch', { name: /Llamar a la fila de a pocos/ });
+    const slotsField = () => screen.getByLabelText('Personas llamadas a la vez');
+
+    beforeEach(() => serverHas([{ id: 1, name: 'V1', tables: ['10'] }]));
+
+    it('shows the switch and the slots field', async () => {
+      renderPage();
+      await openConfig();
+      expect(queueSwitch()).toBeInTheDocument();
+      expect(slotsField()).toBeInTheDocument();
+    });
+
+    it('defaults to on with 4 slots', async () => {
+      renderPage();
+      await openConfig();
+      expect(queueSwitch()).toHaveAttribute('aria-checked', 'true');
+      expect(slotsField()).toHaveValue(4);
+    });
+
+    it('shows the stored values', async () => {
+      localStorage.setItem('globalDisplayConfig', JSON.stringify({ maxUsers: 10, pollingInterval: 10, queueMode: false, callSlots: 7 }));
+      renderPage();
+      await openConfig();
+      expect(queueSwitch()).toHaveAttribute('aria-checked', 'false');
+      expect(slotsField()).toHaveValue(7);
+    });
+
+    it('saves the switch', async () => {
+      renderPage();
+      await openConfig();
+      fireEvent.click(queueSwitch());
+      expect(queueSwitch()).toHaveAttribute('aria-checked', 'false');
+      expect(storedConfig().queueMode).toBe(false);
+    });
+
+    it('saves the slots and clamps them', async () => {
+      renderPage();
+      await openConfig();
+      fireEvent.change(slotsField(), { target: { value: '6' } });
+      expect(storedConfig().callSlots).toBe(6);
+      fireEvent.change(slotsField(), { target: { value: '20' } });
+      expect(storedConfig().callSlots).toBe(12);
+      expect(slotsField()).toHaveValue(12);
+    });
+
+    it('does not alter maxUsers nor pollingInterval', async () => {
+      localStorage.setItem('globalDisplayConfig', JSON.stringify({ maxUsers: 8, pollingInterval: 25 }));
+      renderPage();
+      await openConfig();
+      fireEvent.click(queueSwitch());
+      fireEvent.change(slotsField(), { target: { value: '5' } });
+      expect(storedConfig()).toMatchObject({ maxUsers: 8, pollingInterval: 25, queueMode: false, callSlots: 5 });
+    });
+  });
 });
