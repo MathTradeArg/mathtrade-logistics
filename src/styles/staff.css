@@ -144,4 +144,22 @@
     page-break-after: auto;
     break-after: auto;
   }
+
+  .print-sheet-a5 {
+    width: 100% !important;
+    height: 134mm !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    page-break-after: always;
+    break-after: page;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .print-sheet-a5:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
 }

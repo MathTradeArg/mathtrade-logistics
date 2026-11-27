@@ -62,7 +62,7 @@ function BoxCircleSymbol({ fill }: { fill: CircleFill }) {
     <div className="flex h-full w-full flex-col items-center justify-center rounded-xl border-4 border-black bg-white p-4 print:p-2 text-center">
       <svg
         viewBox="0 0 200 200"
-        className="h-52 w-52 sm:h-60 sm:w-60 print:h-36 print:w-36 text-black"
+        className="h-52 w-52 sm:h-60 sm:w-60 print:h-28 print:w-28 text-black"
         role="img"
         aria-label={
           isFilled
@@ -890,13 +890,13 @@ function PrintPageContent() {
             return (
               <section
                 key={item.key}
-                className="print-sheet rounded-xl border-4 border-black bg-white p-6 print:p-4 text-black"
+                className="print-sheet-a5 flex flex-col rounded-xl border-4 border-black bg-white p-6 print:p-4 text-black"
               >
                 {/* Top Header: Destination + Giant Circle Symbol (for CABA) + Box Number */}
-                <div className="grid grid-cols-1 gap-4 border-b-4 border-black pb-4 print:pb-2 sm:grid-cols-12 sm:items-stretch">
+                <div className="grid grid-cols-1 gap-4 border-b-4 border-black pb-4 print:pb-2 sm:grid-cols-12 sm:items-stretch print:grid-cols-12 print:items-stretch print:gap-3">
                   <div
                     className={`flex flex-col justify-between ${
-                      item.circleFill ? 'sm:col-span-4' : 'sm:col-span-8'
+                      item.circleFill ? 'sm:col-span-4 print:col-span-4' : 'sm:col-span-8 print:col-span-8'
                     }`}
                   >
                     <div>
@@ -933,27 +933,27 @@ function PrintPageContent() {
                     </div>
 
                     {item.payOnDelivery && (
-                      <div className="mt-4 inline-block rounded-lg border-4 border-black bg-black px-4 py-2 text-center text-2xl font-black tracking-wider text-white uppercase print:border-black print:text-black print:bg-white">
+                      <div className="mt-4 print:mt-2 inline-block rounded-lg border-4 border-black bg-black px-4 py-2 print:py-1 text-center text-2xl print:text-xl font-black tracking-wider text-white uppercase print:border-black print:text-black print:bg-white">
                         PAGO EN DESTINO
                       </div>
                     )}
                   </div>
 
                   {item.circleFill && (
-                    <div className="sm:col-span-5 flex items-center justify-center">
+                    <div className="sm:col-span-5 print:col-span-5 flex items-center justify-center">
                       <BoxCircleSymbol fill={item.circleFill} />
                     </div>
                   )}
 
                   <div
                     className={`${
-                      item.circleFill ? 'sm:col-span-3' : 'sm:col-span-4'
-                    } flex flex-col justify-between rounded-xl border-4 border-black p-3 text-center`}
+                      item.circleFill ? 'sm:col-span-3 print:col-span-3' : 'sm:col-span-4 print:col-span-4'
+                    } flex flex-col justify-between rounded-xl border-4 border-black p-3 print:p-2 text-center`}
                   >
                     <span className="text-caption font-black tracking-wider uppercase">
                       CAJA Nº
                     </span>
-                    <div className="my-auto flex min-h-24 items-center justify-center">
+                    <div className="my-auto flex min-h-24 print:min-h-12 items-center justify-center">
                       {boxNumberText.trim() ? (
                         <span className="text-4xl font-black">{boxNumberText}</span>
                       ) : (
@@ -969,7 +969,7 @@ function PrintPageContent() {
                 </div>
 
                 {/* Middle: Destination Address & Recipient Referrer */}
-                <div className="mt-4 print:mt-2 grid grid-cols-1 gap-4 border-b-4 border-black pb-4 print:pb-2 sm:grid-cols-2">
+                <div className="mt-4 print:mt-2 grid flex-1 content-start grid-cols-1 gap-4 border-b-4 border-black pb-4 print:pb-2 sm:grid-cols-2 print:grid-cols-2 print:gap-3">
                   <div>
                     <p className="text-caption font-black tracking-wider uppercase">
                       DIRECCIÓN / SUCURSAL VÍA CARGO DESTINO
@@ -1020,7 +1020,7 @@ function PrintPageContent() {
                   <p className="text-caption font-black tracking-wider uppercase">
                     ENVÍA (DATOS DEL REFERENTE REMITENTE)
                   </p>
-                  <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 print:grid-cols-2 print:gap-x-6 print:gap-y-2">
                     <div className="flex items-end gap-2">
                       <span className="text-body font-bold whitespace-nowrap">Localidad origen:</span>
                       {senderCity.trim() ? (
@@ -1028,7 +1028,7 @@ function PrintPageContent() {
                           {senderCity}
                         </span>
                       ) : (
-                        <span className="flex-1 border-b-2 border-dashed border-black py-2" />
+                        <span className="flex-1 border-b-2 border-dashed border-black py-2 print:py-3" />
                       )}
                     </div>
                     <div className="flex items-end gap-2">
@@ -1038,7 +1038,7 @@ function PrintPageContent() {
                           {senderName}
                         </span>
                       ) : (
-                        <span className="flex-1 border-b-2 border-dashed border-black py-2" />
+                        <span className="flex-1 border-b-2 border-dashed border-black py-2 print:py-3" />
                       )}
                     </div>
                     <div className="flex items-end gap-2">
@@ -1048,7 +1048,7 @@ function PrintPageContent() {
                           {senderDni}
                         </span>
                       ) : (
-                        <span className="flex-1 border-b-2 border-dashed border-black py-2" />
+                        <span className="flex-1 border-b-2 border-dashed border-black py-2 print:py-3" />
                       )}
                     </div>
                     <div className="flex items-end gap-2">
@@ -1058,7 +1058,7 @@ function PrintPageContent() {
                           {senderPhone}
                         </span>
                       ) : (
-                        <span className="flex-1 border-b-2 border-dashed border-black py-2" />
+                        <span className="flex-1 border-b-2 border-dashed border-black py-2 print:py-3" />
                       )}
                     </div>
                   </div>
@@ -1152,6 +1152,7 @@ function PrintPageContent() {
       </div>
       {/* Outside the sheets container so the last sheet stays :last-child (no blank trailing page). */}
       {tab !== 'labels' && <style>{'@page { size: A4 landscape; margin: 10mm; }'}</style>}
+      {tab === 'labels' && <style>{'@page { size: A5 landscape; margin: 6mm; }'}</style>}
     </StaffPage>
   );
 }
