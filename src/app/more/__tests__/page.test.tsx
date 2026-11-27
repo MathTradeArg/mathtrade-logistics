@@ -26,7 +26,7 @@ const EVENT_SHEET_BUTTONS = [
   'Envíos cargados',
   'Cobro del interior',
 ];
-const EXPORT_BUTTON = 'Descargar planilla del evento (Excel)';
+const EXPORT_BUTTON = 'Planilla del evento';
 
 describe('MorePage', () => {
   beforeEach(() => {
@@ -168,6 +168,8 @@ describe('MorePage', () => {
     expect(screen.queryByText(/Mi rol/)).not.toBeInTheDocument();
   });
 
+  const openSheets = () => fireEvent.click(screen.getByRole('button', { name: /Planillas \(Excel\)/ }));
+
   describe('an admin downloads the event sheet (plan B on paper)', () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
@@ -177,6 +179,7 @@ describe('MorePage', () => {
       const download = jest.fn();
       mockUseOperationalExport.mockReturnValue({ download, isLoading: false, error: null, lastDownloadedAt: null });
       render(<MorePage />);
+      openSheets();
       fireEvent.click(screen.getByRole('button', { name: EXPORT_BUTTON }));
       expect(download).toHaveBeenCalledTimes(1);
       expect(screen.queryByText(/Descargada a las/)).not.toBeInTheDocument();
@@ -186,6 +189,7 @@ describe('MorePage', () => {
       const download = jest.fn();
       mockUseOperationalExport.mockReturnValue({ download, isLoading: true, error: null, lastDownloadedAt: null });
       render(<MorePage />);
+      openSheets();
       const button = screen.getByRole('button', { name: 'Armando la planilla...' });
       expect(button).toBeDisabled();
       fireEvent.click(button);
@@ -198,6 +202,7 @@ describe('MorePage', () => {
         download, isLoading: false, error: 'No hay conexión o el servidor tardó demasiado. Probá de nuevo.', lastDownloadedAt: null,
       });
       render(<MorePage />);
+      openSheets();
       expect(screen.getByRole('alert')).toHaveTextContent('No hay conexión o el servidor tardó demasiado. Probá de nuevo.');
       const button = screen.getByRole('button', { name: EXPORT_BUTTON });
       expect(button).toBeEnabled();
@@ -210,10 +215,21 @@ describe('MorePage', () => {
         download: jest.fn(), isLoading: false, error: null, lastDownloadedAt: new Date(2026, 10, 8, 9, 5, 30),
       });
       render(<MorePage />);
+      openSheets();
       expect(screen.getByText('Descargada a las 09:05')).toBeInTheDocument();
     });
   });
   describe('an admin downloads the six event spreadsheets', () => {
+    it('groups the sheets under one "Planillas (Excel)" button, closed until tapped', () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
+      render(<MorePage />);
+      expect(screen.queryByRole('button', { name: EXPORT_BUTTON })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Cajas entrantes' })).not.toBeInTheDocument();
+      openSheets();
+      expect(screen.getByRole('button', { name: EXPORT_BUTTON })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Cajas entrantes' })).toBeInTheDocument();
+    });
+
     it('hides them from volunteers and referrers', () => {
       mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: false, isLoading: false, role: 'boxes' });
       render(<MorePage />);
@@ -225,6 +241,7 @@ describe('MorePage', () => {
     it('shows the six buttons with their help line to the organizer', () => {
       mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
       render(<MorePage />);
+      openSheets();
       EVENT_SHEET_BUTTONS.forEach((name) => {
         expect(screen.getByRole('button', { name })).toBeEnabled();
       });
@@ -240,6 +257,7 @@ describe('MorePage', () => {
     it('each button uses its own endpoint and file prefix', () => {
       mockUseAuth.mockReturnValue({ isAuthenticated: true, isAdmin: true, isLoading: false });
       render(<MorePage />);
+      openSheets();
       expect(mockUseXlsxExport.mock.calls.map((c) => [c[0], c[1]])).toEqual([
         ['incoming-boxes', 'cajas_entrantes'],
         ['outgoing-games', 'juegos_que_salen'],
@@ -267,6 +285,7 @@ describe('MorePage', () => {
         return { download: downloads[i], lastDownloadedAt: i === 3 ? new Date(2026, 10, 8, 9, 5) : null, ...states[i] };
       });
       render(<MorePage />);
+      openSheets();
       expect(screen.getByRole('button', { name: /Armando.*Juegos que salen|Juegos que salen/ })).toBeDisabled();
       expect(screen.getByRole('button', { name: 'Cajas entrantes' })).toBeEnabled();
       expect(screen.getAllByRole('alert')).toHaveLength(1);

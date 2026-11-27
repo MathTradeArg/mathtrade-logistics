@@ -53,6 +53,7 @@ export default function MorePage() {
   const { isAuthenticated, isAdmin, isLoading: authIsLoading, role, cityAccess } = useAuth();
   const { eventPhase, isLoadingEventPhase, updateEventPhase } = useEventPhase();
   const [isUpdatingPhase, setIsUpdatingPhase] = useState(false);
+  const [sheetsOpen, setSheetsOpen] = useState(false);
   const operationalExport = useOperationalExport();
 
   const [pendingPhase, setPendingPhase] = useState<number | null>(null);
@@ -164,6 +165,41 @@ export default function MorePage() {
         <li>
           <Link href="/more/print" className={rowClass}>Imprimir etiquetas, sectores y mesas</Link>
         </li>
+        {isAdmin && (
+          <li>
+            <button
+              type="button"
+              className={rowClass}
+              aria-expanded={sheetsOpen}
+              onClick={() => setSheetsOpen((open) => !open)}
+            >
+              Planillas (Excel) {sheetsOpen ? '▲' : '▼'}
+            </button>
+            {sheetsOpen && (
+              <ul className="mt-3 flex flex-col gap-3">
+                <li>
+                  <button
+                    type="button"
+                    className={`${rowClass} disabled:opacity-60`}
+                    disabled={operationalExport.isLoading}
+                    onClick={() => operationalExport.download()}
+                  >
+                    {operationalExport.isLoading ? 'Armando la planilla...' : 'Planilla del evento'}
+                  </button>
+                  {operationalExport.error && <StaffBanner>{operationalExport.error}</StaffBanner>}
+                  {operationalExport.lastDownloadedAt && (
+                    <p className="mt-2 px-1 text-body text-gray-500">
+                      Descargada a las {formatClock(operationalExport.lastDownloadedAt)}
+                    </p>
+                  )}
+                </li>
+                {EVENT_SHEET_BUTTONS.map((b) => (
+                  <EventSheetButton key={b.sheet.endpoint} {...b} />
+                ))}
+              </ul>
+            )}
+          </li>
+        )}
       </ul>
 
       {isAdmin && (
@@ -228,25 +264,6 @@ export default function MorePage() {
                 Abrir pantalla de retiros (tele)
               </button>
             </li>
-            <li>
-              <button
-                type="button"
-                className={`${rowClass} disabled:opacity-60`}
-                disabled={operationalExport.isLoading}
-                onClick={() => operationalExport.download()}
-              >
-                {operationalExport.isLoading ? 'Armando la planilla...' : 'Descargar planilla del evento (Excel)'}
-              </button>
-              {operationalExport.error && <StaffBanner>{operationalExport.error}</StaffBanner>}
-              {operationalExport.lastDownloadedAt && (
-                <p className="mt-2 px-1 text-body text-gray-500">
-                  Descargada a las {formatClock(operationalExport.lastDownloadedAt)}
-                </p>
-              )}
-            </li>
-            {EVENT_SHEET_BUTTONS.map((b) => (
-              <EventSheetButton key={b.sheet.endpoint} {...b} />
-            ))}
           </ul>
         </div>
       )}
