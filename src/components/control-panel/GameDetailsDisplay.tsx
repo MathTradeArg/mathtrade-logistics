@@ -6,6 +6,8 @@ import { LoadingSpinner } from '@/components/common/ui';
 import { useHapticClick } from '@/hooks/useHapticClick';
 import { formatTradeCode } from '@/utils/tradeCode';
 import { REVERT_DELIVERY_WARNING } from '@/utils/revertDeliveryWarning';
+import { currentBoxHref, currentBoxSummary } from '@/components/staff/CurrentBoxLine';
+import Link from 'next/link';
 
 interface GameDetailsDisplayProps {
   gameDetail: GameDetail;
@@ -15,6 +17,8 @@ interface GameDetailsDisplayProps {
   gameActionSuccess: string | null;
   gameActionError: string | null;
   onGameAction: (gameId: number, newStatus: GameStatusCode) => void;
+  /** Called when following the box link, so the modal does not cover the box screen. */
+  onNavigate?: () => void;
 }
 
 const DetailItem = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: React.ReactNode }) => (
@@ -35,6 +39,7 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
   gameActionSuccess,
   gameActionError,
   onGameAction,
+  onNavigate,
 }) => {
   const {
     assigned_trade_code,
@@ -44,7 +49,9 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
     status,
     table_number,
     change_by,
+    box,
   } = gameDetail;
+  const boxHref = box ? currentBoxHref(box) : null;
   const { title } = item_to;
 
   const handleAction = useHapticClick((newStatus: GameStatusCode) => {
@@ -64,6 +71,15 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
         <DetailItem icon={User} label="A" value={`${member_to.first_name} ${member_to.last_name}`} />
         <DetailItem icon={Package} label="Estado" value={GameStatusMap[status] || 'Desconocido'} />
         {table_number && <DetailItem icon={MapPin} label="Destino" value={table_number} />}
+        {box && (
+          <DetailItem
+            icon={Package}
+            label="Caja"
+            value={boxHref
+              ? <Link href={boxHref} onClick={onNavigate} className="font-semibold text-primary underline">{currentBoxSummary(box)}</Link>
+              : currentBoxSummary(box)}
+          />
+        )}
         {change_by && <DetailItem icon={Info} label="Último cambio por" value={`${change_by.first_name} ${change_by.last_name}`} />}
       </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from '@/components/common/ui';
-import { ProblemHeader, StaffDialog, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
+import { CurrentBoxLine, ProblemHeader, StaffDialog, StaffEmpty, StaffError, StaffPage, StaffSearch } from '@/components/staff';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { bulkUpdateTradeStatus } from '@/hooks/boxes/boxApi';
 import { useApi } from '@/hooks/useApi';
@@ -103,6 +103,7 @@ export default function ToolsPage() {
         <div className="mt-4 rounded-lg bg-white p-4">
           <p className="font-medium">{game.item_to?.title || `Código ${formatTradeCode(game.assigned_trade_code)}`}</p>
           <p className="mt-1 text-body text-gray-500">{formatTradeCode(game.assigned_trade_code)} · estado {game.status}</p>
+          <CurrentBoxLine box={game.box} />
           <div className="mt-4 flex flex-col gap-3">
             {showEvento && (
               <button type="button" onClick={() => setPendingStatus(5)} className="min-h-14 rounded-lg bg-want font-semibold text-white">Marcar en evento</button>
