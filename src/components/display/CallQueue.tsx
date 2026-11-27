@@ -14,7 +14,7 @@ export default function CallQueue({ calling, waiting }: { calling: UserWithWindo
   return (
     <section className="flex flex-col gap-6">
       <p className="text-center text-2xl text-gray-700 md:text-3xl">
-        Tené a mano tu QR y acercate a la boca cuando veas tu nombre
+        Tené a mano tu QR y acercate a retirar tus juegos cuando veas tu nombre
       </p>
       {calling.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">

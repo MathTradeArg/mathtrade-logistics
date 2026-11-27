@@ -13,7 +13,7 @@ const person = (id: number, first: string, last: string): UserWithWindow => ({
   table_number: '7',
 });
 
-const FIXED_MESSAGE = 'Tené a mano tu QR y acercate a la boca cuando veas tu nombre';
+const FIXED_MESSAGE = 'Tené a mano tu QR y acercate a retirar tus juegos cuando veas tu nombre';
 
 describe('CallQueue', () => {
   it('shows the fixed message', () => {

@@ -294,7 +294,7 @@ export default function WindowConfigPage() {
                         <div>
                           <p className="text-body font-medium text-primary">Llamar a la fila de a pocos</p>
                           <p className="text-caption text-primary mt-1">
-                            La tele llama a pocas personas a la vez a la boca. Apagado: tarjetas por ventanilla.
+                            La tele llama a pocas personas a la vez. Apagado: tarjetas por ventanilla.
                           </p>
                         </div>
                       </div>

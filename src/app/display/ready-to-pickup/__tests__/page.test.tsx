@@ -204,7 +204,7 @@ describe('DisplayReadyToPickupPage polling', () => {
 });
 
 describe('DisplayReadyToPickupPage con cola activa', () => {
-  const FIXED_MESSAGE = 'Tené a mano tu QR y acercate a la boca cuando veas tu nombre';
+  const FIXED_MESSAGE = 'Tené a mano tu QR y acercate a retirar tus juegos cuando veas tu nombre';
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -391,7 +391,7 @@ describe('DisplayReadyToPickupPage cola activa con polling', () => {
 
 describe('DisplayReadyToPickupPage segun la fase del evento', () => {
   const RECEPTION = 'Acercate a entregar tus juegos con tu QR en mano';
-  const QUEUE_MESSAGE = 'Tené a mano tu QR y acercate a la boca cuando veas tu nombre';
+  const QUEUE_MESSAGE = 'Tené a mano tu QR y acercate a retirar tus juegos cuando veas tu nombre';
   let fetchUsers: jest.Mock;
   let fetchConfig: jest.Mock;
 
