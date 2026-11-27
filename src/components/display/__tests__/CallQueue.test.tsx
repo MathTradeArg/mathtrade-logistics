@@ -49,6 +49,21 @@ describe('CallQueue', () => {
     expect(green?.querySelector('svg')).not.toBeInTheDocument();
   });
 
+  it('shows a warning icon only for no_show users, keeping the present style', () => {
+    const noShow = { ...person(1, 'lucia', 'perez'), status: 'no_show' as const };
+    const present = person(2, 'Ana', 'Gomez');
+    render(<CallQueue calling={[noShow, present]} waiting={0} />);
+    const warned = screen.getByText('Lucia Perez').closest('li');
+    const plain = screen.getByText('Ana Gomez').closest('li');
+    const icon = warned?.querySelector('svg.lucide-triangle-alert');
+    expect(icon).toBeInTheDocument();
+    expect(icon).toHaveClass('fill-sun', 'text-ink');
+    expect(warned?.querySelector('svg.lucide-user-x')).not.toBeInTheDocument();
+    expect(warned).toHaveClass('border-want', 'bg-want/10', 'text-center');
+    expect(warned?.querySelector('svg.lucide-refresh-cw')).not.toBeInTheDocument();
+    expect(plain?.querySelector('svg')).not.toBeInTheDocument();
+  });
+
   it('shows the number waiting', () => {
     render(<CallQueue calling={[person(1, 'Ana', 'Gomez')]} waiting={5} />);
     expect(screen.getByText('En espera: 5')).toBeInTheDocument();

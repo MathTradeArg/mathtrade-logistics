@@ -1,4 +1,4 @@
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, TriangleAlert } from 'lucide-react';
 import type { UserWithWindow } from '@/types/window';
 
 export function displayName(user: Pick<UserWithWindow, 'first_name' | 'last_name'>): string {
@@ -26,6 +26,7 @@ export default function CallQueue({ calling, waiting }: { calling: UserWithWindo
           <ul className="flex flex-col gap-4">
             {calling.map((user) => {
               const receiving = user.status === 'receiving';
+              const noShow = user.status === 'no_show';
               return (
                 <li
                   key={user.id}
@@ -35,6 +36,7 @@ export default function CallQueue({ calling, waiting }: { calling: UserWithWindo
                 >
                   <p className="flex items-center justify-center gap-4 break-words text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
                     {receiving && <RefreshCw className="shrink-0 text-primary" size={48} aria-hidden="true" />}
+                    {noShow && <TriangleAlert className="shrink-0 fill-sun text-ink" size={48} aria-hidden="true" />}
                     <span>{displayName(user)}</span>
                   </p>
                 </li>
