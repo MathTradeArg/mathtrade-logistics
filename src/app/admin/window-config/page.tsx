@@ -7,9 +7,18 @@ import { useAuth } from '@/hooks/useAuth';
 import { useApi } from '@/hooks/useApi';
 import { useActionStatus } from '@/contexts/ActionStatusContext';
 import { useHapticClick } from '@/hooks/useHapticClick';
-import { getGlobalDisplayConfig, updateGlobalMaxUsers, updateGlobalPollingInterval } from '@/utils/windowStorage';
+import {
+  getCallSlots,
+  getGlobalDisplayConfig,
+  MAX_CALL_SLOTS,
+  MIN_CALL_SLOTS,
+  setCallSlots,
+  setQueueMode,
+  updateGlobalMaxUsers,
+  updateGlobalPollingInterval,
+} from '@/utils/windowStorage';
 import { apiErrorMessage } from '@/components/city/errors';
-import { LoadingSpinner } from '@/components/common/ui';
+import { LoadingSpinner, Switch } from '@/components/common/ui';
 import StaffDialog from '@/components/staff/StaffDialog';
 import { StaffBanner } from '@/components/staff/StaffPage';
 
@@ -37,6 +46,8 @@ export default function WindowConfigPage() {
   const [availableTables, setAvailableTables] = useState<string[]>([]);
   const [globalMaxUsers, setGlobalMaxUsers] = useState(10);
   const [pollingInterval, setPollingInterval] = useState(10);
+  const [queueMode, setQueueModeState] = useState(true);
+  const [callSlots, setCallSlotsState] = useState(4);
   const [showGlobalConfig, setShowGlobalConfig] = useState(false);
   // A failed load must never show the form: saving it would POST an empty
   // list and wipe every window on the server.
@@ -57,6 +68,8 @@ export default function WindowConfigPage() {
       const globalConfig = getGlobalDisplayConfig();
       setGlobalMaxUsers(globalConfig.maxUsers);
       setPollingInterval(globalConfig.pollingInterval);
+      setQueueModeState(globalConfig.queueMode);
+      setCallSlotsState(globalConfig.callSlots);
       
       const configData = await fetchWindowConfig();
       if (!Array.isArray(configData)) {
@@ -116,6 +129,16 @@ export default function WindowConfigPage() {
   const handlePollingIntervalChange = (newInterval: number) => {
     setPollingInterval(newInterval);
     updateGlobalPollingInterval(newInterval);
+  };
+
+  const handleQueueModeChange = (value: boolean) => {
+    setQueueModeState(value);
+    setQueueMode(value);
+  };
+
+  const handleCallSlotsChange = (raw: number) => {
+    setCallSlots(raw);
+    setCallSlotsState(getCallSlots());
   };
 
   const assignTableToWindow = (windowId: number, table: string) => {
@@ -259,6 +282,35 @@ export default function WindowConfigPage() {
                         <p className="text-caption text-primary mt-1">
                           Frecuencia de actualización automática del display
                         </p>
+                      </div>
+                    </div>
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-start gap-3">
+                        <Switch
+                          checked={queueMode}
+                          onCheckedChange={handleQueueModeChange}
+                          aria-label="Llamar a la fila de a pocos"
+                        />
+                        <div>
+                          <p className="text-body font-medium text-primary">Llamar a la fila de a pocos</p>
+                          <p className="text-caption text-primary mt-1">
+                            La tele llama a pocas personas a la vez. Apagado: tarjetas por ventanilla.
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <label htmlFor="call-slots" className="block text-body font-medium text-primary mb-1">
+                          Personas llamadas a la vez
+                        </label>
+                        <input
+                          id="call-slots"
+                          type="number"
+                          min={MIN_CALL_SLOTS}
+                          max={MAX_CALL_SLOTS}
+                          value={callSlots}
+                          onChange={(e) => handleCallSlotsChange(parseInt(e.target.value) || 4)}
+                          className="min-h-14 rounded-lg border border-gray-200 bg-white px-3 text-gray-900 w-full"
+                        />
                       </div>
                     </div>
                   </div>

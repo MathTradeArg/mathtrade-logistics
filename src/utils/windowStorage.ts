@@ -5,20 +5,44 @@ export interface WindowMaxUsersConfig {
 export interface GlobalDisplayConfig {
   maxUsers: number;
   pollingInterval: number; // en segundos
+  queueMode: boolean;
+  callSlots: number;
 }
+
+export const DEFAULT_CALL_SLOTS = 4;
+export const MIN_CALL_SLOTS = 1;
+export const MAX_CALL_SLOTS = 12;
 
 const STORAGE_KEY = 'windowMaxUsers';
 const GLOBAL_CONFIG_KEY = 'globalDisplayConfig';
 
+const defaultGlobalConfig = (): GlobalDisplayConfig => ({
+  maxUsers: 10,
+  pollingInterval: 10,
+  queueMode: true,
+  callSlots: DEFAULT_CALL_SLOTS,
+});
+
+const clampCallSlots = (value: number): number =>
+  Number.isFinite(value)
+    ? Math.min(MAX_CALL_SLOTS, Math.max(MIN_CALL_SLOTS, Math.round(value)))
+    : DEFAULT_CALL_SLOTS;
+
 export const getGlobalDisplayConfig = (): GlobalDisplayConfig => {
-  if (typeof window === 'undefined') return { maxUsers: 10, pollingInterval: 10 };
+  if (typeof window === 'undefined') return defaultGlobalConfig();
   
   try {
     const stored = localStorage.getItem(GLOBAL_CONFIG_KEY);
-    return stored ? JSON.parse(stored) : { maxUsers: 10, pollingInterval: 10 };
+    if (!stored) return defaultGlobalConfig();
+    const merged = { ...defaultGlobalConfig(), ...JSON.parse(stored) };
+    return {
+      ...merged,
+      callSlots: clampCallSlots(merged.callSlots),
+      queueMode: typeof merged.queueMode === 'boolean' ? merged.queueMode : true,
+    };
   } catch (error) {
     console.error('Error al leer configuración global:', error);
-    return { maxUsers: 10, pollingInterval: 10 };
+    return defaultGlobalConfig();
   }
 };
 
@@ -51,6 +75,22 @@ export const getGlobalPollingInterval = (): number => {
 export const updateGlobalPollingInterval = (seconds: number): void => {
   const config = getGlobalDisplayConfig();
   config.pollingInterval = seconds;
+  setGlobalDisplayConfig(config);
+};
+
+export const getQueueMode = (): boolean => getGlobalDisplayConfig().queueMode;
+
+export const setQueueMode = (value: boolean): void => {
+  const config = getGlobalDisplayConfig();
+  config.queueMode = value;
+  setGlobalDisplayConfig(config);
+};
+
+export const getCallSlots = (): number => getGlobalDisplayConfig().callSlots;
+
+export const setCallSlots = (value: number): void => {
+  const config = getGlobalDisplayConfig();
+  config.callSlots = clampCallSlots(value);
   setGlobalDisplayConfig(config);
 };
 

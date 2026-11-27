@@ -231,7 +231,7 @@ describe('DeliverPage', () => {
     expect(mockBulkUpdate).toHaveBeenCalledWith({ status: 6, assigned_trade_codes: [101], user_uuid: 'user-qr-code' });
   });
 
-  it('does not mark completed when some trades remain undelivered', async () => {
+  it('marks user completed after a partial delivery even when other trades remain undelivered', async () => {
     mockFetchGames.mockResolvedValue({ games: mockMixedTrades, user: mockUser });
 
     render(<DeliverPage />);
@@ -246,6 +246,30 @@ describe('DeliverPage', () => {
     await waitFor(() => {
       expect(mockBulkUpdate).toHaveBeenCalledWith({ status: 6, assigned_trade_codes: [101], user_uuid: 'user-qr-code' });
     });
+
+    await waitFor(() => {
+      expect(mockExecute).toHaveBeenCalledWith({ user_id: 123, status: 'completed' });
+    });
+  });
+
+  it('does not mark completed when the bulk update fails', async () => {
+    mockFetchGames.mockResolvedValue({ games: mockMixedTrades, user: mockUser });
+    mockBulkUpdate.mockRejectedValue(new Error('boom'));
+    window.HTMLElement.prototype.scrollIntoView = jest.fn();
+
+    render(<DeliverPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Simulate Scan' }));
+    await waitFor(() => {
+      expect(screen.getByTestId('game-list')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Update First Item' }));
+
+    await waitFor(() => {
+      expect(mockBulkUpdate).toHaveBeenCalled();
+    });
+    await new Promise(r => setTimeout(r, 50));
 
     expect(mockExecute).not.toHaveBeenCalledWith({ user_id: 123, status: 'completed' });
   });
