@@ -40,7 +40,7 @@ describe('GameDetailsDisplay', () => {
     expect(screen.getByText('De:')).toBeInTheDocument();
     expect(screen.getByText('Juan Perez')).toBeInTheDocument();
     expect(screen.getByText('Estado:')).toBeInTheDocument();
-    expect(screen.getByText('Pendiente')).toBeInTheDocument();
+    expect(screen.getByText('En viaje directo')).toBeInTheDocument();
     expect(screen.getByText('Destino:')).toBeInTheDocument();
     expect(screen.getByText('Mesa 5')).toBeInTheDocument();
     expect(screen.getByText('Último cambio por:')).toBeInTheDocument();
@@ -116,7 +116,17 @@ describe('GameDetailsDisplay', () => {
       fireEvent.click(screen.getAllByRole('button', { name: 'Pendiente' })[0]);
 
       expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('esto no deshace el traspaso'));
-      expect(mockOnGameAction).toHaveBeenCalledWith(12345, 4);
+      expect(mockOnGameAction).toHaveBeenCalledWith(12345, 1);
+    });
+
+    // Rule: "Pendiente" puts the game back to 1 Created (not received), not
+    // 4, which is Transit Direct (in a city to city box).
+    it('"Pendiente" sends status 1 and asks about "Creado"', () => {
+      render(<GameDetailsDisplay {...defaultProps} isAdmin={true} gameDetail={{ ...baseGameDetail, status: 5 }} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Pendiente' }));
+
+      expect(window.confirm).toHaveBeenCalledWith('¿Seguro que quieres marcar este juego como "Creado"?');
+      expect(mockOnGameAction).toHaveBeenCalledWith(12345, 1);
     });
 
     it('a game that is not delivered does not get the transfer warning', () => {

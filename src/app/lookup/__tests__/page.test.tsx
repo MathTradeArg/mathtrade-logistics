@@ -1,6 +1,6 @@
 import { useApi } from '@/hooks/useApi';
 import { useAuth } from '@/hooks/useAuth';
-import type { DeliverTrade, GameBoxInfo, GameDetail, GameSearchResult, ReceiveTrade, TradeResponse } from '@/types';
+import type { DeliverTrade, GameBoxInfo, GameCurrentBox, GameDetail, GameSearchResult, ReceiveTrade, TradeResponse } from '@/types';
 import { PROBLEMS } from '@/config/problems';
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -542,6 +542,110 @@ describe('LookupPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Ver historial' }));
       expect(historyExecute).toHaveBeenLastCalledWith(undefined, 'user/uuid-qr/history/');
       expect(await screen.findAllByText('Catan (00101)')).not.toHaveLength(0);
+    });
+  });
+
+  describe('the box a game is in now', () => {
+    const cityBox: GameCurrentBox = {
+      id: 31, number: 12, origin_id: 4, origin_name: 'Santa Fe',
+      destination_id: 1, destination_name: 'AMBA', destination_code: 'AMB', closed: false,
+    };
+    const hubBox: GameCurrentBox = {
+      id: 32, number: 3, origin_id: 1, origin_name: 'AMBA',
+      destination_id: 4, destination_name: 'Córdoba', destination_code: 'COR', closed: true,
+    };
+
+    const openGame = (text: string) => {
+      fireEvent.click(screen.getByRole('button', { name: 'Juego' }));
+      fireEvent.change(screen.getByLabelText('Buscar juego por título o código'), { target: { value: text } });
+      fireEvent.click(screen.getByRole('button', { name: 'Buscar' }));
+    };
+
+    it('shows the box of a game in the detail, linked to its screen', async () => {
+      gameExecute.mockResolvedValue({ ...game, status: 2, box: cityBox });
+      render(<LookupPage />);
+      openGame('303');
+
+      const link = await screen.findByRole('link', { name: 'En caja #12 · Santa Fe → AMBA · abierta' });
+      expect(link).toHaveAttribute('href', '/boxes/in/4/31');
+      expect(screen.getByText('00303 · Mesa 7 · En viaje al evento')).toBeInTheDocument();
+    });
+
+    it('shows a box leaving AMBA with its label and no link', async () => {
+      gameExecute.mockResolvedValue({ ...game, status: 3, box: hubBox });
+      render(<LookupPage />);
+      openGame('303');
+
+      expect(await screen.findByText('En caja #COR-3 · AMBA → Córdoba · cerrada')).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /En caja/ })).not.toBeInTheDocument();
+      expect(screen.getByText('00303 · Mesa 7 · En viaje de vuelta')).toBeInTheDocument();
+    });
+
+    it('names an unnumbered box "en armado"', async () => {
+      gameExecute.mockResolvedValue({ ...game, status: 4, box: { ...cityBox, number: null, destination_name: 'Salta', destination_id: 9 } });
+      render(<LookupPage />);
+      openGame('303');
+
+      expect(await screen.findByText('En caja en armado · Santa Fe → Salta · abierta')).toBeInTheDocument();
+      expect(screen.getByText('00303 · Mesa 7 · En viaje directo')).toBeInTheDocument();
+    });
+
+    it.each([
+      ['null', null],
+      ['missing (older backend)', undefined],
+    ])('shows nothing when box is %s', async (_case, value) => {
+      gameExecute.mockResolvedValue({ ...game, box: value });
+      render(<LookupPage />);
+      openGame('303');
+
+      expect(await screen.findByText('00303 · Mesa 7 · En evento')).toBeInTheDocument();
+      expect(screen.queryByText(/En caja/)).not.toBeInTheDocument();
+    });
+
+    it('shows the box on the title search results', async () => {
+      const results: GameSearchResult[] = [
+        {
+          assigned_trade_code: 404, title: 'Azul', giver_first_name: 'Eva', giver_last_name: 'Ruiz',
+          receiver_first_name: 'Luis', receiver_last_name: 'Diaz', status: 4, status_display: 'Transit Direct',
+          box: { ...cityBox, destination_name: 'Salta', destination_id: 9, closed: true },
+        },
+        {
+          assigned_trade_code: 405, title: 'Azul 2', giver_first_name: 'Eva', giver_last_name: 'Ruiz',
+          receiver_first_name: 'Luis', receiver_last_name: 'Diaz', status: 1, status_display: 'Created', box: null,
+        },
+      ];
+      gameExecute.mockResolvedValue(results);
+      render(<LookupPage />);
+      openGame('azul');
+
+      const list = await screen.findByRole('list', { name: 'Juegos encontrados' });
+      expect(within(list).getByText('En caja #12 · Santa Fe → Salta · cerrada')).toBeInTheDocument();
+      expect(within(list).getAllByText(/En caja/)).toHaveLength(1);
+      expect(within(list).getByText('En viaje directo')).toBeInTheDocument();
+      expect(within(list).getByText('Creado')).toBeInTheDocument();
+    });
+
+    it('shows the box of each game of a participant', async () => {
+      memberExecute.mockImplementation((_body: unknown, path: string) => Promise.resolve(
+        path.endsWith('/games/receive/')
+          ? { ...receiveResponse, games: [{ ...receiveResponse.games[0], result: { ...receiveResponse.games[0].result, status_display: 'Transit to Event' }, box: cityBox }] }
+          : { ...deliverResponse, games: [{ ...deliverResponse.games[0], result: { ...deliverResponse.games[0].result, status_display: 'Transit Back' }, box: hubBox }] },
+      ));
+      render(<LookupPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'Elegir Ana' }));
+
+      expect(await screen.findByRole('link', { name: 'En caja #12 · Santa Fe → AMBA · abierta' })).toHaveAttribute('href', '/boxes/in/4/31');
+      expect(screen.getByText('En caja #COR-3 · AMBA → Córdoba · cerrada')).toBeInTheDocument();
+      expect(screen.getByText('00101 · Mesa 4 · En viaje al evento')).toBeInTheDocument();
+      expect(screen.getByText('00202 · Mesa B · En viaje de vuelta')).toBeInTheDocument();
+    });
+
+    it('shows no box line for participant games without box', async () => {
+      render(<LookupPage />);
+      fireEvent.click(screen.getByRole('button', { name: 'Elegir Ana' }));
+
+      expect(await screen.findByText('Catan')).toBeInTheDocument();
+      expect(screen.queryByText(/En caja/)).not.toBeInTheDocument();
     });
   });
 });

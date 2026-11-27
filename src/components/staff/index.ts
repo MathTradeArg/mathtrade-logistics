@@ -12,3 +12,4 @@ export { default as StaffSearch } from './StaffSearch';
 export { default as StaffSegmented } from './StaffSegmented';
 export { StaffTitleProvider, useStaffTitle, useStaffTitleValue } from './StaffTitleContext';
 export { default as ThumbCta } from './ThumbCta';
+export { default as CurrentBoxLine } from './CurrentBoxLine';

@@ -1,3 +1,4 @@
+import type { GameCurrentBox } from "@/types/game";
 import { Item } from "@/types/item";
 import { User } from "@/types/user";
 
@@ -6,6 +7,8 @@ export interface Trade {
   to_member: User | null,
   math_item_exchanged: Item,
   result: Result,
+  /** The box the game is in now; null = in no box, missing on an older backend. */
+  box?: GameCurrentBox | null,
 }
 export interface DeliverTrade extends Trade {
   from_member: User,
