@@ -20,7 +20,7 @@ export default function ToolsPage() {
   const [game, setGame] = useState<GameDetail | null>(null);
   const [gameError, setGameError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
-  const [pendingStatus, setPendingStatus] = useState<5 | 6 | 4 | null>(null);
+  const [pendingStatus, setPendingStatus] = useState<5 | 6 | 1 | null>(null);
   const [busy, setBusy] = useState(false);
 
   const handleCodeSearch = async (event: FormEvent) => {
@@ -76,6 +76,7 @@ export default function ToolsPage() {
 
   const showEvento = game && game.status < 5;
   const showEntregado = game && game.status < 6;
+  // Back to pending = 1 Created (not received); 4 is Transit Direct.
   const showPendiente = game && game.status > 4;
 
   return (
@@ -110,7 +111,7 @@ export default function ToolsPage() {
               <button type="button" onClick={() => setPendingStatus(6)} className="min-h-14 rounded-lg bg-brand font-semibold text-brand-ink hover:brightness-95">Marcar entregado</button>
             )}
             {showPendiente && (
-              <button type="button" onClick={() => setPendingStatus(4)} className="min-h-14 rounded-lg bg-warning font-semibold text-gray-900">Volver a pendiente</button>
+              <button type="button" onClick={() => setPendingStatus(1)} className="min-h-14 rounded-lg bg-warning font-semibold text-gray-900">Volver a pendiente</button>
             )}
           </div>
         </div>
@@ -126,8 +127,8 @@ export default function ToolsPage() {
       >
         {pendingStatus === 5 && 'Vas a marcar este juego como en evento. Avisá si no estás seguro.'}
         {pendingStatus === 6 && 'Vas a marcar este juego como entregado. Avisá si no estás seguro.'}
-        {pendingStatus === 4 && 'Vas a volver este juego a pendiente.'}
-        {pendingStatus === 4 && game?.status === 6 && (
+        {pendingStatus === 1 && 'Vas a volver este juego a pendiente (Creado, sin recibir).'}
+        {pendingStatus === 1 && game?.status === 6 && (
           <p className="mt-2 font-semibold text-gray-900">{REVERT_DELIVERY_WARNING}</p>
         )}
       </StaffDialog>

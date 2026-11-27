@@ -3,7 +3,8 @@ import { useApi } from '@/hooks/useApi';
 import { ActionStatusProvider } from '@/contexts/ActionStatusContext';
 import type { GameDetail } from '@/types';
 import '@testing-library/jest-dom';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { bulkUpdateTradeStatus } from '@/hooks/boxes/boxApi';
 import ToolsPage from '../page';
 
 jest.mock('@/hooks/useAuth');
@@ -90,7 +91,14 @@ describe('ToolsPage', () => {
 
   it('reverting a game En evento keeps the usual text', async () => {
     const dialog = await searchGame(5);
-    expect(dialog).toHaveTextContent('Vas a volver este juego a pendiente.');
+    expect(dialog).toHaveTextContent('Vas a volver este juego a pendiente (Creado, sin recibir).');
     expect(dialog).not.toHaveTextContent('traspaso');
+  });
+
+  // Rule: back to pending = 1 Created, not 4 (Transit Direct).
+  it('"Volver a pendiente" sends status 1', async () => {
+    const dialog = await searchGame(5);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Sí, forzar' }));
+    await waitFor(() => expect(bulkUpdateTradeStatus).toHaveBeenCalledWith([game.assigned_trade_code], 1));
   });
 });

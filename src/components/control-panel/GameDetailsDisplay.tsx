@@ -70,6 +70,7 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
       {isAdmin && (() => {
         const showEvento = (status < 5 || (status === 6 && isAdmin)) && status !== 5;
         const showEntregado = status < 6;
+        // "Pendiente" = back to 1 Created (not received); 4 is Transit Direct.
         const showPendiente = isAdmin && status > 4;
         if (!showEvento && !showEntregado && !showPendiente) return null;
         return (
@@ -96,7 +97,7 @@ export const GameDetailsDisplay: React.FC<GameDetailsDisplayProps> = ({
               )}
               {showPendiente && (
                   <button
-                    onClick={() => handleAction(4)}
+                    onClick={() => handleAction(1)}
                     disabled={isPerformingGameAction || actionsDisabledByPhase}
                     className="min-h-14 rounded-lg bg-warning px-4 text-body font-semibold text-gray-900 disabled:bg-cancel"
                   >
