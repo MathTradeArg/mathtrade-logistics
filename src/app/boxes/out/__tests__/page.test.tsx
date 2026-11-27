@@ -91,6 +91,31 @@ describe('BoxesOutPage', () => {
   });
 });
 
+describe('BoxesOutPage in the delivery phase', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ isAuthenticated: true, isLoading: false });
+    mockUseEventPhase.mockReturnValue({ eventPhase: 2, isLoadingEventPhase: false, errorEventPhase: null });
+    mockListItems.mockResolvedValue([
+      {
+        id: 1,
+        title: 'Catan',
+        assigned_trade_code: 101,
+        status: 5,
+        location: 8,
+        location_name: 'Córdoba',
+      },
+    ]);
+    mockListBoxes.mockResolvedValue([]);
+  });
+
+  it('lists destinations in phase 2 and does not block the screen', async () => {
+    render(<BoxesOutPage />, { wrapper });
+    expect(await screen.findByRole('link', { name: /Córdoba/ })).toHaveAttribute('href', '/boxes/out/8');
+    expect(screen.queryByText('El evento no empezó')).not.toBeInTheDocument();
+  });
+});
+
 describe('Santa Fe group from AMBA', () => {
   const mockListSeparateFromHub = boxApi.listSeparateFromHub as jest.Mock;
   const city = (id: number, title: string, location: number, name: string) => ({
