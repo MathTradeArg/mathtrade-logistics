@@ -163,3 +163,64 @@
     break-after: auto;
   }
 }
+
+.dice-loader {
+  position: relative;
+  display: grid;
+  height: 78px;
+  width: 44px;
+  place-items: start center;
+  perspective: 260px;
+}
+
+.dice-hop {
+  position: relative;
+  z-index: 1;
+  transform: translateY(18px);
+}
+
+.dice {
+  position: relative;
+  height: 40px;
+  width: 40px;
+  transform-style: preserve-3d;
+  transform: rotateX(-20deg) rotateX(0deg) rotateY(0deg);
+}
+
+.dice-face {
+  position: absolute;
+  inset: -2px;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  padding: 5px;
+  border: 2.5px solid color-mix(in srgb, var(--color-sun) 45%, var(--color-brand-ink));
+  border-radius: 3px;
+  background: var(--color-sun);
+  backface-visibility: hidden;
+}
+
+.dice-face i {
+  display: block;
+  height: 7px;
+  width: 7px;
+  place-self: center;
+  border-radius: 50%;
+  background: var(--color-ink);
+}
+
+.dice-face-1 { transform: translateZ(20px); filter: brightness(1.04); }
+.dice-face-2 { transform: rotateY(90deg) translateZ(20px); filter: brightness(0.9); }
+.dice-face-3 { transform: rotateY(180deg) translateZ(20px); filter: brightness(0.8); }
+.dice-face-4 { transform: rotateY(-90deg) translateZ(20px); filter: brightness(0.94); }
+.dice-face-5 { transform: rotateX(90deg) translateZ(20px); filter: brightness(1.1); }
+.dice-face-6 { transform: rotateX(-90deg) translateZ(20px); filter: brightness(0.74); }
+
+.dice-shadow {
+  position: absolute;
+  bottom: 1px;
+  z-index: 0;
+  height: 8px;
+  width: 34px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-ink) 18%, transparent);
+}

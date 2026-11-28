@@ -14,4 +14,15 @@ describe('LoadingSpinner', () => {
     render(<LoadingSpinner />);
     expect(screen.getByText('Cargando...')).toBeInTheDocument();
   });
+
+  it('keeps the loading-spinner test id', () => {
+    render(<LoadingSpinner />);
+    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+  });
+
+  it('renders the dice instead of the spinning ring', () => {
+    const { container } = render(<LoadingSpinner />);
+    expect(container.querySelectorAll('[data-dice-face]')).toHaveLength(6);
+    expect(container.querySelector('svg')).toBeNull();
+  });
 });
