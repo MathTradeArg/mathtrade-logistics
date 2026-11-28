@@ -13,6 +13,10 @@ jest.mock('next/navigation', () => ({
 jest.mock('@/components/common/ui/LoadingSpinner', () => ({
   LoadingSpinner: () => <div data-testid="loading-spinner">Loading...</div>,
 }));
+jest.mock('../EventProgress', () => ({
+  __esModule: true,
+  default: () => <div data-testid="event-progress" />,
+}));
 jest.mock('../NotificationsBell', () => ({
   __esModule: true,
   default: () => <div data-testid="notifications-bell" />,
@@ -171,5 +175,16 @@ describe('AppHeader', () => {
       expect(screen.queryByText('Panel de Control')).not.toBeInTheDocument();
       expect(screen.getByText('Cerrar Sesión')).toBeInTheDocument();
     });
+  });
+
+  it('shows the event progress strip to admins', () => {
+    mockUseAuth.mockReturnValue({ ...defaultAuthContext, isAdmin: true });
+    render(<AppHeader pageTitle="Más" />);
+    expect(screen.getByTestId('event-progress')).toBeInTheDocument();
+  });
+
+  it('hides the event progress strip from everyone else', () => {
+    render(<AppHeader pageTitle="Más" />);
+    expect(screen.queryByTestId('event-progress')).not.toBeInTheDocument();
   });
 });
