@@ -7,8 +7,12 @@ jest.mock('../useApi');
 const mockUseApi = useApi as jest.Mock;
 
 const sample = {
-  games: { received: 50, total: 200 },
-  users: { total: 40, ready: 10, received: 4 },
+  reception: { games: { done: 50, total: 200 }, users: { done: 20, total: 80 } },
+  delivery: {
+    games: { done: 10, total: 100 },
+    users: { done: 4, total: 40 },
+    ready: { done: 10, total: 40 },
+  },
 };
 
 describe('progressPercent', () => {

@@ -11,8 +11,12 @@ jest.mock('@/hooks/useEventProgress', () => ({
 const mockUseEventProgress = useEventProgress as jest.Mock;
 
 const sample = {
-  games: { received: 1234, total: 3612 },
-  users: { total: 400, ready: 100, received: 40 },
+  reception: { games: { done: 1234, total: 3612 }, users: { done: 100, total: 400 } },
+  delivery: {
+    games: { done: 50, total: 500 },
+    users: { done: 40, total: 200 },
+    ready: { done: 60, total: 200 },
+  },
 };
 
 describe('EventProgress', () => {
@@ -40,26 +44,36 @@ describe('EventProgress', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('opens the three percentages on tap', () => {
+  it('opens the five percentages on tap', () => {
     render(<EventProgress />);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /ver progreso/i }));
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByText('Juegos recibidos')).toBeInTheDocument();
-    expect(within(dialog).getByText('34 %')).toBeInTheDocument();
-    expect(within(dialog).getByText('Usuarios listos para retirar')).toBeInTheDocument();
-    expect(within(dialog).getByText('25 %')).toBeInTheDocument();
-    expect(within(dialog).getByText('Usuarios que ya retiraron')).toBeInTheDocument();
-    expect(within(dialog).getByText('10 %')).toBeInTheDocument();
+    const rows: [string, string][] = [
+      ['Juegos recibidos', '34 %'],
+      ['Usuarios recibidos', '25 %'],
+      ['Usuarios listos para entregarles sus juegos', '30 %'],
+      ['Juegos entregados', '10 %'],
+      ['Usuarios entregados', '20 %'],
+    ];
+    rows.forEach(([label, percent]) => {
+      const bar = within(dialog).getByRole('progressbar', { name: label });
+      expect(bar).toHaveAttribute('aria-valuenow', percent.replace(' %', ''));
+      expect(within(dialog).getByText(label)).toBeInTheDocument();
+      expect(within(dialog).getByText(percent)).toBeInTheDocument();
+    });
+    expect(within(dialog).getAllByRole('progressbar')).toHaveLength(5);
   });
 
-  it('shows the counts next to each percentage', () => {
+  it('shows the counts and the scope next to each percentage', () => {
     render(<EventProgress />);
     fireEvent.click(screen.getByRole('button', { name: /ver progreso/i }));
     const dialog = screen.getByRole('dialog');
-    expect(within(dialog).getByText('1234 de 3612')).toBeInTheDocument();
-    expect(within(dialog).getByText('100 de 400')).toBeInTheDocument();
-    expect(within(dialog).getByText('40 de 400')).toBeInTheDocument();
+    expect(within(dialog).getByText('1234 de 3612 · AMBA y La Plata')).toBeInTheDocument();
+    expect(within(dialog).getByText('100 de 400 · AMBA y La Plata')).toBeInTheDocument();
+    expect(within(dialog).getByText('60 de 200 · asistentes')).toBeInTheDocument();
+    expect(within(dialog).getByText('50 de 500 · AMBA')).toBeInTheDocument();
+    expect(within(dialog).getByText('40 de 200 · AMBA')).toBeInTheDocument();
   });
 
   it('closes the dialog', () => {

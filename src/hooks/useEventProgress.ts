@@ -3,9 +3,11 @@
 import { useEffect } from 'react';
 import { useApi } from './useApi';
 
+export type ProgressCount = { done: number; total: number };
+
 export type EventProgress = {
-  games: { received: number; total: number };
-  users: { total: number; ready: number; received: number };
+  reception: { games: ProgressCount; users: ProgressCount };
+  delivery: { games: ProgressCount; users: ProgressCount; ready: ProgressCount };
 };
 
 export function progressPercent(done: number, total: number): number {

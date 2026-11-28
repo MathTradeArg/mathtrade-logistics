@@ -1,7 +1,7 @@
 "use client";
 
 import StaffDialog from '@/components/staff/StaffDialog';
-import { progressPercent, useEventProgress } from '@/hooks/useEventProgress';
+import { type ProgressCount, progressPercent, useEventProgress } from '@/hooks/useEventProgress';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -20,8 +20,8 @@ function Bar({ percent, label }: { percent: number; label: string }) {
   );
 }
 
-function Row({ label, done, total }: { label: string; done: number; total: number }) {
-  const percent = progressPercent(done, total);
+function Row({ label, scope, count }: { label: string; scope: string; count: ProgressCount }) {
+  const percent = progressPercent(count.done, count.total);
   return (
     <div className="space-y-1">
       <div className="flex items-baseline justify-between gap-3">
@@ -29,7 +29,7 @@ function Row({ label, done, total }: { label: string; done: number; total: numbe
         <span className="text-heading font-bold text-ink">{percent} %</span>
       </div>
       <Bar percent={percent} label={label} />
-      <p className="text-caption text-gray-500">{done} de {total}</p>
+      <p className="text-caption text-gray-500">{count.done} de {count.total} · {scope}</p>
     </div>
   );
 }
@@ -40,8 +40,8 @@ export default function EventProgress() {
 
   if (!progress) return null;
 
-  const { games, users } = progress;
-  const gamesPercent = progressPercent(games.received, games.total);
+  const { reception, delivery } = progress;
+  const gamesPercent = progressPercent(reception.games.done, reception.games.total);
 
   return (
     <>
@@ -56,7 +56,7 @@ export default function EventProgress() {
           <Bar percent={gamesPercent} label="Juegos recibidos" />
         </span>
         <span className="text-caption font-bold text-ink">{gamesPercent} %</span>
-        <span className="text-caption text-gray-500">{games.received} / {games.total}</span>
+        <span className="text-caption text-gray-500">{reception.games.done} / {reception.games.total}</span>
       </button>
       {open &&
         createPortal(
@@ -68,9 +68,11 @@ export default function EventProgress() {
             onCancel={() => setOpen(false)}
           >
             <div className="space-y-4">
-              <Row label="Juegos recibidos" done={games.received} total={games.total} />
-              <Row label="Usuarios listos para retirar" done={users.ready} total={users.total} />
-              <Row label="Usuarios que ya retiraron" done={users.received} total={users.total} />
+              <Row label="Juegos recibidos" scope="AMBA y La Plata" count={reception.games} />
+              <Row label="Usuarios recibidos" scope="AMBA y La Plata" count={reception.users} />
+              <Row label="Usuarios listos para entregarles sus juegos" scope="asistentes" count={delivery.ready} />
+              <Row label="Juegos entregados" scope="AMBA" count={delivery.games} />
+              <Row label="Usuarios entregados" scope="AMBA" count={delivery.users} />
             </div>
           </StaffDialog>,
           document.body,
