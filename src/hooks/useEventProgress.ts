@@ -6,7 +6,12 @@ import { useApi } from './useApi';
 export type ProgressCount = { done: number; total: number };
 
 export type EventProgress = {
-  reception: { games: ProgressCount; users: ProgressCount };
+  reception: {
+    games: ProgressCount;
+    users: ProgressCount;
+    interior_games: ProgressCount;
+    boxes: ProgressCount;
+  };
   delivery: { games: ProgressCount; users: ProgressCount; ready: ProgressCount };
 };
 

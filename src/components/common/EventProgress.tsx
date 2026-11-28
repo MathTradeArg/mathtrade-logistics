@@ -80,9 +80,11 @@ export default function EventProgress() {
             cancelLabel="Cerrar"
             onCancel={() => setOpen(false)}
           >
-            <div className="space-y-4">
+            <div className="max-h-[65dvh] space-y-4 overflow-y-auto pr-1">
               <Row label="Juegos recibidos" scope="AMBA y La Plata" count={reception.games} />
               <Row label="Usuarios recibidos" scope="AMBA y La Plata" count={reception.users} />
+              <Row label="Juegos del interior recibidos" scope="por caja" count={reception.interior_games} />
+              <Row label="Cajas abiertas" scope="del interior a AMBA" count={reception.boxes} />
               <Row label="Usuarios listos para entregarles sus juegos" scope="asistentes" count={delivery.ready} />
               <Row label="Juegos entregados" scope="asistentes" count={delivery.games} />
               <Row label="Usuarios entregados" scope="asistentes" count={delivery.users} />
