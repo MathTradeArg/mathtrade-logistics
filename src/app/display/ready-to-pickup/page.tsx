@@ -2,6 +2,7 @@
 
 import { Clock, RefreshCw, UserX, Users } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { LoadingSpinner } from '@/components/common/ui';
 import CallQueue, { displayName } from '@/components/display/CallQueue';
 import ReceptionMessage from '@/components/display/ReceptionMessage';
 import { useEventPhase } from '@/contexts/EventPhaseContext';
@@ -221,8 +222,8 @@ export default function DisplayReadyToPickupPage() {
 
       <div className="flex flex-1 flex-col">
         {!showReception && isLoadingData && (queueMode ? queue.calling.length === 0 : windowsData.length === 0) && (
-          <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
-            <p className="text-2xl text-primary md:text-3xl">Cargando información...</p>
+          <div className="rounded-lg border border-gray-200 bg-white p-12">
+            <LoadingSpinner message="Cargando información..." />
           </div>
         )}
 

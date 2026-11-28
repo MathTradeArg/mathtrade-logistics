@@ -226,9 +226,7 @@ export default function WindowConfigPage() {
       <main className="w-full p-3 md:p-4 lg:p-6 flex flex-col">
         <div className="max-w-6xl mx-auto w-full">
         {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <p className="text-gray-500 ">Cargando configuración...</p>
-          </div>
+          <LoadingSpinner message="Cargando configuración..." />
         ) : loadFailed ? (
           <StaffBanner onRetry={loadData}>
             No se pudo cargar la configuración de ventanillas. No guardes nada hasta que cargue.

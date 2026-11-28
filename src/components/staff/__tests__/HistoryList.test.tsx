@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { HistoryList, HistorySection } from '../HistoryList';
 
 type Row = { id: number; text: string };
@@ -31,6 +31,12 @@ describe('HistoryList', () => {
 });
 
 describe('HistorySection', () => {
+  it('shows the dice loader with its message while the history loads', () => {
+    renderSection(jest.fn(() => new Promise(() => {})));
+    fireEvent.click(screen.getByRole('button', { name: 'Ver historial' }));
+    expect(within(screen.getByTestId('loading-spinner')).getByText('Cargando historial...')).toBeInTheDocument();
+  });
+
   it('does not load until opened, then loads once and shows rows and the truncated notice', async () => {
     const load = jest.fn().mockResolvedValue({ results: rows, truncated: true });
     renderSection(load);

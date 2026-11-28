@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from 'react';
+import { LoadingSpinner } from '@/components/common/ui';
 import type { HistoryResponse } from '@/types';
 // Direct import (not the staff/ui barrels): some page tests mock those barrels.
 import { StaffEmpty, StaffError } from './StaffPage';
@@ -81,7 +82,7 @@ export function HistorySection<T>({ title = 'Historial', load, getKey, renderRow
       {open && (
         <div>
           {notice && <p className="mt-3 text-caption text-gray-500">{notice}</p>}
-          {state.kind === 'loading' && <p className="mt-3 text-body text-gray-500">Cargando historial...</p>}
+          {state.kind === 'loading' && <LoadingSpinner message="Cargando historial..." />}
           {state.kind === 'unavailable' && (
             <StaffEmpty>El historial todavía no está disponible. Probá de nuevo más tarde.</StaffEmpty>
           )}
