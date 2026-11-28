@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import React, { ComponentType, FormEvent, useState } from 'react';
 import { useControlPanel } from '@/contexts/ControlPanelContext';
 import { useHapticClick } from '@/hooks/useHapticClick';
+import EventProgress from './EventProgress';
 import NotificationsBell from './NotificationsBell';
 
 interface AppHeaderProps {
@@ -49,7 +50,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   }
 
   return (
-    <header className="sticky top-0 z-nav flex w-full flex-wrap items-center justify-between bg-white border-b border-line p-3 pt-[calc(0.75rem+env(safe-area-inset-top))] md:flex-nowrap">
+    <header className="sticky top-0 z-nav flex w-full flex-wrap items-center justify-between bg-white border-b border-line p-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
       <div className="flex min-w-0 flex-1 items-center gap-3 overflow-x-hidden">
         {!isMagnifyingGlassVisible && (
           <>
@@ -124,6 +125,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           </div>
         )}
       </div>
+      {isAdmin && <EventProgress />}
     </header>
   );
 };
