@@ -99,6 +99,32 @@ describe('EventProgress', () => {
     expect(within(dialog).getByText('40 de 200 · asistentes')).toBeInTheDocument();
   });
 
+  it('colors the strip by phase: brand blue for reception, green for delivery', () => {
+    const { unmount } = render(<EventProgress />);
+    const fill = () => within(screen.getByRole('button', { name: /ver progreso/i })).getByRole('progressbar').firstElementChild;
+    expect(fill()).toHaveClass('bg-brand');
+    expect(fill()).not.toHaveClass('bg-want');
+    unmount();
+    mockUseEventPhase.mockReturnValue({ eventPhase: 2 });
+    render(<EventProgress />);
+    expect(fill()).toHaveClass('bg-want');
+    expect(fill()).not.toHaveClass('bg-brand');
+  });
+
+  it('colors the panel bars by group', () => {
+    render(<EventProgress />);
+    fireEvent.click(screen.getByRole('button', { name: /ver progreso/i }));
+    const dialog = screen.getByRole('dialog');
+    const tone = (label: string) =>
+      within(dialog).getByRole('progressbar', { name: label }).firstElementChild;
+    ['Juegos recibidos', 'Usuarios recibidos', 'Juegos del interior recibidos', 'Cajas abiertas'].forEach((label) => {
+      expect(tone(label)).toHaveClass('bg-brand');
+    });
+    ['Usuarios listos para entregarles sus juegos', 'Juegos entregados', 'Usuarios entregados'].forEach((label) => {
+      expect(tone(label)).toHaveClass('bg-want');
+    });
+  });
+
   it('closes the dialog', () => {
     render(<EventProgress />);
     fireEvent.click(screen.getByRole('button', { name: /ver progreso/i }));
