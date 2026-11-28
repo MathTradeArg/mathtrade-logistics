@@ -503,6 +503,7 @@ describe('DisplayReadyToPickupPage segun la fase del evento', () => {
     await act(async () => { await jest.advanceTimersByTimeAsync(30_000); });
 
     expect(screen.getByText('Cargando información...')).toBeInTheDocument();
+    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
     expect(screen.queryByText(RECEPTION)).not.toBeInTheDocument();
     expect(screen.queryByText('Nombre1 Apellido')).not.toBeInTheDocument();
     expect(fetchUsers).not.toHaveBeenCalled();

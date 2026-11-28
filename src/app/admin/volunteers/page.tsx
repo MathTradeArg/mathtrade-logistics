@@ -349,7 +349,7 @@ export default function VolunteersPage() {
           </select>
         </div>
         {isLoadingList ? (
-          <p className="py-8 text-center text-gray-500">Cargando voluntarios...</p>
+          <LoadingSpinner message="Cargando voluntarios..." />
         ) : shown.length === 0 ? (
           <StaffEmpty>Todavía no hay voluntarios en esta edición.</StaffEmpty>
         ) : (

@@ -67,6 +67,13 @@ describe('WindowConfigPage', () => {
     });
   });
 
+  it('shows the dice loader with its message while the configuration loads', () => {
+    configExecute.mockReturnValue(new Promise(() => {}));
+    tablesExecute.mockReturnValue(new Promise(() => {}));
+    renderPage();
+    expect(within(screen.getByTestId('loading-spinner')).getByText('Cargando configuración...')).toBeInTheDocument();
+  });
+
   describe('a window keeps its identity (id) across saves, so its users stay on the display', () => {
     it('renaming an existing window sends its own id, not a new one', async () => {
       serverHas([{ id: 7, name: 'V1', tables: ['10'] }]);

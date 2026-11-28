@@ -656,8 +656,8 @@ export default function ReadyToPickupPage() {
 
         <div className="flex-1">
           {isLoadingData && mainUsers.length === 0 && (
-            <div className="rounded-lg bg-white p-6 md:p-8 text-center">
-              <p className="text-heading lg:text-2xl text-primary">Cargando usuarios...</p>
+            <div className="rounded-lg bg-white p-6 md:p-8">
+              <LoadingSpinner message="Cargando usuarios..." />
             </div>
           )}
 

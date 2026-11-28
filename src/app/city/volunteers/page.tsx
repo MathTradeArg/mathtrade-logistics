@@ -1,6 +1,7 @@
 "use client";
 
 import NoCity from '@/components/city/NoCity';
+import { LoadingSpinner } from '@/components/common/ui';
 import ReferrerOnly from '@/components/city/ReferrerOnly';
 import { apiErrorMessage } from '@/components/city/errors';
 import { GameRow, StaffDialog, StaffEmpty, StaffPage, StaffSearch } from '@/components/staff';
@@ -174,7 +175,7 @@ export default function CityVolunteersPage() {
       <section className="mt-10">
         <h2 className="text-body font-semibold text-gray-500">Voluntarios ({volunteers.length})</h2>
         {isLoadingList ? (
-          <p className="py-8 text-center text-gray-500">Cargando voluntarios...</p>
+          <LoadingSpinner message="Cargando voluntarios..." />
         ) : volunteers.length === 0 ? (
           <StaffEmpty>Todavía no agregaste voluntarios.</StaffEmpty>
         ) : (
