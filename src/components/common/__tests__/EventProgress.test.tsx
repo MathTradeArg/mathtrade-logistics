@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import EventProgress from '../EventProgress';
+import { useEventPhase } from '@/contexts/EventPhaseContext';
 import { useEventProgress } from '@/hooks/useEventProgress';
 
 jest.mock('@/hooks/useEventProgress', () => ({
@@ -8,7 +9,10 @@ jest.mock('@/hooks/useEventProgress', () => ({
   useEventProgress: jest.fn(),
 }));
 
+jest.mock('@/contexts/EventPhaseContext');
+
 const mockUseEventProgress = useEventProgress as jest.Mock;
+const mockUseEventPhase = useEventPhase as jest.Mock;
 
 const sample = {
   reception: { games: { done: 1234, total: 3612 }, users: { done: 100, total: 400 } },
@@ -22,20 +26,31 @@ const sample = {
 describe('EventProgress', () => {
   beforeEach(() => {
     mockUseEventProgress.mockReturnValue(sample);
+    mockUseEventPhase.mockReturnValue({ eventPhase: 1 });
   });
 
-  it('shows the share of games received in the top strip', () => {
+  it('shows games received inside the bar during reception', () => {
     render(<EventProgress />);
     const strip = screen.getByRole('button', { name: /ver progreso/i });
-    expect(within(strip).getByText('Recibidos')).toBeInTheDocument();
-    expect(within(strip).getByText('34 %')).toBeInTheDocument();
+    expect(within(strip).getByText('Recibidos · 34 %')).toBeInTheDocument();
     expect(within(strip).getByText('1234 / 3612')).toBeInTheDocument();
+    expect(within(strip).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '34');
   });
 
-  it('fills the strip bar according to the percentage', () => {
+  it('shows games delivered inside the bar during delivery', () => {
+    mockUseEventPhase.mockReturnValue({ eventPhase: 2 });
     render(<EventProgress />);
-    const bar = within(screen.getByRole('button', { name: /ver progreso/i })).getByRole('progressbar');
-    expect(bar).toHaveAttribute('aria-valuenow', '34');
+    const strip = screen.getByRole('button', { name: /ver progreso/i });
+    expect(within(strip).getByText('Entregados · 10 %')).toBeInTheDocument();
+    expect(within(strip).getByText('50 / 500')).toBeInTheDocument();
+    expect(within(strip).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '10');
+  });
+
+  it.each([0, null])('shows games received when the phase is %s', (phase) => {
+    mockUseEventPhase.mockReturnValue({ eventPhase: phase });
+    render(<EventProgress />);
+    const strip = screen.getByRole('button', { name: /ver progreso/i });
+    expect(within(strip).getByText('Recibidos · 34 %')).toBeInTheDocument();
   });
 
   it('renders nothing until the first answer', () => {
@@ -72,8 +87,8 @@ describe('EventProgress', () => {
     expect(within(dialog).getByText('1234 de 3612 · AMBA y La Plata')).toBeInTheDocument();
     expect(within(dialog).getByText('100 de 400 · AMBA y La Plata')).toBeInTheDocument();
     expect(within(dialog).getByText('60 de 200 · asistentes')).toBeInTheDocument();
-    expect(within(dialog).getByText('50 de 500 · AMBA')).toBeInTheDocument();
-    expect(within(dialog).getByText('40 de 200 · AMBA')).toBeInTheDocument();
+    expect(within(dialog).getByText('50 de 500 · asistentes')).toBeInTheDocument();
+    expect(within(dialog).getByText('40 de 200 · asistentes')).toBeInTheDocument();
   });
 
   it('closes the dialog', () => {

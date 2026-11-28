@@ -13,6 +13,10 @@ jest.mock('next/navigation', () => ({
 jest.mock('@/components/common/ui', () => ({
   LoadingSpinner: () => <div data-testid="loading-spinner">Loading...</div>,
 }));
+jest.mock('@/components/common/EventProgress', () => ({
+  __esModule: true,
+  default: () => null,
+}));
 jest.mock('@/components/common/NotificationsBell', () => ({
   __esModule: true,
   default: () => <div data-testid="notifications-bell" />,
