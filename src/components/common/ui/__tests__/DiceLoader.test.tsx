@@ -48,7 +48,21 @@ describe('DiceLoader', () => {
     const faces = container.querySelectorAll('[data-dice-face]');
     expect(faces).toHaveLength(6);
     const counts = Array.from(faces).map((face) => face.querySelectorAll('[data-pip]').length);
-    expect(counts).toEqual([1, 2, 3, 4, 5, 6]);
+    expect([...counts].sort()).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it('lays the pips out like a real right-handed die', () => {
+    const { container } = render(<DiceLoader />);
+    const faces = Array.from(container.querySelectorAll('[data-dice-face]'));
+    const [front, right, back, left, top, bottom] = faces.map(
+      (face) => face.querySelectorAll('[data-pip]').length,
+    );
+    expect(front + back).toBe(7);
+    expect(right + left).toBe(7);
+    expect(top + bottom).toBe(7);
+    expect(top).toBe(1);
+    expect(front).toBe(2);
+    expect(right).toBe(3);
   });
 
   it('does not throw when Element.prototype.animate is missing', () => {
